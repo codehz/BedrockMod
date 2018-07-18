@@ -34,6 +34,9 @@ CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_player()
   m->add(chaiscript::base_class<Mob, ServerPlayer>());
   m->add(chaiscript::base_class<Player, ServerPlayer>());
   m->add(chaiscript::user_type<Vec3>(), "Vec3");
+  m->add(chaiscript::fun(&Vec3::x), "x");
+  m->add(chaiscript::fun(&Vec3::y), "y");
+  m->add(chaiscript::fun(&Vec3::z), "z");
   m->add(chaiscript::constructor<Vec3(float, float, float)>(), "Vec3");
   m->add(chaiscript::fun(&ServerPlayer::sendNetworkPacket), "sendPacket");
   m->add(chaiscript::fun(&Entity::getPos), "getPos");
