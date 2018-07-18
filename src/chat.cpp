@@ -19,8 +19,6 @@ struct TextPacket : Packet {
 
 CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_chat() {
   chaiscript::ModulePtr m(new chaiscript::Module());
-  // m->add(chaiscript::user_type<TextPacket>(), "TextPacket");
-  // m->add(chaiscript::base_class<Packet, TextPacket>());
   m->add(chaiscript::fun([](ServerPlayer &player, std::string message) {
            auto packet = TextPacket::createSystemMessage(message);
            player.sendNetworkPacket(packet);

@@ -22,13 +22,9 @@ TInstanceHook(ServerPlayer *, _ZN20ServerNetworkHandler16_createNewPlayerERK17Ne
 }
 
 TInstanceHook(void, _ZN20ServerNetworkHandler24onReady_ClientGenerationER6PlayerRK17NetworkIdentifier, ServerNetworkHandler, Player &player,
-              NetworkIdentifier const &nid) {
-  // original(this, player, nid); - do not call original so there are no join messages
-  // instance.onPlayerJoined(player);
-}
+              NetworkIdentifier const &nid) {}
 
 TInstanceHook(void, _ZN20ServerNetworkHandler13_onPlayerLeftEP12ServerPlayer, ServerNetworkHandler, ServerPlayer *player) {
-  // original(this, player); - do not call original so there are no quit messages
   player->disconnect();
   player->remove();
 
