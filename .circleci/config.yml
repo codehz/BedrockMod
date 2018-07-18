@@ -7,7 +7,7 @@ jobs:
     working_directory: /data/projects
     steps:
       - checkout
-      - run: CPP=/data/sdk/bin/i686-linux-android-g++ make
+      - run: CPP=/data/sdk/bin/i686-linux-android-g++ make -j $(nproc)
 
       - store_artifacts:
           path: /data/projects/out
