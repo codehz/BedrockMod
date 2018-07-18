@@ -15,14 +15,15 @@ TInstanceHook(ServerPlayer *, _ZN20ServerNetworkHandler16_createNewPlayerERK17Ne
               NetworkIdentifier const &nid, ConnectionRequest const &req) {
   ServerPlayer *ret = original(this, nid, req);
   playermap[nid]    = ret;
-  for (auto joined : joinedHandles) try {
-      joined(*ret);
-    } catch (const std::exception &e) { Log::error("ChaiExtra", e.what()); }
   return ret;
 }
 
 TInstanceHook(void, _ZN20ServerNetworkHandler24onReady_ClientGenerationER6PlayerRK17NetworkIdentifier, ServerNetworkHandler, Player &player,
-              NetworkIdentifier const &nid) {}
+              NetworkIdentifier const &nid) {
+  for (auto joined : joinedHandles) try {
+      joined(static_cast<ServerPlayer &>(player));
+    } catch (const std::exception &e) { Log::error("ChaiExtra", e.what()); }
+}
 
 TInstanceHook(void, _ZN20ServerNetworkHandler13_onPlayerLeftEP12ServerPlayer, ServerNetworkHandler, ServerPlayer *player) {
   player->disconnect();
