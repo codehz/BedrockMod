@@ -15,7 +15,6 @@ struct TeleportCommand {
 };
 
 void teleport(Entity &entity, Vec3 target, int dim, Vec3 *center) {
-  Log::info("TP", "(%f, %f, %f)", target.x, target.y, target.z);
   auto real = center != nullptr ? *center : target;
   ((TeleportCommand *)nullptr)->teleport(entity, target, &real, { dim });
 }
