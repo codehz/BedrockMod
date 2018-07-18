@@ -288,13 +288,16 @@ struct StubCommand : Command {
       if (it != CustomCommandMap.end()) {
         try {
           auto boxed = it->second->execute({ orig }, content);
-          if (boxed.is_type(chaiscript::user_type<std::string>()))
-            content = "/echo " + chaiscript::boxed_cast<std::string>(boxed);
-          else
-            content = "/echo";
+          if (boxed.is_type(chaiscript::user_type<std::string>())) {
+            std::string result = chaiscript::boxed_cast<std::string>(boxed);
+            if (!result.empty()) outp.addMessage(result);
+            outp.success();
+            return;
+          }
         } catch (const std::exception &e) {
           Log::error("CMD", "Error in callback: %s", e.what());
-          content = "/echo Error.";
+          outp.error(e.what());
+          return;
         }
       }
     }
