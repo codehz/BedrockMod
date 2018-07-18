@@ -43,8 +43,6 @@ struct Player : Mob {
   void remove();
   NetworkIdentifier const &getClientId() const;
   unsigned char getClientSubId() const;
-
-  void sendPacket(Packet &packet);
 };
 
 struct ServerPlayer : Player {
@@ -61,12 +59,6 @@ struct Level {
   ServerPlayer *getPlayer(EntityUniqueID uuid) const;
   PacketSender &getPacketSender() const;
 };
-
-struct Minecraft {
-  Level *getLevel() const;
-};
-
-extern Minecraft *minecraft;
 
 extern void onPlayerJoined(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerLeft(std::function<void(ServerPlayer &player)> callback);

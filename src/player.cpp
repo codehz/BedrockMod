@@ -22,7 +22,7 @@ CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_player()
   m->add(chaiscript::base_class<Entity, ServerPlayer>());
   m->add(chaiscript::base_class<Mob, ServerPlayer>());
   m->add(chaiscript::base_class<Player, ServerPlayer>());
-  m->add(chaiscript::fun(&Player::sendPacket), "sendPacket");
+  m->add(chaiscript::fun(&ServerPlayer::sendNetworkPacket), "sendPacket");
   m->add(chaiscript::fun([](ServerPlayer &player) -> std::string { return player.getNameTag(); }), "getNameTag");
   m->add(chaiscript::fun([](std::function<chaiscript::Boxed_Value(ServerPlayer &)> f) { onPlayerJoined(f); }), "onPlayerJoined");
   m->add(chaiscript::fun([](std::function<chaiscript::Boxed_Value(ServerPlayer &)> f) { onPlayerLeft(f); }), "onPlayerLeft");

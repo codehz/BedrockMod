@@ -45,28 +45,5 @@ TInstanceHook(void, _ZN20ServerNetworkHandler12onDisconnectERK17NetworkIdentifie
   playermap.erase(nid);
 }
 
-Minecraft *minecraft = 0;
-
-TInstanceHook(void *, _ZN9Minecraft4initEb, Minecraft, bool b) {
-  minecraft = this;
-  return original(this, b);
-}
-
-// struct Minecraft {
-//   Level *getLevel() const;
-//   IMPL(Minecraft, void *, init, , bool b) {
-//     auto ret = $init()(this, b);
-//     level    = getLevel();
-//     level->getPacketSender();
-//     Log::info("Player", "Level set");
-//     return ret;
-//   }
-// };
-
-void Player::sendPacket(Packet &packet) {
-  Log::trace("Player", "mc: %08x, level: %08x", minecraft, minecraft->getLevel());
-  this->getLevel()->getPacketSender().sendToClient(this->getClientId(), packet, this->getClientSubId());
-}
-
 void onPlayerJoined(std::function<void(ServerPlayer &player)> callback) { joinedHandles.push_back(callback); }
 void onPlayerLeft(std::function<void(ServerPlayer &player)> callback) { leftsHandles.push_back(callback); }
