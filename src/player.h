@@ -22,10 +22,18 @@ struct Vec3 {
       : x(x)
       , y(y)
       , z(z) {}
+  Vec3() = default;
+  Vec3(Vec3 const &) = default;
 };
 
 struct Vec2 {
   float x, y;
+};
+
+struct DimensionId {
+  int value;
+  DimensionId(int value)
+      : value(value) {}
 };
 
 struct BinaryStream;
@@ -54,6 +62,7 @@ struct Entity {
   Vec2 const &getRotation() const;
   Vec3 const &getPos() const;
   Level *getLevel() const;
+  int getDimensionId() const;
 };
 
 struct Mob : Entity {

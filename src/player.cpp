@@ -10,13 +10,17 @@
 
 #include "player.h"
 
-struct DimensionId {
-  int value;
-};
-
 struct TeleportCommand {
   void teleport(Entity &entity, Vec3 pos, Vec3 *center, DimensionId dim) const;
 };
+
+void teleport(Entity &entity, Vec3 target, int dim, Vec3 *center) {
+  Log::info("TP", "(%f, %f, %f)", target.x, target.y, target.z);
+  auto real = center != nullptr ? *center : target;
+  ((TeleportCommand *)nullptr)->teleport(entity, target, &real, { dim });
+}
+void teleport1(Entity &entity, Vec3 target, int dim) { teleport(entity, target, dim, nullptr); }
+void teleport2(Entity &entity, Vec3 target) { teleport(entity, target, entity.getDimensionId(), nullptr); }
 
 CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_player() {
   chaiscript::ModulePtr m(new chaiscript::Module());
@@ -30,12 +34,14 @@ CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_player()
   m->add(chaiscript::base_class<Entity, ServerPlayer>());
   m->add(chaiscript::base_class<Mob, ServerPlayer>());
   m->add(chaiscript::base_class<Player, ServerPlayer>());
+  m->add(chaiscript::user_type<Vec3>(), "Vec3");
+  m->add(chaiscript::constructor<Vec3(float, float, float)>(), "Vec3");
   m->add(chaiscript::fun(&ServerPlayer::sendNetworkPacket), "sendPacket");
-  m->add(chaiscript::fun([](ServerPlayer &player, float x, float y, float z) -> void {
-           Vec3 zero{ x, y, z };
-           ((TeleportCommand *)nullptr)->teleport(player, { x, y, z }, &zero, { 0 });
-         }),
-         "move");
+  m->add(chaiscript::fun(&Entity::getPos), "getPos");
+  m->add(chaiscript::fun(&Entity::getDimensionId), "getDim");
+  m->add(chaiscript::fun(teleport), "teleport");
+  m->add(chaiscript::fun(teleport1), "teleport");
+  m->add(chaiscript::fun(teleport2), "teleport");
   m->add(chaiscript::fun([](ServerPlayer &player) -> std::string { return player.getNameTag(); }), "getNameTag");
   m->add(chaiscript::fun([](std::function<chaiscript::Boxed_Value(ServerPlayer &)> f) { onPlayerJoined(f); }), "onPlayerJoined");
   m->add(chaiscript::fun([](std::function<chaiscript::Boxed_Value(ServerPlayer &)> f) { onPlayerLeft(f); }), "onPlayerLeft");
