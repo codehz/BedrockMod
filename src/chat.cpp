@@ -1,7 +1,8 @@
 #include <polyfill.h>
 
-#include "player.h"
+#include <log.h>
 
+#include "player.h"
 struct TextPacket : Packet {
   char filler[0x30];
   static TextPacket createSystemMessage(std::string const &);
@@ -19,6 +20,12 @@ struct TextPacket : Packet {
 
 CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_chat() {
   chaiscript::ModulePtr m(new chaiscript::Module());
+  m->add(chaiscript::fun([](ServerPlayer &player, std::string message, unsigned type) {
+           auto packet      = TextPacket::createSystemMessage(message);
+           packet.filler[0] = type;
+           player.sendNetworkPacket(packet);
+         }),
+         "sendCustomMessage");
   m->add(chaiscript::fun([](ServerPlayer &player, std::string message) {
            auto packet = TextPacket::createSystemMessage(message);
            player.sendNetworkPacket(packet);

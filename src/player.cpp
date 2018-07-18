@@ -42,7 +42,7 @@ CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_player()
   m->add(chaiscript::fun(teleport1), "teleport");
   m->add(chaiscript::fun(teleport2), "teleport");
   m->add(chaiscript::fun([](ServerPlayer &player) -> std::string { return player.getNameTag(); }), "getNameTag");
-  m->add(chaiscript::fun([](std::function<chaiscript::Boxed_Value(ServerPlayer &)> f) { onPlayerJoined(f); }), "onPlayerJoined");
-  m->add(chaiscript::fun([](std::function<chaiscript::Boxed_Value(ServerPlayer &)> f) { onPlayerLeft(f); }), "onPlayerLeft");
+  m->add(chaiscript::fun([](std::function<void(ServerPlayer &)> f) { onPlayerJoined(f); }), "onPlayerJoined");
+  m->add(chaiscript::fun([](std::function<void(ServerPlayer &)> f) { onPlayerLeft(f); }), "onPlayerLeft");
   return m;
 }
