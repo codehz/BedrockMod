@@ -12,6 +12,22 @@ struct EntityUniqueID {
   long long high, low;
 };
 
+struct EntityRuntimeID {
+  long long eid = 0;
+};
+
+struct Vec3 {
+  float x, y, z;
+  Vec3(float x, float y, float z)
+      : x(x)
+      , y(y)
+      , z(z) {}
+};
+
+struct Vec2 {
+  float x, y;
+};
+
 struct BinaryStream;
 struct NetEventCallback;
 
@@ -34,10 +50,15 @@ struct Level;
 
 struct Entity {
   const std::string &getNameTag() const;
+  EntityRuntimeID getRuntimeID() const;
+  Vec2 const &getRotation() const;
+  Vec3 const &getPos() const;
   Level *getLevel() const;
 };
 
-struct Mob : Entity {};
+struct Mob : Entity {
+  float getYHeadRot() const;
+};
 
 struct Player : Mob {
   void remove();

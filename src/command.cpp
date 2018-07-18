@@ -258,7 +258,6 @@ struct CommandSender {
   bool isPlayer() { return orig->getOriginType() == CommandOriginType::PLAYER; }
   ServerPlayer *getPlayer() {
     if (isPlayer()) {
-      Log::debug("CMD", "GetEntity: %08x", orig->getEntity());
       return static_cast<ServerPlayer *>(orig->getEntity());
     } else
       throw new std::runtime_error("CommandOrigin is not player!");
