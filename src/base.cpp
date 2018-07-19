@@ -51,6 +51,52 @@ struct ServerInstance {
   Minecraft *minecraft;
 };
 
+enum struct PlayerActionType { DESTROY, BUILD };
+
+std::function<bool(ServerPlayer &sp, PlayerActionType, BlockPos const &)> playerAction;
+
+TInstanceHook(int, _ZN8GameMode12destroyBlockERK8BlockPosa, GameMode, BlockPos const &pos, signed char flag) {
+  try {
+    if (!playerAction || playerAction(this->player, PlayerActionType::DESTROY, pos)) { return original(this, pos, flag); }
+    return 0;
+  } catch (std::exception const &e) {
+    Log::error("PlayerAction", "Error: %s", e.what());
+    return original(this, pos, flag);
+  }
+}
+
+TInstanceHook(int, _ZN12SurvivalMode12destroyBlockERK8BlockPosa, SurvivalMode, BlockPos const &pos, signed char flag) {
+  try {
+    if (!playerAction || playerAction(this->player, PlayerActionType::DESTROY, pos)) { return original(this, pos, flag); }
+    return 0;
+  } catch (std::exception const &e) {
+    Log::error("PlayerAction", "Error: %s", e.what());
+    return original(this, pos, flag);
+  }
+}
+
+TInstanceHook(int, _ZN8GameMode9useItemOnER12ItemInstanceRK8BlockPosaRK4Vec3P15ItemUseCallback, GameMode, ItemInstance &item, BlockPos const &pos,
+              signed char flag, Vec3 const &ppos, ItemUseCallback *cb) {
+  try {
+    if (!playerAction || playerAction(this->player, PlayerActionType::BUILD, pos)) { return original(this, item, pos, flag, ppos, cb); }
+    return 0;
+  } catch (std::exception const &e) {
+    Log::error("PlayerAction", "Error: %s", e.what());
+    return original(this, item, pos, flag, ppos, cb);
+  }
+}
+
+TInstanceHook(int, _ZN12SurvivalMode9useItemOnER12ItemInstanceRK8BlockPosaRK4Vec3P15ItemUseCallback, SurvivalMode, ItemInstance &item,
+              BlockPos const &pos, signed char flag, Vec3 const &ppos, ItemUseCallback *cb) {
+  try {
+    if (!playerAction || playerAction(this->player, PlayerActionType::BUILD, pos)) { return original(this, item, pos, flag, ppos, cb); }
+    return 0;
+  } catch (std::exception const &e) {
+    Log::error("PlayerAction", "Error: %s", e.what());
+    return original(this, item, pos, flag, ppos, cb);
+  }
+}
+
 extern "C" void mod_set_server(ServerInstance *si) {
   si->minecraft->activateWhitelist();
   mc = si->minecraft;
@@ -68,11 +114,18 @@ extern "C" void mod_init() {
   m->add(chaiscript::base_class<Entity, ServerPlayer>());
   m->add(chaiscript::base_class<Mob, ServerPlayer>());
   m->add(chaiscript::base_class<Player, ServerPlayer>());
+  m->add(chaiscript::user_type<BlockPos>(), "BlockPos");
   m->add(chaiscript::user_type<Vec3>(), "Vec3");
+  m->add(chaiscript::fun(&BlockPos::x), "x");
+  m->add(chaiscript::fun(&BlockPos::y), "y");
+  m->add(chaiscript::fun(&BlockPos::z), "z");
+  m->add(chaiscript::constructor<BlockPos(int, int, int)>(), "BlockPos");
+  m->add(chaiscript::constructor<BlockPos(Vec3 const &)>(), "BlockPos");
   m->add(chaiscript::fun(&Vec3::x), "x");
   m->add(chaiscript::fun(&Vec3::y), "y");
   m->add(chaiscript::fun(&Vec3::z), "z");
   m->add(chaiscript::constructor<Vec3(float, float, float)>(), "Vec3");
+  m->add(chaiscript::constructor<Vec3(BlockPos const &)>(), "Vec3");
   m->add(chaiscript::fun([](std::function<bool(std::string)> const &fn) { whitelistFilter = fn; }), "setWhitelistFilter");
   m->add(chaiscript::fun(&ServerPlayer::sendNetworkPacket), "sendPacket");
   m->add(chaiscript::fun(&Entity::getPos), "getPos");
@@ -96,5 +149,8 @@ extern "C" void mod_init() {
            });
          }),
          "forEachPlayer");
+  chaiscript::utility::add_class<PlayerActionType>(*m, "PlayerActionType",
+                                                   { { PlayerActionType::DESTROY, "DESTROY" }, { PlayerActionType::BUILD, "BUILD" } });
+  m->add(chaiscript::fun([](std::function<bool(ServerPlayer & sp, PlayerActionType, BlockPos const &)> fn) { playerAction = fn; }), "onPlayerAction");
   loadModule(m);
 }

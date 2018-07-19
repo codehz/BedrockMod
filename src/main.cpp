@@ -44,7 +44,7 @@ struct LogForChai {
   template <LogLevel Level> void log(std::string tag, std::string content) const { Log::log(Level, ("Chai::" + tag).c_str(), "%s", content.c_str()); }
 };
 
-LogForChai LogInstance;
+static LogForChai LogInstance;
 
 extern "C" void loadModule(chaiscript::ModulePtr ptr) { chai.add(ptr); }
 

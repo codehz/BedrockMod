@@ -16,12 +16,24 @@ struct EntityRuntimeID {
   long long eid = 0;
 };
 
+struct Vec3;
+
+struct BlockPos {
+  int x, y, z;
+  BlockPos(int x, int y, int z)
+      : x(x)
+      , y(y)
+      , z(z) {}
+  BlockPos(Vec3 const &);
+};
+
 struct Vec3 {
   float x, y, z;
   Vec3(float x, float y, float z)
       : x(x)
       , y(y)
       , z(z) {}
+  Vec3(BlockPos const &);
   Vec3()             = default;
   Vec3(Vec3 const &) = default;
 };
@@ -89,6 +101,47 @@ struct Level {
   ServerPlayer *getPlayer(EntityUniqueID uuid) const;
   PacketSender &getPacketSender() const;
   void forEachPlayer(std::function<bool(Player &)>);
+};
+
+enum struct InputMode { UNK };
+
+struct ItemInstance;
+struct ItemUseCallback;
+
+struct GameMode {
+  GameMode(Player &);
+  ServerPlayer &player;
+  virtual ~GameMode();
+  virtual int startDestroyBlock(BlockPos const &, signed char, bool &);
+  virtual int destroyBlock(BlockPos const &, signed char);
+  virtual int continueDestroyBlock(BlockPos const &, signed char, bool &);
+  virtual int stopDestroyBlock(BlockPos const &);
+  virtual int startBuildBlock(BlockPos const &, signed char);
+  virtual int buildBlock(BlockPos const &, signed char);
+  virtual int continueBuildBlock(BlockPos const &, signed char);
+  virtual int stopBuildBlock(void);
+  virtual void tick(void);
+  virtual long double getPickRange(InputMode const &, bool);
+  virtual int useItem(ItemInstance &);
+  virtual int useItemOn(ItemInstance &, BlockPos const &, signed char, Vec3 const &, ItemUseCallback *);
+  virtual int interact(Entity &, Vec3 const &);
+  virtual int attack(Entity &);
+  virtual int releaseUsingItem(void);
+  virtual int setTrialMode(bool);
+  virtual int isInTrialMode(void);
+  virtual int registerUpsellScreenCallback(std::function<void(bool)>);
+};
+struct SurvivalMode : GameMode {
+  SurvivalMode(Player &);
+  virtual ~SurvivalMode();
+  virtual int startDestroyBlock(BlockPos const &, signed char, bool &);
+  virtual int destroyBlock(BlockPos const &, signed char);
+  virtual void tick(void);
+  virtual int useItem(ItemInstance &);
+  virtual int useItemOn(ItemInstance &, BlockPos const &, signed char, Vec3 const &, ItemUseCallback *);
+  virtual int setTrialMode(bool);
+  virtual int isInTrialMode(void);
+  virtual int registerUpsellScreenCallback(std::function<void(bool)>);
 };
 
 extern void onPlayerAdded(std::function<void(ServerPlayer &player)> callback);
