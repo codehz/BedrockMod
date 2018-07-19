@@ -24,11 +24,18 @@ struct Whitelist {};
 
 namespace mce {
 struct UUID {
-  long long most, least;
+  uint64_t most, least;
+  const std::string asString() const;
+  void fromString(std::string const &);
 };
 } // namespace mce
 
+static std::function<bool(std::string)> whitelistFilter;
+
 TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::UUID &uuid, std::string const &msg) {
+  if (whitelistFilter) try {
+      return whitelistFilter(uuid.asString());
+    } catch (std::exception const &e) { Log::error("Player", "Error: %s", e.what()); }
   return true;
 }
 
@@ -41,9 +48,7 @@ struct ServerInstance {
   Minecraft *minecraft;
 };
 
-extern "C" void mod_set_server(ServerInstance *si) {
-  si->minecraft->activateWhitelist();
-}
+extern "C" void mod_set_server(ServerInstance *si) { si->minecraft->activateWhitelist(); }
 
 extern "C" void mod_init() {
   chaiscript::ModulePtr m(new chaiscript::Module());
@@ -62,6 +67,7 @@ extern "C" void mod_init() {
   m->add(chaiscript::fun(&Vec3::y), "y");
   m->add(chaiscript::fun(&Vec3::z), "z");
   m->add(chaiscript::constructor<Vec3(float, float, float)>(), "Vec3");
+  m->add(chaiscript::fun([](std::function<bool(std::string)> const &fn) { whitelistFilter = fn; }), "setWhitelistFilter");
   m->add(chaiscript::fun(&ServerPlayer::sendNetworkPacket), "sendPacket");
   m->add(chaiscript::fun(&Entity::getPos), "getPos");
   m->add(chaiscript::fun(&Entity::getDimensionId), "getDim");
