@@ -21,9 +21,9 @@ out/libplayer_support.so: objs/fix.o objs/player_support.o lib/libminecraftpe.so
 out/chai_%.so: objs/%.o objs/hack.o out/libplayer_support.so lib/libminecraftpe.so out/ChaiSupport.so
 	@echo LD $@
 	@$(CPP) $(LDFLAGS) $(LPLAYER) $(LCHAI) -shared -fPIC -o $@ $(filter %.o,$^)
-out/ChaiSupport.so: objs/fix.o objs/main.o out/libplayer_support.so lib/libminecraftpe.so
+out/ChaiSupport.so: objs/fix.o objs/main.o lib/libminecraftpe.so
 	@echo LD $@
-	@$(CPP) $(LDFLAGS) $(LPLAYER) -shared -fPIC -o $@ $(filter %.o,$^)
+	@$(CPP) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
 
 .PRECIOUS: deps/%.d
 deps/%.d: src/%.cpp

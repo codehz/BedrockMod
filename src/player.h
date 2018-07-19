@@ -90,6 +90,7 @@ struct Level {
   PacketSender &getPacketSender() const;
 };
 
+extern void onPlayerAdded(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerJoined(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerLeft(std::function<void(ServerPlayer &player)> callback);
 

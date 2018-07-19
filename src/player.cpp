@@ -75,7 +75,8 @@ extern "C" void mod_init() {
   m->add(chaiscript::fun(teleport1), "teleport");
   m->add(chaiscript::fun(teleport2), "teleport");
   m->add(chaiscript::fun([](ServerPlayer &player) -> std::string { return player.getNameTag(); }), "getNameTag");
-  m->add(chaiscript::fun([](std::function<void(ServerPlayer &)> f) { onPlayerJoined(f); }), "onPlayerJoined");
-  m->add(chaiscript::fun([](std::function<void(ServerPlayer &)> f) { onPlayerLeft(f); }), "onPlayerLeft");
+  m->add(chaiscript::fun(onPlayerAdded), "onPlayerAdded");
+  m->add(chaiscript::fun(onPlayerJoined), "onPlayerJoined");
+  m->add(chaiscript::fun(onPlayerLeft), "onPlayerLeft");
   loadModule(m);
 }

@@ -6,7 +6,7 @@
 #include "player.h"
 
 static std::unordered_map<NetworkIdentifier, Player *> playermap;
-static std::vector<std::function<void(ServerPlayer &)>> joinedHandles, leftsHandles;
+static std::vector<std::function<void(ServerPlayer &)>> addedHandles, joinedHandles, leftsHandles;
 
 struct ServerNetworkHandler {};
 struct ConnectionRequest {};
@@ -15,6 +15,9 @@ TInstanceHook(ServerPlayer *, _ZN20ServerNetworkHandler16_createNewPlayerERK17Ne
               NetworkIdentifier const &nid, ConnectionRequest const &req) {
   ServerPlayer *ret = original(this, nid, req);
   playermap[nid]    = ret;
+  for (auto added : addedHandles) try {
+      added(static_cast<ServerPlayer &>(*ret));
+    } catch (const std::exception &e) { Log::error("ChaiExtra", e.what()); }
   return ret;
 }
 
@@ -42,5 +45,6 @@ TInstanceHook(void, _ZN20ServerNetworkHandler12onDisconnectERK17NetworkIdentifie
   playermap.erase(nid);
 }
 
+void onPlayerAdded(std::function<void(ServerPlayer &player)> callback) { addedHandles.push_back(callback); }
 void onPlayerJoined(std::function<void(ServerPlayer &player)> callback) { joinedHandles.push_back(callback); }
 void onPlayerLeft(std::function<void(ServerPlayer &player)> callback) { leftsHandles.push_back(callback); }
