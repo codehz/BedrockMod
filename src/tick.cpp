@@ -31,11 +31,15 @@ TInstanceHook(void, _ZN5Level4tickEv, Level) {
   }
   auto &to = timeoutHandlers.front();
   if (--to.chip <= 0) {
-    to();
+    try {
+      to();
+    } catch (std::exception const &e) { Log::error("BASE", "TICK ERROR: %s", e.what()); }
     timeoutHandlers.pop_front();
   }
   while (timeoutHandlers.front().chip == 0) {
-    timeoutHandlers.front()();
+    try {
+      timeoutHandlers.front()();
+    } catch (std::exception const &e) { Log::error("BASE", "TICK ERROR: %s", e.what()); }
     timeoutHandlers.pop_front();
   }
   count++;
