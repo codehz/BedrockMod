@@ -10,7 +10,7 @@ extern "C"
 
   void _init()
   {
-    stdin = fdopen(0, "w");
+    stdin = fdopen(0, "r");
     stdout = fdopen(1, "w");
     stderr = fdopen(2, "w");
   }
