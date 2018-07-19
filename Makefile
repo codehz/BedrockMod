@@ -2,13 +2,14 @@ CXXFLAGS = -ffast-math -std=c++14 -Iinclude -DCHAISCRIPT_NO_THREADS -Wno-invalid
 LDFLAGS = -L./lib -lminecraftpe
 
 LPLAYER = -Lout -lplayer_support
+LCHAI = out/ChaiSupport.so
 
 MODS = chat command form player test
 
 $(shell mkdir -p objs deps out >/dev/null)
 
 .PHONY: all
-all: out/libplayer_support.so out/ChaiSupport.so $(addsuffix .mod,$(addprefix out/,$(MODS)))
+all: out/libplayer_support.so out/ChaiSupport.so $(addsuffix .so,$(addprefix out/chai_,$(MODS)))
 
 .PHONY: clean
 clean:
@@ -17,9 +18,9 @@ clean:
 out/libplayer_support.so: objs/fix.o objs/player_support.o lib/libminecraftpe.so
 	@echo LD $@
 	@$(CPP) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
-out/%.mod: objs/%.o objs/hack.o out/libplayer_support.so lib/libminecraftpe.so
+out/chai_%.so: objs/%.o objs/hack.o out/libplayer_support.so lib/libminecraftpe.so out/ChaiSupport.so
 	@echo LD $@
-	@$(CPP) $(LDFLAGS) $(LPLAYER) -shared -fPIC -o $@ $(filter %.o,$^)
+	@$(CPP) $(LDFLAGS) $(LPLAYER) $(LCHAI) -shared -fPIC -o $@ $(filter %.o,$^)
 out/ChaiSupport.so: objs/fix.o objs/main.o out/libplayer_support.so lib/libminecraftpe.so
 	@echo LD $@
 	@$(CPP) $(LDFLAGS) $(LPLAYER) -shared -fPIC -o $@ $(filter %.o,$^)

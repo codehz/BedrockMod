@@ -1,6 +1,4 @@
-#include <polyfill.h>
-
-#include <chaiscript/chaiscript.hpp>
+#include <api.h>
 #include <dirent.h>
 #include <log.h>
 #include <sys/stat.h>
@@ -48,23 +46,9 @@ struct LogForChai {
 
 static LogForChai LogInstance;
 
+extern "C" void loadModule(chaiscript::ModulePtr ptr) { chai.add(ptr); }
+
 extern "C" void mod_init() {
-  DIR *dir;
-  dirent *ent;
-  if ((dir = opendir("user/chai/modules")) != nullptr) {
-    while ((ent = readdir(dir)) != nullptr) {
-      std::string name = ent->d_name;
-      std::string path = cwd + "/user/chai/modules/" + name;
-      if (!hasPrefix(name, ".") && hasSuffix(name, ".mod")) {
-        Log::info("ChaiSupport", "Load Module: %s", path.c_str());
-        try {
-          chai.load_module(name.substr(0, name.length() - 4), path);
-        } catch (const chaiscript::exception::load_module_error &e) { Log::error("ChaiSupport", "Failed to load module: %s", e.what()); }
-      }
-    }
-  } else {
-    Log::warn("ChaiSupport", "Failed to open the modules directory %s", "user/chai/modules");
-  }
   chai.add(chaiscript::user_type<LogForChai>(), "LogTy");
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_NOTICE>), "notice");
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_INFO>), "info");

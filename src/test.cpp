@@ -1,4 +1,4 @@
-#include <polyfill.h>
+#include <api.h>
 
 #include <chaiscript/chaiscript.hpp>
 #include <functional>
@@ -38,9 +38,9 @@ void JITTest(std::function<int()> fun) {
   Log::info("TM", "JIT: %08x", result);
 }
 
-CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_test() {
+extern "C" void mod_init() {
   chaiscript::ModulePtr m(new chaiscript::Module());
   m->add(chaiscript::fun([]() { Log::info("TM", "test module invoked"); }), "test");
   m->add(chaiscript::fun(JITTest), "jit");
-  return m;
+  loadModule(m);
 }

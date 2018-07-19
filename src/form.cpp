@@ -1,8 +1,7 @@
-#include <polyfill.h>
+#include <api.h>
 
 #include <StaticHook.h>
 #include <algorithm>
-#include <chaiscript/chaiscript.hpp>
 #include <functional>
 #include <hook.h>
 #include <log.h>
@@ -248,7 +247,7 @@ TInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK23Mo
   }
 }
 
-CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_form() {
+extern "C" void mod_init() {
   chaiscript::ModulePtr m(new chaiscript::Module());
   onPlayerLeft([](ServerPlayer &player) { callbacks.erase(player.getClientId()); });
   m->add(chaiscript::user_type<BaseForm>(), "BaseForm");
@@ -292,5 +291,5 @@ CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_form() {
            callbacks[player.getClientId()][id] = callback;
          }),
          "sendForm");
-  return m;
+  loadModule(m);
 }

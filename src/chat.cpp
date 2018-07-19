@@ -1,4 +1,4 @@
-#include <polyfill.h>
+#include <api.h>
 
 #include <log.h>
 
@@ -18,7 +18,7 @@ struct TextPacket : Packet {
   virtual bool disallowBatching() const;
 };
 
-CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_chat() {
+extern "C" void mod_init() {
   chaiscript::ModulePtr m(new chaiscript::Module());
   m->add(chaiscript::fun([](ServerPlayer &player, std::string message, unsigned type) {
            auto packet      = TextPacket::createSystemMessage(message);
@@ -31,5 +31,5 @@ CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_chat() {
            player.sendNetworkPacket(packet);
          }),
          "sendMessage");
-  return m;
+  loadModule(m);
 }

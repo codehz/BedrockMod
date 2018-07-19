@@ -1,7 +1,6 @@
-#include <polyfill.h>
+#include <api.h>
 
 #include <StaticHook.h>
-#include <chaiscript/chaiscript.hpp>
 #include <functional>
 #include <hook.h>
 #include <log.h>
@@ -21,7 +20,32 @@ void teleport(Entity &entity, Vec3 target, int dim, Vec3 *center) {
 void teleport1(Entity &entity, Vec3 target, int dim) { teleport(entity, target, dim, nullptr); }
 void teleport2(Entity &entity, Vec3 target) { teleport(entity, target, entity.getDimensionId(), nullptr); }
 
-CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_player() {
+struct Whitelist {};
+
+namespace mce {
+struct UUID {
+  long long most, least;
+};
+} // namespace mce
+
+TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::UUID &uuid, std::string const &msg) {
+  return true;
+}
+
+struct Minecraft {
+  void activateWhitelist();
+};
+
+struct ServerInstance {
+  char filler[0x10];
+  Minecraft *minecraft;
+};
+
+extern "C" void mod_set_server(ServerInstance *si) {
+  si->minecraft->activateWhitelist();
+}
+
+extern "C" void mod_init() {
   chaiscript::ModulePtr m(new chaiscript::Module());
   m->add(chaiscript::user_type<Entity>(), "Entity");
   m->add(chaiscript::user_type<Mob>(), "Mob");
@@ -47,5 +71,5 @@ CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_player()
   m->add(chaiscript::fun([](ServerPlayer &player) -> std::string { return player.getNameTag(); }), "getNameTag");
   m->add(chaiscript::fun([](std::function<void(ServerPlayer &)> f) { onPlayerJoined(f); }), "onPlayerJoined");
   m->add(chaiscript::fun([](std::function<void(ServerPlayer &)> f) { onPlayerLeft(f); }), "onPlayerLeft");
-  return m;
+  loadModule(m);
 }

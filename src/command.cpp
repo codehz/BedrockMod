@@ -1,6 +1,5 @@
-#include <polyfill.h>
+#include <api.h>
 
-#include <chaiscript/chaiscript.hpp>
 #include <functional>
 #include <hook.h>
 #include <iomanip>
@@ -343,7 +342,7 @@ std::shared_ptr<CustomCommand> defcmd(std::string name, std::string desc, unsign
 
 struct PlayerCommandSender : CommandSender {};
 
-CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_command() {
+extern "C" void mod_init() {
   chaiscript::ModulePtr m(new chaiscript::Module());
   HOOK(SayCommand, setup);
   void *handle = dlopen("libminecraftpe.so", RTLD_LAZY);
@@ -379,5 +378,5 @@ CHAISCRIPT_MODULE_EXPORT chaiscript::ModulePtr create_chaiscript_module_command(
   m->add(chaiscript::user_type<CustomCommand>(), "CustomCommand");
   m->add(chaiscript::fun(&defcmd), "defcmd");
   m->add(chaiscript::fun(&CustomCommand::add), "add");
-  return m;
+  loadModule(m);
 }
