@@ -4,7 +4,7 @@ LDFLAGS = -L./lib -lminecraftpe
 LPLAYER = -Lout -lsupport
 LCHAI = out/ChaiSupport.so
 
-MODS = chat command form base test
+MODS = chat command form base test tick
 
 $(shell mkdir -p objs deps out >/dev/null)
 

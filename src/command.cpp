@@ -17,7 +17,7 @@
 #include <minecraft/command/CommandParameterData.h>
 #include <minecraft/command/CommandRegistry.h>
 
-#include "player.h"
+#include "base.h"
 
 #define VALID(x) (reinterpret_cast<int const &>(x) != 0)
 

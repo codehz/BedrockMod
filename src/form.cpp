@@ -11,7 +11,7 @@
 
 #include <minecraft/net/NetworkIdentifier.h>
 
-#include "player.h"
+#include "base.h"
 
 using JSON   = json::JSON;
 using JCLASS = json::JSON::Class;

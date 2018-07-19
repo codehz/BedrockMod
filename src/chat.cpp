@@ -6,7 +6,7 @@
 
 #include <functional>
 
-#include "player.h"
+#include "base.h"
 
 struct TextPacket : Packet {
   unsigned char type; // 13

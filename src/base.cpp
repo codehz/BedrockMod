@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "player.h"
+#include "base.h"
 
 struct TeleportCommand {
   void teleport(Entity &entity, Vec3 pos, Vec3 *center, DimensionId dim) const;
