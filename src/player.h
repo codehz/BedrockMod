@@ -22,7 +22,7 @@ struct Vec3 {
       : x(x)
       , y(y)
       , z(z) {}
-  Vec3() = default;
+  Vec3()             = default;
   Vec3(Vec3 const &) = default;
 };
 
@@ -88,10 +88,11 @@ struct Level {
   ServerPlayer *getPlayer(const std::string &name) const;
   ServerPlayer *getPlayer(EntityUniqueID uuid) const;
   PacketSender &getPacketSender() const;
+  void forEachPlayer(std::function<bool(Player &)>);
 };
 
 extern void onPlayerAdded(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerJoined(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerLeft(std::function<void(ServerPlayer &player)> callback);
 
-void registerPlayer(chaiscript::ModulePtr m);
+extern ServerPlayer *findPlayer(NetworkIdentifier const &nid, unsigned char subIndex);

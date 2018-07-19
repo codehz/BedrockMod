@@ -1,7 +1,10 @@
 #define _GLIBCXX_USE_CXX11_ABI 0
-#include "string.h"
+#include <fix/string.h>
+#include <string>
 
 mcpe::string* mcpe::string::empty;
+
+#define VALID(x) (reinterpret_cast<int const &>(x) != 0)
 
 mcpe::string::string() {
     ptr = empty->ptr;
@@ -28,6 +31,7 @@ mcpe::string::string(const string &str) {
     }
 }
 mcpe::string::~string() {
+
     if (ptr == empty->ptr)
         return;
     ((std::string*) this)->~basic_string<char>();

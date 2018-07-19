@@ -41,14 +41,20 @@ TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::
 
 struct Minecraft {
   void activateWhitelist();
+  Level *getLevel() const;
 };
+
+static Minecraft *mc;
 
 struct ServerInstance {
   char filler[0x10];
   Minecraft *minecraft;
 };
 
-extern "C" void mod_set_server(ServerInstance *si) { si->minecraft->activateWhitelist(); }
+extern "C" void mod_set_server(ServerInstance *si) {
+  si->minecraft->activateWhitelist();
+  mc = si->minecraft;
+}
 
 extern "C" void mod_init() {
   chaiscript::ModulePtr m(new chaiscript::Module());
@@ -78,5 +84,17 @@ extern "C" void mod_init() {
   m->add(chaiscript::fun(onPlayerAdded), "onPlayerAdded");
   m->add(chaiscript::fun(onPlayerJoined), "onPlayerJoined");
   m->add(chaiscript::fun(onPlayerLeft), "onPlayerLeft");
+  m->add(chaiscript::fun([](std::function<void(ServerPlayer & sp)> fn) {
+           mc->getLevel()->forEachPlayer([&fn](Player &p) -> bool {
+             try {
+               fn(static_cast<ServerPlayer &>(p));
+             } catch (std::exception const &e) {
+               Log::error("BASE", "forEachPlayers: %s", e.what());
+               return false;
+             }
+             return true;
+           });
+         }),
+         "forEachPlayer");
   loadModule(m);
 }
