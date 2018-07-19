@@ -28,7 +28,7 @@ struct TextPacket : Packet {
   virtual bool disallowBatching() const;
 };
 
-static std::function<void(ServerPlayer *, std::string)> chatHook;
+std::function<void(ServerPlayer *, std::string)> chatHook;
 
 TClasslessInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK10TextPacket, NetworkIdentifier const &nid,
                        TextPacket const &packet) {

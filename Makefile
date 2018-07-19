@@ -1,4 +1,4 @@
-CXXFLAGS = -ffast-math -std=c++14 -Iinclude -DCHAISCRIPT_NO_THREADS -Wno-invalid-offsetof -O3
+CXXFLAGS = -ffast-math -std=c++14 -Iinclude -DCHAISCRIPT_NO_THREADS -Wno-invalid-offsetof -O3 -fdiagnostics-color=always -fmax-errors=1
 LDFLAGS = -L./lib -lminecraftpe
 
 LPLAYER = -Lout -lsupport

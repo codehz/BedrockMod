@@ -30,7 +30,7 @@ struct UUID {
 };
 } // namespace mce
 
-static std::function<bool(std::string)> whitelistFilter;
+std::function<bool(std::string)> whitelistFilter;
 
 TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::UUID &uuid, std::string const &msg) {
   if (whitelistFilter) try {
@@ -44,7 +44,7 @@ struct Minecraft {
   Level *getLevel() const;
 };
 
-static Minecraft *mc;
+Minecraft *mc;
 
 struct ServerInstance {
   char filler[0x10];

@@ -6,8 +6,8 @@
 
 #include "base.h"
 
-static std::unordered_map<NetworkIdentifier, std::vector<ServerPlayer *>> playermap;
-static std::vector<std::function<void(ServerPlayer &)>> addedHandles, joinedHandles, leftsHandles;
+std::unordered_map<NetworkIdentifier, std::vector<ServerPlayer *>> playermap;
+std::vector<std::function<void(ServerPlayer &)>> addedHandles, joinedHandles, leftsHandles;
 
 struct ServerNetworkHandler {};
 struct ConnectionRequest {};

@@ -226,7 +226,7 @@ struct ModalFormResponsePacket : Packet {
   virtual bool disallowBatching() const;
 };
 
-static std::unordered_map<NetworkIdentifier, std::unordered_map<int, std::function<chaiscript::Boxed_Value(std::string)>>> callbacks;
+std::unordered_map<NetworkIdentifier, std::unordered_map<int, std::function<chaiscript::Boxed_Value(std::string)>>> callbacks;
 
 struct ServerNetworkHandler {};
 

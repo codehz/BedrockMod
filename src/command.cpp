@@ -1,7 +1,7 @@
 #include <api.h>
 
+#include <StaticHook.h>
 #include <functional>
-#include <hook.h>
 #include <iomanip>
 #include <log.h>
 #include <map>
@@ -110,58 +110,11 @@ struct CustomCommand {
   void add(const OverloadDef &data) { overloads.push_back(std::move(data)); }
 };
 
-static std::map<std::string, std::shared_ptr<CustomCommand>> CustomCommandMap;
+std::map<std::string, std::shared_ptr<CustomCommand>> CustomCommandMap;
 
-static void *(*$availableCommand)(void *self, std::vector<std::string> &vec1, std::vector<std::string> &vec2, std::vector<EnumData> &enumdatas,
-                                  std::vector<CommandData> &commands);
-
-void *availableCommand(void *self, std::vector<std::string> &enumValues, std::vector<std::string> &postfixs, std::vector<EnumData> &enumdatas,
+TClasslessInstanceHook(void *, _ZN23AvailableCommandsPacketC2ERKSt6vectorISsSaISsEES4_OS0_INS_8EnumDataESaIS5_EEOS0_INS_11CommandDataESaIS9_EE,
+                       std::vector<std::string> &enumValues, std::vector<std::string> &postfixs, std::vector<EnumData> &enumdatas,
                        std::vector<CommandData> &commands) {
-  // int index = 0;
-  // for (auto s : enumValues)
-  // {
-  //   if (reinterpret_cast<int &>(s) != 0)
-  //   {
-  //     Log::debug("CMD", "value[%04x] %s", index++, s.c_str());
-  //   }
-  // }
-  // index = 0;
-  // for (auto enumdata : enumdatas)
-  // {
-  //   std::stringstream ss;
-  //   ss << "enum[" << std::setfill('0') << std::setw(4) << std::hex << index++ << "]" << enumdata.name << "\n\t";
-  //   for (auto ui : enumdata.vec)
-  //   {
-  //     ss << " " << std::setfill('0') << std::setw(4) << std::hex << ui;
-  //   }
-  //   Log::debug("CMD", " %s", ss.str().c_str());
-  // }
-  // for (auto commanddata : commands)
-  // {
-  //   Log::debug("CMD", "command %s", commanddata.name.c_str());
-  //   Log::debug("CMD", "\tdesc %s", commanddata.description.c_str());
-  //   Log::debug("CMD", "\tflag %d", commanddata.flag);
-  //   Log::debug("CMD", "\tperm %d", commanddata.permission);
-  //   for (auto overload : commanddata.overloads)
-  //   {
-  //     Log::debug("CMD", "\toverload");
-  //     for (auto param : overload.params)
-  //     {
-  //       Log::debug("CMD", "\t\tparam: %-20s %08x %d", param.name.c_str(), param.type, param.optional);
-  //     }
-  //   }
-  //   Log::debug("CMD", "\tunk %d", commanddata.unk);
-  // }
-
-  // commands.push_back(CommandData{
-  //     "ping",
-  //     "Ping Server",
-  //     0,
-  //     0,
-  //     {0, 0},
-  //     {{}},
-  //     255});
-
   for (auto cmd : CustomCommandMap) {
     auto &def = *cmd.second;
     CommandData commandData;
@@ -202,7 +155,7 @@ void *availableCommand(void *self, std::vector<std::string> &enumValues, std::ve
     commandData.unk = -1;
     commands.push_back(commandData);
   }
-  return $availableCommand(self, enumValues, postfixs, enumdatas, commands);
+  return original(this, enumValues, postfixs, enumdatas, commands);
 }
 
 struct CommandContext {
@@ -263,16 +216,15 @@ struct CommandSender {
   }
 };
 
-static void (*$createCommandContext)(CommandContext *ctx, std::string const &content, CommandOrigin &orig, int unk);
-
-void createCommandContext(CommandContext *ctx, std::string &content, CommandOrigin &orig, int unk) {
+TInstanceHook(void, _ZN14CommandContextC2ERKSsSt10unique_ptrI13CommandOriginSt14default_deleteIS3_EEi, CommandContext, std::string &content,
+              CommandOrigin &orig, int unk) {
   if (VALID(content)) {
     std::istringstream buf(content.substr(1));
     std::istream_iterator<std::string> beg(buf);
     auto it = CustomCommandMap.find(*beg);
     if (it != CustomCommandMap.end()) { content = "/custom " + content; }
   }
-  $createCommandContext(ctx, content, orig, unk);
+  original(this, content, orig, unk);
 }
 
 struct StubCommand : Command {
@@ -346,10 +298,6 @@ extern "C" void mod_init() {
   chaiscript::ModulePtr m(new chaiscript::Module());
   HOOK(SayCommand, setup);
   void *handle = dlopen("libminecraftpe.so", RTLD_LAZY);
-  mcpelauncher_hook(dlsym(handle, "_ZN23AvailableCommandsPacketC2ERKSt6vectorISsSaISsEES4_OS0_INS_8EnumDataESaIS5_EEOS0_INS_11CommandDataESaIS9_EE"),
-                    reinterpret_cast<void *>(availableCommand), (void **)&$availableCommand);
-  mcpelauncher_hook(dlsym(handle, "_ZN14CommandContextC2ERKSsSt10unique_ptrI13CommandOriginSt14default_deleteIS3_EEi"),
-                    reinterpret_cast<void *>(createCommandContext), (void **)&$createCommandContext);
   m->add(chaiscript::user_type<CommandSender>(), "CommandOrigin");
   m->add(chaiscript::fun(&CommandSender::isPlayer), "isPlayer");
   m->add(chaiscript::fun(&CommandSender::getPlayer), "getPlayer");
