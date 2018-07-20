@@ -212,7 +212,7 @@ struct CommandSender {
     if (isPlayer()) {
       return static_cast<ServerPlayer *>(orig->getEntity());
     } else
-      throw new std::runtime_error("CommandOrigin is not player!");
+      throw std::runtime_error("CommandOrigin is not player!");
   }
 };
 
