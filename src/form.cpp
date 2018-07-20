@@ -13,6 +13,8 @@
 
 #include "base.h"
 
+using namespace chaiscript;
+
 using JSON   = json::JSON;
 using JCLASS = json::JSON::Class;
 
@@ -226,7 +228,7 @@ struct ModalFormResponsePacket : Packet {
   virtual bool disallowBatching() const;
 };
 
-std::unordered_map<NetworkIdentifier, std::unordered_map<int, std::function<chaiscript::Boxed_Value(std::string)>>> callbacks;
+std::unordered_map<NetworkIdentifier, std::unordered_map<int, std::function<Boxed_Value(std::string)>>> callbacks;
 
 struct ServerNetworkHandler {};
 
@@ -236,53 +238,54 @@ TInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK23Mo
   if (it != callbacks.end()) {
     auto it2 = it->second.find(packet.id);
     if (it2 != it->second.end()) {
+      Boxed_Value result;
       try {
-        auto result = it2->second(packet.data);
-        if (chaiscript::boxed_cast<bool>(result)) {
-          it->second.erase(it2);
-          if (it->second.empty()) { callbacks.erase(it); }
-        }
+        result = it2->second(packet.data);
       } catch (const std::exception &e) { Log::error("ChaiForm", "Failed to callback: %s", e.what()); }
+      if (!result.is_type(user_type<bool>()) || boxed_cast<bool>(result)) {
+        it->second.erase(it2);
+        if (it->second.empty()) { callbacks.erase(it); }
+      }
     }
   }
 }
 
 extern "C" void mod_init() {
-  chaiscript::ModulePtr m(new chaiscript::Module());
+  ModulePtr m(new Module());
   onPlayerLeft([](ServerPlayer &player) { callbacks.erase(player.getClientId()); });
-  m->add(chaiscript::user_type<BaseForm>(), "BaseForm");
-  m->add(chaiscript::user_type<ModalForm>(), "ModalForm");
-  m->add(chaiscript::base_class<BaseForm, ModalForm>());
-  m->add(chaiscript::constructor<ModalForm(std::string title, std::string modal, std::string button1, std::string button2)>(), "ModalForm");
-  m->add(chaiscript::user_type<CustomForm>(), "CustomForm");
-  m->add(chaiscript::base_class<BaseForm, CustomForm>());
-  m->add(chaiscript::constructor<CustomForm(std::string title)>(), "CustomForm");
-  m->add(chaiscript::fun(&CustomForm::add), "add");
-  m->add(chaiscript::user_type<SimpleForm>(), "SimpleForm");
-  m->add(chaiscript::base_class<BaseForm, SimpleForm>());
-  m->add(chaiscript::constructor<SimpleForm(std::string title, std::string content)>(), "SimpleForm");
-  m->add(chaiscript::fun(&SimpleForm::add), "add");
+  m->add(user_type<BaseForm>(), "BaseForm");
+  m->add(user_type<ModalForm>(), "ModalForm");
+  m->add(base_class<BaseForm, ModalForm>());
+  m->add(constructor<ModalForm(std::string title, std::string modal, std::string button1, std::string button2)>(), "ModalForm");
+  m->add(user_type<CustomForm>(), "CustomForm");
+  m->add(base_class<BaseForm, CustomForm>());
+  m->add(constructor<CustomForm(std::string title)>(), "CustomForm");
+  m->add(fun(&CustomForm::add), "add");
+  m->add(user_type<SimpleForm>(), "SimpleForm");
+  m->add(base_class<BaseForm, SimpleForm>());
+  m->add(constructor<SimpleForm(std::string title, std::string content)>(), "SimpleForm");
+  m->add(fun(&SimpleForm::add), "add");
 
-  m->add(chaiscript::user_type<BaseControl>(), "BaseControl");
-  m->add(chaiscript::user_type<LabelControl>(), "LabelControl");
-  m->add(chaiscript::base_class<BaseControl, LabelControl>());
-  m->add(chaiscript::constructor<LabelControl(std::string text)>(), "LabelControl");
-  m->add(chaiscript::user_type<InputControl>(), "InputControl");
-  m->add(chaiscript::base_class<BaseControl, InputControl>());
-  m->add(chaiscript::constructor<InputControl(std::string text, std::string placeholder, std::string defaultValue)>(), "InputControl");
-  m->add(chaiscript::user_type<SliderControl>(), "SliderControl");
-  m->add(chaiscript::base_class<BaseControl, SliderControl>());
-  m->add(chaiscript::constructor<SliderControl(std::string text, float min, float max, float step, float defaultValue)>(), "SliderControl");
-  m->add(chaiscript::user_type<StepsControl>(), "StepsControl");
-  m->add(chaiscript::base_class<BaseControl, StepsControl>());
-  m->add(chaiscript::constructor<StepsControl(std::string text, int defaultValue)>(), "StepsControl");
-  m->add(chaiscript::fun(&StepsControl::add), "add");
-  m->add(chaiscript::user_type<DropdownControl>(), "DropdownControl");
-  m->add(chaiscript::base_class<BaseControl, DropdownControl>());
-  m->add(chaiscript::constructor<DropdownControl(std::string text, int defaultValue)>(), "DropdownControl");
-  m->add(chaiscript::fun(&DropdownControl::add), "add");
+  m->add(user_type<BaseControl>(), "BaseControl");
+  m->add(user_type<LabelControl>(), "LabelControl");
+  m->add(base_class<BaseControl, LabelControl>());
+  m->add(constructor<LabelControl(std::string text)>(), "LabelControl");
+  m->add(user_type<InputControl>(), "InputControl");
+  m->add(base_class<BaseControl, InputControl>());
+  m->add(constructor<InputControl(std::string text, std::string placeholder, std::string defaultValue)>(), "InputControl");
+  m->add(user_type<SliderControl>(), "SliderControl");
+  m->add(base_class<BaseControl, SliderControl>());
+  m->add(constructor<SliderControl(std::string text, float min, float max, float step, float defaultValue)>(), "SliderControl");
+  m->add(user_type<StepsControl>(), "StepsControl");
+  m->add(base_class<BaseControl, StepsControl>());
+  m->add(constructor<StepsControl(std::string text, int defaultValue)>(), "StepsControl");
+  m->add(fun(&StepsControl::add), "add");
+  m->add(user_type<DropdownControl>(), "DropdownControl");
+  m->add(base_class<BaseControl, DropdownControl>());
+  m->add(constructor<DropdownControl(std::string text, int defaultValue)>(), "DropdownControl");
+  m->add(fun(&DropdownControl::add), "add");
 
-  m->add(chaiscript::fun([](ServerPlayer &player, int id, BaseForm &form, std::function<chaiscript::Boxed_Value(std::string ret)> callback) {
+  m->add(fun([](ServerPlayer &player, int id, BaseForm &form, std::function<Boxed_Value(std::string ret)> callback) {
            auto json = form.toJSON().dump();
            Log::info("Form", "Try to sending: %s", json.c_str());
            ModalFormRequestPacket packet{ player.getClientSubId(), id, json.c_str() };
