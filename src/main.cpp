@@ -57,6 +57,7 @@ extern "C" void mod_init() {
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_ERROR>), "error");
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_FATAL>), "fatal");
   chai.add_global_const(chaiscript::const_var(LogInstance), "Log");
+  chai.add(chaiscript::bootstrap::standard_library::map_type<std::map<std::string, std::string>>("StringMap"));
 }
 
 extern "C" void mod_exec() {

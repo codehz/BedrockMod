@@ -1,10 +1,11 @@
+CFLAGSQL = -std=c99 -Iinclude -O3 -fdiagnostics-color=always -fmax-errors=1
 CXXFLAGS = -ffast-math -std=c++14 -Iinclude -DCHAISCRIPT_NO_THREADS -Wno-invalid-offsetof -O3 -fdiagnostics-color=always -fmax-errors=1
 LDFLAGS = -L./lib -lminecraftpe
 
 LPLAYER = -Lout -lsupport
 LCHAI = -Lout -lchai
 
-MODS = chat command form base test tick prop
+MODS = chat command form base test tick prop sqlite3
 
 $(shell mkdir -p objs deps out >/dev/null)
 
@@ -15,9 +16,14 @@ all: out/libsupport.so out/libchai.so $(addsuffix .so,$(addprefix out/chai_,$(MO
 clean:
 	@rm -rf objs out deps
 
+objs/sqlite.o: src/sqlite3.c
+	@echo CC $@
+	@$(CC) $(CFLAGSQL) -c -o $@ $<
+
 out/libsupport.so: objs/fix.o objs/string.o objs/support.o lib/libminecraftpe.so
 	@echo LD $@
 	@$(CPP) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
+out/chai_sqlite3.so: objs/sqlite.o
 out/chai_%.so: objs/%.o objs/hack.o out/libsupport.so lib/libminecraftpe.so out/libchai.so
 	@echo LD $@
 	@$(CPP) $(LDFLAGS) $(LPLAYER) $(LCHAI) -shared -fPIC -o $@ $(filter %.o,$^)
