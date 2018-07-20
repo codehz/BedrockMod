@@ -56,18 +56,14 @@ extern "C" void mod_init() {
          "setInterval");
   m->add(chaiscript::fun([](std::function<void(void)> fn, uint16_t len) {
            uint16_t sum = 0;
-           Log::trace("setTO", "reg: %d", len);
            for (auto it = timeoutHandlers.begin(); it != timeoutHandlers.end(); ++it) {
              sum += it->chip;
-             Log::trace("setTO", "sum: %d", sum);
              if (sum > len) {
-               Log::trace("setTO", "INS: %d", it->chip - sum + len);
                timeoutHandlers.insert(it, FixedFunction(it->chip - sum + len, fn));
                it->chip -= sum - len;
                return;
              }
            }
-           Log::trace("setTO", "BAK: %d", len - sum);
            timeoutHandlers.push_back(FixedFunction(len - sum, fn));
          }),
          "setTimeout");
