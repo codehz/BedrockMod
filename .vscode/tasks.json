@@ -21,12 +21,25 @@
         "echo": true,
         "reveal": "silent",
         "focus": true,
-        "panel": "dedicated",
+        "panel": "shared",
         "showReuseMessage": false
       },
       "problemMatcher": [
         "$gcc"
       ]
+    },
+    {
+      "label": "clean",
+      "type": "shell",
+      "command": "make clean",
+      "presentation": {
+        "echo": false,
+        "reveal": "never",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": false
+      },
+      "problemMatcher": []
     },
     {
       "label": "test",
@@ -46,7 +59,7 @@
         "echo": false,
         "reveal": "always",
         "focus": true,
-        "panel": "dedicated",
+        "panel": "shared",
         "showReuseMessage": false
       },
       "problemMatcher": []

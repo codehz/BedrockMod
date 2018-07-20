@@ -5,7 +5,7 @@
 #include <cstdarg>
 #include <cstdio>
 
-extern "C" void mcpelauncher_log(int level, const char *data);
+extern "C" void mcpelauncher_log(int level, const char *tag, const char *data);
 
 #define LogFuncDef(name, logLevel)                         \
   static void name(const char *tag, const char *text, ...) \
@@ -50,8 +50,7 @@ public:
     char buffer[4096];
     char buffer2[4096];
     vsnprintf(buffer, sizeof(buffer), text, args);
-    snprintf(buffer2, sizeof(buffer2), "[%s] %s", tag, buffer);
-    mcpelauncher_log((int)level, buffer2);
+    mcpelauncher_log((int)level, tag, buffer);
   }
 
   static void log(LogLevel level, const char *tag, const char *text, ...)

@@ -7,26 +7,30 @@ LCHAI = -Lout -lchai
 
 MODS = chat command form base test tick prop sqlite3
 
-$(shell mkdir -p objs deps out >/dev/null)
+$(shell mkdir -p objs deps out ref >/dev/null)
 
 .PHONY: all
 all: out/libsupport.so out/libchai.so $(addsuffix .so,$(addprefix out/chai_,$(MODS)))
 
 .PHONY: clean
 clean:
-	@rm -rf objs out deps
+	@rm -rf objs out deps ref
 
 objs/sqlite.o: src/sqlite3.c
 	@echo CC $@
 	@$(CC) $(CFLAGSQL) -c -o $@ $<
 
+ref/bridge.so: objs/sqlite.o
+	@echo MO $@
+	@$(CPP) -shared -fPIC -o $@ $(filter %.o,$^)
+
 out/libsupport.so: objs/fix.o objs/string.o objs/support.o lib/libminecraftpe.so
 	@echo LD $@
 	@$(CPP) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
-out/chai_sqlite3.so: objs/sqlite.o
+out/chai_sqlite3.so: ref/bridge.so
 out/chai_%.so: objs/%.o objs/hack.o out/libsupport.so lib/libminecraftpe.so out/libchai.so
 	@echo LD $@
-	@$(CPP) $(LDFLAGS) $(LPLAYER) $(LCHAI) -shared -fPIC -o $@ $(filter %.o,$^)
+	@$(CPP) $(LDFLAGS) $(LPLAYER) $(LCHAI) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lref -l:,$(notdir $(filter ref/%.so,$^)))
 out/libchai.so: objs/fix.o objs/main.o lib/libminecraftpe.so out/libsupport.so
 	@echo LD $@
 	@$(CPP) $(LDFLAGS) $(LPLAYER) -shared -fPIC -o $@ $(filter %.o,$^)
