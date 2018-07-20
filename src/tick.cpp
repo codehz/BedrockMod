@@ -50,8 +50,9 @@ TInstanceHook(void, _ZN5Level4tickEv, Level) {
 
 extern "C" void mod_init() {
   chaiscript::ModulePtr m(new chaiscript::Module());
-  m->add(chaiscript::fun([](std::function<void(void)> fn, int16_t cycle) {
-           tickHandlers.emplace(std::make_pair(cycle, FixedFunction{ (int16_t)(count % cycle), fn }));
+  m->add(chaiscript::fun([](std::function<void(void)> fn, int16_t cycle) -> std::function<void(void)> {
+           auto it = tickHandlers.emplace(std::make_pair(cycle, FixedFunction{ (int16_t)(count % cycle), fn }));
+           return [it]() { tickHandlers.erase(it); };
          }),
          "setInterval");
   m->add(chaiscript::fun([](std::function<void(void)> fn, int16_t len) {
