@@ -47,6 +47,7 @@ struct LogForChai {
 static LogForChai LogInstance;
 
 extern "C" void loadModule(chaiscript::ModulePtr ptr) { chai.add(ptr); }
+extern "C" chaiscript::ChaiScript &getChai() { return chai; }
 
 extern "C" void mod_init() {
   chai.add(chaiscript::user_type<LogForChai>(), "LogTy");

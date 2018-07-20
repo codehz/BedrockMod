@@ -117,9 +117,9 @@ struct CustomCommandWithPlayerSelector {
   std::string desc;
   unsigned char flag, perm;
   std::vector<OverloadDef> overloads;
-  std::function<Boxed_Value(CommandSender orig, std::vector<ServerPlayer *> const &, std::string)> execute;
+  std::function<Boxed_Value(CommandSender orig, std::vector<ServerPlayer *>, std::string)> execute;
   CustomCommandWithPlayerSelector(std::string desc, unsigned char flag, unsigned char perm,
-                                  std::function<Boxed_Value(CommandSender orig, std::vector<ServerPlayer *> const &, std::string)> execute)
+                                  std::function<Boxed_Value(CommandSender orig, std::vector<ServerPlayer *>, std::string)> execute)
       : desc(desc)
       , flag(flag)
       , perm(perm)
@@ -359,8 +359,9 @@ struct StubCommand : Command {
               if (!result.empty()) outp.addMessage(result);
             }
           } else {
+            for (auto item : *ret.content) { Log::trace("CMD", "item: %s", item->getNameTag().c_str()); }
             auto boxed =
-                it2->second->execute({ orig }, reinterpret_cast<std::vector<ServerPlayer *> &>(*ret.content), content.substr(1 + beg->length()));
+                it2->second->execute({ orig }, reinterpret_cast<std::vector<ServerPlayer *> &>(*ret.content), content.substr(2 + beg->length()));
             if (boxed.is_type(user_type<std::string>())) {
               std::string result = boxed_cast<std::string>(boxed);
               if (!result.empty()) outp.addMessage(result);
@@ -421,7 +422,7 @@ std::shared_ptr<CustomCommand> defcmd(std::string name, std::string desc, unsign
 
 std::shared_ptr<CustomCommandWithPlayerSelector>
 defcmd2(std::string name, std::string desc, unsigned char flag, unsigned char perm,
-        std::function<Boxed_Value(CommandSender orig, std::vector<ServerPlayer *> const &, std::string)> execute) {
+        std::function<Boxed_Value(CommandSender orig, std::vector<ServerPlayer *>, std::string)> execute) {
   CustomCommandWithPlayerSelectorMap.emplace(std::make_pair(name, std::make_shared<CustomCommandWithPlayerSelector>(desc, flag, perm, execute)));
   return CustomCommandWithPlayerSelectorMap.find(name)->second;
 }
