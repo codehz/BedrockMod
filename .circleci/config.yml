@@ -9,7 +9,7 @@ jobs:
       - checkout
       - run:
           name: build
-          command: make -j $(nproc)
+          command: make
           environment:
             CPP: /data/sdk/bin/i686-linux-android-g++
             CC : /data/sdk/bin/i686-linux-android-gcc
