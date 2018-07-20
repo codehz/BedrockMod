@@ -78,8 +78,14 @@ struct Sqlite3 {
     auto result = sqlite3_open(name.c_str(), &db);
     if (result != SQLITE_OK) {
       auto msg = sqlite3_errmsg(db);
-      Log::error("Sqlite3", "%s: ", msg, name.c_str());
+      Log::error("Sqlite3", "%s: %s", name.c_str(), msg);
       sqlite3_free((void *)msg);
+    }
+    char *err = 0;
+    sqlite3_exec(db, "PRAGMA synchronous = OFF; PRAGMA journal_mode = MEMORY;", nullptr, nullptr, &err);
+    if (err != nullptr) {
+      Log::error("Sqlite3", "%s: %s", name.c_str(), err);
+      sqlite3_free(err);
     }
   }
   Sqlite3(Sqlite3 const &) = delete;
