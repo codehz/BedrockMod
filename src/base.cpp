@@ -136,6 +136,7 @@ extern "C" void mod_init() {
   m->add(fun(&ServerPlayer::sendNetworkPacket), "sendPacket");
   m->add(fun(&Entity::getPos), "getPos");
   m->add(fun(&Entity::getDimensionId), "getDim");
+  m->add(fun(&Player::getSpawnPosition), "getSpawnPos");
   m->add(fun(teleport), "teleport");
   m->add(fun(teleport1), "teleport");
   m->add(fun(teleport2), "teleport");

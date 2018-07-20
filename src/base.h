@@ -85,6 +85,7 @@ struct Player : Mob {
   void remove();
   NetworkIdentifier const &getClientId() const;
   unsigned char getClientSubId() const;
+  BlockPos getSpawnPosition();
 };
 
 struct ServerPlayer : Player {
