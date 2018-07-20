@@ -3,13 +3,12 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/include",
-                "${workspaceFolder}/third"
+                "${workspaceFolder}/include"
             ],
             "defines": [],
-            "compilerPath": "/opt/cuda/bin/gcc",
+            "compilerPath": "/data/ndk/bin/i686-linux-android-g++",
             "cStandard": "c11",
-            "cppStandard": "c++17",
+            "cppStandard": "c++14",
             "intelliSenseMode": "clang-x64"
         }
     ],

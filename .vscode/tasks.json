@@ -6,15 +6,23 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "make -j8",
+      "command": "make -j",
       "options": {
         "env": {
-          "CPP": "/data/ndk/bin/i686-linux-android-g++"
+          "CPP": "/data/ndk/bin/i686-linux-android-g++",
+          "CC": "/data/ndk/bin/i686-linux-android-gcc"
         }
       },
       "group": {
         "kind": "build",
         "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "silent",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": false
       },
       "problemMatcher": [
         "$gcc"
@@ -27,6 +35,9 @@
       "options": {
         "cwd": "./test"
       },
+      "dependsOn": [
+        "build"
+      ],
       "group": {
         "kind": "test",
         "isDefault": true
@@ -35,7 +46,7 @@
         "echo": false,
         "reveal": "always",
         "focus": true,
-        "panel": "shared",
+        "panel": "dedicated",
         "showReuseMessage": false
       },
       "problemMatcher": []
