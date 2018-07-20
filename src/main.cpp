@@ -63,5 +63,8 @@ extern "C" void mod_init() {
 extern "C" void mod_exec() {
   try {
     chai.use("init.chai");
+  } catch (const chaiscript::exception::eval_error &e) {
+    auto print = e.pretty_print();
+    Log::error("ChaiSupport", "EvalError: %s", print.c_str());
   } catch (const std::exception &e) { Log::error("ChaiSupport", "Failed to execute script: %s", e.what()); }
 }
