@@ -16,6 +16,15 @@ struct EntityRuntimeID {
   long long eid = 0;
 };
 
+namespace mce {
+struct UUID {
+  uint64_t most, least;
+  UUID() {}
+  const std::string asString() const;
+  void fromString(std::string const &);
+};
+} // namespace mce
+
 struct Vec3;
 
 struct BlockPos {
@@ -99,7 +108,9 @@ struct PacketSender {
 
 struct Level {
   ServerPlayer *getPlayer(const std::string &name) const;
+  ServerPlayer *getPlayer(mce::UUID const &uuid) const;
   ServerPlayer *getPlayer(EntityUniqueID uuid) const;
+
   PacketSender &getPacketSender() const;
   void forEachPlayer(std::function<bool(Player &)>);
   BlockPos const &getDefaultSpawn() const;

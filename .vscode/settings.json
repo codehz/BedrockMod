@@ -1,5 +1,6 @@
 {
   "files.associations": {
+    ".clang-format": "yaml",
     "iosfwd": "cpp",
     "typeindex": "cpp",
     "typeinfo": "cpp",
@@ -57,6 +58,8 @@
     "algorithm": "cpp",
     "iomanip": "cpp",
     "forward_list": "cpp",
-    "valarray": "cpp"
+    "valarray": "cpp",
+    "string": "cpp",
+    "new": "cpp"
   }
 }

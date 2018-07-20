@@ -24,19 +24,11 @@ void teleport2(Entity &entity, Vec3 target) { teleport(entity, target, entity.ge
 
 struct Whitelist {};
 
-namespace mce {
-struct UUID {
-  uint64_t most, least;
-  const std::string asString() const;
-  void fromString(std::string const &);
-};
-} // namespace mce
-
-std::function<bool(std::string)> whitelistFilter;
+std::function<bool(mce::UUID &)> whitelistFilter;
 
 TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::UUID &uuid, std::string const &msg) {
   if (whitelistFilter) try {
-      return whitelistFilter(uuid.asString());
+      return whitelistFilter(uuid);
     } catch (std::exception const &e) { Log::error("Player", "Error: %s", e.what()); }
   return true;
 }
@@ -116,8 +108,7 @@ extern "C" void mod_init() {
            mc->getLevel()->setDefaultSpawn(pos);
          }),
          "getDefaultSpawn");
-  utility::add_class<Level>(*m, "Level", {},
-                            { { fun(&Level::getDefaultSpawn), "getSpawnPoint" }, { fun(&Level::setDefaultSpawn), "setSpawnPoint" } });
+  utility::add_class<mce::UUID>(*m, "UUID", {}, { { fun(&mce::UUID::asString), "to_string" } });
   utility::add_class<Vec3>(*m, "Vec3", { constructor<Vec3(float, float, float)>(), constructor<Vec3(BlockPos const &)>() },
                            { { fun(&BlockPos::x), "x" }, { fun(&BlockPos::y), "y" }, { fun(&BlockPos::z), "z" } });
   utility::add_class<BlockPos>(*m, "BlockPos", { constructor<BlockPos(int, int, int)>(), constructor<BlockPos(Vec3 const &)>() },
@@ -132,7 +123,13 @@ extern "C" void mod_init() {
   m->add(base_class<Entity, ServerPlayer>());
   m->add(base_class<Mob, ServerPlayer>());
   m->add(base_class<Player, ServerPlayer>());
-  m->add(fun([](std::function<bool(std::string)> const &fn) { whitelistFilter = fn; }), "setWhitelistFilter");
+  m->add(fun([](std::string uuid) -> mce::UUID {
+           mce::UUID ret;
+           ret.fromString(uuid);
+           return ret;
+         }),
+         "makeUUID");
+  m->add(fun([](std::function<bool(mce::UUID &)> const &fn) { whitelistFilter = fn; }), "setWhitelistFilter");
   m->add(fun(&ServerPlayer::sendNetworkPacket), "sendPacket");
   m->add(fun(&Entity::getPos), "getPos");
   m->add(fun(&Entity::getDimensionId), "getDim");
@@ -144,6 +141,16 @@ extern "C" void mod_init() {
   m->add(fun(onPlayerAdded), "onPlayerAdded");
   m->add(fun(onPlayerJoined), "onPlayerJoined");
   m->add(fun(onPlayerLeft), "onPlayerLeft");
+  m->add(fun([](mce::UUID const &uuid) {
+           if (!mc) throw std::runtime_error("Minecraft is not loaded");
+           return mc->getLevel()->getPlayer(uuid);
+         }),
+         "getPlayer");
+  m->add(fun([](std::string const &name) {
+           if (!mc) throw std::runtime_error("Minecraft is not loaded");
+           return mc->getLevel()->getPlayer(name);
+         }),
+         "getPlayer");
   m->add(fun([](std::function<void(ServerPlayer & sp)> fn) {
            if (mc)
              mc->getLevel()->forEachPlayer([&fn](Player &p) -> bool {

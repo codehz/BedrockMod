@@ -1,6 +1,7 @@
 #include <api.h>
 
 #include <StaticHook.h>
+#include <fix/string.h>
 #include <functional>
 #include <iomanip>
 #include <log.h>
@@ -18,6 +19,9 @@
 #include <minecraft/command/CommandRegistry.h>
 
 #include "base.h"
+
+using namespace json;
+using namespace chaiscript;
 
 #define VALID(x) (reinterpret_cast<int const &>(x) != 0)
 
@@ -100,9 +104,22 @@ struct CustomCommand {
   std::string desc;
   unsigned char flag, perm;
   std::vector<OverloadDef> overloads;
-  std::function<chaiscript::Boxed_Value(CommandSender orig, std::string)> execute;
-  CustomCommand(std::string desc, unsigned char flag, unsigned char perm,
-                std::function<chaiscript::Boxed_Value(CommandSender orig, std::string)> execute)
+  std::function<Boxed_Value(CommandSender orig, std::string)> execute;
+  CustomCommand(std::string desc, unsigned char flag, unsigned char perm, std::function<Boxed_Value(CommandSender orig, std::string)> execute)
+      : desc(desc)
+      , flag(flag)
+      , perm(perm)
+      , execute(execute) {}
+  void add(const OverloadDef &data) { overloads.push_back(std::move(data)); }
+};
+
+struct CustomCommandWithPlayerSelector {
+  std::string desc;
+  unsigned char flag, perm;
+  std::vector<OverloadDef> overloads;
+  std::function<Boxed_Value(CommandSender orig, std::vector<ServerPlayer *> const &, std::string)> execute;
+  CustomCommandWithPlayerSelector(std::string desc, unsigned char flag, unsigned char perm,
+                                  std::function<Boxed_Value(CommandSender orig, std::vector<ServerPlayer *> const &, std::string)> execute)
       : desc(desc)
       , flag(flag)
       , perm(perm)
@@ -111,50 +128,56 @@ struct CustomCommand {
 };
 
 std::map<std::string, std::shared_ptr<CustomCommand>> CustomCommandMap;
+std::map<std::string, std::shared_ptr<CustomCommandWithPlayerSelector>> CustomCommandWithPlayerSelectorMap;
+
+template <typename T>
+void regCommand(T const &cmd, std::vector<std::string> &enumValues, std::vector<std::string> &postfixs, std::vector<EnumData> &enumdatas,
+                std::vector<CommandData> &commands) {
+  auto &def = *cmd.second;
+  CommandData commandData;
+  commandData.name        = cmd.first;
+  commandData.description = def.desc;
+  commandData.flag        = def.flag;
+  commandData.permission  = def.perm;
+  for (auto overload : def.overloads) {
+    OverloadData overloadData;
+    for (auto param : overload.params) {
+      ParamData paramData;
+      paramData.name     = param->name;
+      paramData.optional = param->optional;
+      auto enumparam     = std::dynamic_pointer_cast<EnumParamDef>(param);
+      if (enumparam) {
+        EnumData enumData;
+        enumData.name = enumparam->enumdef.name;
+        for (auto value : enumparam->enumdef.values) {
+          auto idx = std::find(enumValues.begin(), enumValues.end(), value);
+          if (idx != enumValues.end()) {
+            auto index = idx - enumValues.begin();
+            enumData.vec.push_back(index);
+          } else {
+            enumValues.push_back(value);
+            enumData.vec.push_back(enumValues.size() - 1);
+          }
+        }
+        enumdatas.push_back(enumData);
+        paramData.type = 0x00300000 + enumdatas.size() - 1;
+      } else {
+        auto basicparam = std::dynamic_pointer_cast<BasicParamDef>(param);
+        paramData.type  = 0x00100000 + basicparam->type();
+      }
+      overloadData.params.push_back(paramData);
+    }
+    commandData.overloads.push_back(overloadData);
+  }
+  commandData.unk = -1;
+  commands.push_back(commandData);
+}
 
 TClasslessInstanceHook(void *, _ZN23AvailableCommandsPacketC2ERKSt6vectorISsSaISsEES4_OS0_INS_8EnumDataESaIS5_EEOS0_INS_11CommandDataESaIS9_EE,
                        std::vector<std::string> &enumValues, std::vector<std::string> &postfixs, std::vector<EnumData> &enumdatas,
                        std::vector<CommandData> &commands) {
-  for (auto cmd : CustomCommandMap) {
-    auto &def = *cmd.second;
-    CommandData commandData;
-    commandData.name        = cmd.first;
-    commandData.description = def.desc;
-    commandData.flag        = def.flag;
-    commandData.permission  = def.perm;
-    for (auto overload : def.overloads) {
-      OverloadData overloadData;
-      for (auto param : overload.params) {
-        ParamData paramData;
-        paramData.name     = param->name;
-        paramData.optional = param->optional;
-        auto enumparam     = std::dynamic_pointer_cast<EnumParamDef>(param);
-        if (enumparam) {
-          EnumData enumData;
-          enumData.name = enumparam->enumdef.name;
-          for (auto value : enumparam->enumdef.values) {
-            auto idx = std::find(enumValues.begin(), enumValues.end(), value);
-            if (idx != enumValues.end()) {
-              auto index = idx - enumValues.begin();
-              enumData.vec.push_back(index);
-            } else {
-              enumValues.push_back(value);
-              enumData.vec.push_back(enumValues.size() - 1);
-            }
-          }
-          enumdatas.push_back(enumData);
-          paramData.type = 0x00300000 + enumdatas.size() - 1;
-        } else {
-          auto basicparam = std::dynamic_pointer_cast<BasicParamDef>(param);
-          paramData.type  = 0x00100000 + basicparam->type();
-        }
-        overloadData.params.push_back(paramData);
-      }
-      commandData.overloads.push_back(overloadData);
-    }
-    commandData.unk = -1;
-    commands.push_back(commandData);
-  }
+  for (auto cmd : CustomCommandMap) { regCommand(cmd, enumValues, postfixs, enumdatas, commands); }
+  for (auto cmd : CustomCommandWithPlayerSelectorMap) { regCommand(cmd, enumValues, postfixs, enumdatas, commands); }
   return original(this, enumValues, postfixs, enumdatas, commands);
 }
 
@@ -216,37 +239,137 @@ struct CommandSender {
   }
 };
 
+void replaceAll(std::string &str, const std::string &from, const std::string &to) {
+  if (from.empty()) return;
+  size_t start_pos = 0;
+  while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+    str.replace(start_pos, from.length(), to);
+    start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'
+  }
+}
+
+template <typename InputIt> std::string join(InputIt begin, InputIt end, const std::string &separator = ", ", const std::string &concluder = "") {
+  std::ostringstream ss;
+
+  if (begin != end) {
+    ss << *begin++; // see 3.
+  }
+
+  while (begin != end) // see 3.
+  {
+    ss << separator;
+    ss << *begin++;
+  }
+
+  ss << concluder;
+  return ss.str();
+}
+
 TInstanceHook(void, _ZN14CommandContextC2ERKSsSt10unique_ptrI13CommandOriginSt14default_deleteIS3_EEi, CommandContext, std::string &content,
               CommandOrigin &orig, int unk) {
   if (VALID(content)) {
     std::istringstream buf(content.substr(1));
-    std::istream_iterator<std::string> beg(buf);
-    auto it = CustomCommandMap.find(*beg);
-    if (it != CustomCommandMap.end()) { content = "/custom " + content; }
+    std::istream_iterator<std::string> beg(buf), eos;
+    if ((*beg).compare("custom") == 0) {
+      content = "/echo " + JSON(content).dump();
+    } else {
+      auto it = CustomCommandMap.find(*beg);
+      if (it != CustomCommandMap.end()) {
+        replaceAll(content, "@", "◎");
+        content = "/custom " + content;
+      } else {
+        auto it2 = CustomCommandWithPlayerSelectorMap.find(*beg);
+        if (it2 != CustomCommandWithPlayerSelectorMap.end()) {
+          auto cmd = *beg;
+          beg++;
+          if (beg != eos) {
+            auto selector = *beg;
+            ++beg;
+            content = "/custom2 " + selector + " /" + cmd + " " + join(beg, eos, " ");
+          }
+        }
+      }
+    }
   }
   original(this, content, orig, unk);
 }
 
+template <typename T> struct CommandSelectorResults {
+  std::shared_ptr<std::vector<T *>> content;
+  bool empty() const;
+};
+
+struct CommandSelectorBase {
+  CommandSelectorBase(bool);
+  virtual ~CommandSelectorBase();
+};
+
+template <typename T> struct CommandSelector : CommandSelectorBase {
+  char filler[0x74];
+  CommandSelector();
+
+  const CommandSelectorResults<T> results(CommandOrigin const &) const;
+};
+
+struct CommandSelectorPlayer : CommandSelector<Player> {
+  CommandSelectorPlayer()
+      : CommandSelector() {}
+  ~CommandSelectorPlayer() {}
+
+  static typeid_t<CommandRegistry> type_id() {
+    static typeid_t<CommandRegistry> ret =
+        type_id_minecraft_symbol<CommandRegistry>("_ZZ7type_idI15CommandRegistry15CommandSelectorI6PlayerEE8typeid_tIT_EvE2id");
+    return ret;
+  }
+};
+
 struct StubCommand : Command {
+  CommandSelectorPlayer selector;
   CommandMessage msg;
   ~StubCommand() {}
   void execute(CommandOrigin const &orig, CommandOutput &outp) {
     if (VALID(msg)) {
       auto content = msg.getMessage(orig);
       std::istringstream buf(content.substr(1));
-      std::istream_iterator<std::string> beg(buf);
+      std::istream_iterator<std::string> beg(buf), end(buf);
       auto it = CustomCommandMap.find(*beg);
       if (it != CustomCommandMap.end()) {
         try {
-          auto boxed = it->second->execute({ orig }, content);
-          if (boxed.is_type(chaiscript::user_type<std::string>())) {
-            std::string result = chaiscript::boxed_cast<std::string>(boxed);
+          auto boxed = it->second->execute({ orig }, content.substr(1 + beg->length()));
+          if (boxed.is_type(user_type<std::string>())) {
+            std::string result = boxed_cast<std::string>(boxed);
             if (!result.empty()) outp.addMessage(result);
-            outp.success();
-            return;
           }
+          outp.success();
+          return;
         } catch (const std::exception &e) {
-          Log::error("CMD", "Error in callback: %s", e.what());
+          Log::error("CMD", "%s", e.what());
+          outp.error(e.what());
+          return;
+        }
+      }
+      auto it2 = CustomCommandWithPlayerSelectorMap.find(*beg);
+      if (it2 != CustomCommandWithPlayerSelectorMap.end()) {
+        try {
+          auto ret = selector.results(orig);
+          if (ret.empty()) {
+            auto boxed = it2->second->execute({ orig }, {}, content.substr(1 + beg->length()));
+            if (boxed.is_type(user_type<std::string>())) {
+              std::string result = boxed_cast<std::string>(boxed);
+              if (!result.empty()) outp.addMessage(result);
+            }
+          } else {
+            auto boxed =
+                it2->second->execute({ orig }, reinterpret_cast<std::vector<ServerPlayer *> &>(*ret.content), content.substr(1 + beg->length()));
+            if (boxed.is_type(user_type<std::string>())) {
+              std::string result = boxed_cast<std::string>(boxed);
+              if (!result.empty()) outp.addMessage(result);
+            }
+          }
+          outp.success();
+          return;
+        } catch (const std::exception &e) {
+          Log::error("CMD", "%s", e.what());
           outp.error(e.what());
           return;
         }
@@ -265,46 +388,53 @@ struct EchoCommand : Command {
   }
 };
 
-struct SayCommand {
-  IMPL_STATIC(void, setup, CommandRegistry &reg) {
-    Log::info("CMD", "Setup Command");
-    reg.registerCommand("custom", "STUB Command.", (CommandPermissionLevel)0, (CommandFlag)0, (CommandFlag)0);
-    reg.registerOverload<StubCommand>("custom", CommandVersion(0, INT32_MAX),
-                                      CommandParameterData(CommandMessage::type_id(), &CommandRegistry::parse<CommandMessage>, "stub",
-                                                           (CommandParameterDataType)0, nullptr, offsetof(StubCommand, msg), true, -1));
-    reg.registerCommand("echo", "ECHO Command.", (CommandPermissionLevel)0, (CommandFlag)0, (CommandFlag)0);
-    reg.registerOverload<EchoCommand>("echo", CommandVersion(0, INT32_MAX),
-                                      CommandParameterData(CommandMessage::type_id(), &CommandRegistry::parse<CommandMessage>, "content",
-                                                           (CommandParameterDataType)0, nullptr, offsetof(StubCommand, msg), true, -1));
-    $setup()(reg);
-  }
-};
+TClasslessInstanceHook(void, _ZN10SayCommand5setupER15CommandRegistry, CommandRegistry &reg) {
+  Log::info("CMD", "Setup Command");
+  reg.registerCommand("custom", "STUB Command.", (CommandPermissionLevel)0, (CommandFlag)0, (CommandFlag)0);
+  reg.registerOverload<StubCommand>("custom", CommandVersion(0, INT32_MAX),
+                                    CommandParameterData(CommandMessage::type_id(), &CommandRegistry::parse<CommandMessage>, "stub",
+                                                         (CommandParameterDataType)0, nullptr, offsetof(StubCommand, msg), true, -1));
+  reg.registerCommand("custom2", "STUB Command.", (CommandPermissionLevel)0, (CommandFlag)0, (CommandFlag)0);
+  reg.registerOverload<StubCommand>("custom2", CommandVersion(0, INT32_MAX),
+                                    CommandParameterData(CommandSelectorPlayer::type_id(), &CommandRegistry::parse<CommandSelector<Player>>, "target",
+                                                         (CommandParameterDataType)0, nullptr, offsetof(StubCommand, selector), true, -1),
+                                    CommandParameterData(CommandMessage::type_id(), &CommandRegistry::parse<CommandMessage>, "stub",
+                                                         (CommandParameterDataType)0, nullptr, offsetof(StubCommand, msg), true, -1));
+  reg.registerCommand("echo", "ECHO Command.", (CommandPermissionLevel)0, (CommandFlag)0, (CommandFlag)0);
+  reg.registerOverload<EchoCommand>("echo", CommandVersion(0, INT32_MAX),
+                                    CommandParameterData(CommandMessage::type_id(), &CommandRegistry::parse<CommandMessage>, "content",
+                                                         (CommandParameterDataType)0, nullptr, offsetof(EchoCommand, msg), true, -1));
+  original(this, reg);
+}
 
-template <typename T> void regParam(const chaiscript::ModulePtr &m, std::string name) {
-  m->add(chaiscript::user_type<T>(), name);
-  m->add(chaiscript::base_class<ParamDef, T>());
-  m->add(chaiscript::constructor<T(std::string, bool)>(), name);
+template <typename T> void regParam(const ModulePtr &m, std::string name) {
+  m->add(user_type<T>(), name);
+  m->add(base_class<ParamDef, T>());
+  m->add(constructor<T(std::string, bool)>(), name);
 }
 
 std::shared_ptr<CustomCommand> defcmd(std::string name, std::string desc, unsigned char flag, unsigned char perm,
-                                      std::function<chaiscript::Boxed_Value(CommandSender orig, std::string)> execute) {
+                                      std::function<Boxed_Value(CommandSender orig, std::string)> execute) {
   CustomCommandMap.emplace(std::make_pair(name, std::make_shared<CustomCommand>(desc, flag, perm, execute)));
   return CustomCommandMap.find(name)->second;
 }
 
-struct PlayerCommandSender : CommandSender {};
+std::shared_ptr<CustomCommandWithPlayerSelector>
+defcmd2(std::string name, std::string desc, unsigned char flag, unsigned char perm,
+        std::function<Boxed_Value(CommandSender orig, std::vector<ServerPlayer *> const &, std::string)> execute) {
+  CustomCommandWithPlayerSelectorMap.emplace(std::make_pair(name, std::make_shared<CustomCommandWithPlayerSelector>(desc, flag, perm, execute)));
+  return CustomCommandWithPlayerSelectorMap.find(name)->second;
+}
 
 extern "C" void mod_init() {
-  chaiscript::ModulePtr m(new chaiscript::Module());
-  HOOK(SayCommand, setup);
-  void *handle = dlopen("libminecraftpe.so", RTLD_LAZY);
-  m->add(chaiscript::user_type<CommandSender>(), "CommandOrigin");
-  m->add(chaiscript::fun(&CommandSender::isPlayer), "isPlayer");
-  m->add(chaiscript::fun(&CommandSender::getPlayer), "getPlayer");
-  m->add(chaiscript::user_type<EnumDef>(), "EnumDef");
-  m->add(chaiscript::constructor<EnumDef(std::string)>(), "EnumDef");
-  m->add(chaiscript::fun(&EnumDef::add), "add");
-  m->add(chaiscript::user_type<ParamDef>(), "Param");
+  ModulePtr m(new Module());
+  m->add(user_type<CommandSender>(), "CommandOrigin");
+  m->add(fun(&CommandSender::isPlayer), "isPlayer");
+  m->add(fun(&CommandSender::getPlayer), "getPlayer");
+  m->add(user_type<EnumDef>(), "EnumDef");
+  m->add(constructor<EnumDef(std::string)>(), "EnumDef");
+  m->add(fun(&EnumDef::add), "add");
+  m->add(user_type<ParamDef>(), "Param");
   regParam<IntParamDef>(m, "Param_int");
   regParam<FloatParamDef>(m, "Param_float");
   regParam<ValueParamDef>(m, "Param_value");
@@ -317,14 +447,17 @@ extern "C" void mod_init() {
   regParam<RawTextParamDef>(m, "Param_raw");
   regParam<JsonParamDef>(m, "Param_json");
   regParam<CommandParamDef>(m, "Param_command");
-  m->add(chaiscript::user_type<EnumParamDef>(), "Param_enum");
-  m->add(chaiscript::constructor<EnumParamDef(std::string, bool, EnumDef)>(), "Param_enum");
-  m->add(chaiscript::base_class<ParamDef, EnumParamDef>());
-  m->add(chaiscript::user_type<OverloadDef>(), "CommandOverload");
-  m->add(chaiscript::constructor<OverloadDef()>(), "CommandOverload");
-  m->add(chaiscript::fun(&OverloadDef::add), "add");
-  m->add(chaiscript::user_type<CustomCommand>(), "CustomCommand");
-  m->add(chaiscript::fun(&defcmd), "defcmd");
-  m->add(chaiscript::fun(&CustomCommand::add), "add");
+  m->add(user_type<EnumParamDef>(), "Param_enum");
+  m->add(constructor<EnumParamDef(std::string, bool, EnumDef)>(), "Param_enum");
+  m->add(base_class<ParamDef, EnumParamDef>());
+  m->add(user_type<OverloadDef>(), "CommandOverload");
+  m->add(constructor<OverloadDef()>(), "CommandOverload");
+  m->add(fun(&OverloadDef::add), "add");
+  m->add(user_type<CustomCommand>(), "CustomCommand");
+  m->add(user_type<CustomCommandWithPlayerSelector>(), "CustomCommand2");
+  m->add(fun(&defcmd), "defcmd");
+  m->add(fun(&defcmd2), "defcmd2");
+  m->add(fun(&CustomCommand::add), "add");
+  m->add(fun(&CustomCommandWithPlayerSelector::add), "add");
   loadModule(m);
 }
