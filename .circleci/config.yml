@@ -11,8 +11,8 @@ jobs:
           name: build
           command: make -j $(nproc)
           environment:
-            CPP=/data/sdk/bin/i686-linux-android-g++
-            CC=/data/sdk/bin/i686-linux-android-gcc
+            CPP: /data/sdk/bin/i686-linux-android-g++
+            CC : /data/sdk/bin/i686-linux-android-gcc
       - store_artifacts:
           path: /data/projects/out
 
