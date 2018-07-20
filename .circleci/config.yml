@@ -8,7 +8,7 @@ jobs:
     steps:
       - checkout
       - run:
-        bane: build
+        name: build
         command: make -j $(nproc)
         environment:
           CPP=/data/sdk/bin/i686-linux-android-g++
