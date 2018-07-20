@@ -101,6 +101,8 @@ struct Level {
   ServerPlayer *getPlayer(EntityUniqueID uuid) const;
   PacketSender &getPacketSender() const;
   void forEachPlayer(std::function<bool(Player &)>);
+  BlockPos const &getDefaultSpawn() const;
+  void setDefaultSpawn(BlockPos const &);
 };
 
 enum struct InputMode { UNK };

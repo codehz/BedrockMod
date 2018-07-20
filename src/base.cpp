@@ -9,6 +9,8 @@
 
 #include "base.h"
 
+using namespace chaiscript;
+
 struct TeleportCommand {
   void teleport(Entity &entity, Vec3 pos, Vec3 *center, DimensionId dim) const;
 };
@@ -103,54 +105,58 @@ extern "C" void mod_set_server(ServerInstance *si) {
 }
 
 extern "C" void mod_init() {
-  chaiscript::ModulePtr m(new chaiscript::Module());
-  m->add(chaiscript::user_type<Entity>(), "Entity");
-  m->add(chaiscript::user_type<Mob>(), "Mob");
-  m->add(chaiscript::base_class<Entity, Mob>());
-  m->add(chaiscript::user_type<Player>(), "Player");
-  m->add(chaiscript::base_class<Entity, Player>());
-  m->add(chaiscript::base_class<Mob, Player>());
-  m->add(chaiscript::user_type<ServerPlayer>(), "ServerPlayer");
-  m->add(chaiscript::base_class<Entity, ServerPlayer>());
-  m->add(chaiscript::base_class<Mob, ServerPlayer>());
-  m->add(chaiscript::base_class<Player, ServerPlayer>());
-  m->add(chaiscript::user_type<BlockPos>(), "BlockPos");
-  m->add(chaiscript::user_type<Vec3>(), "Vec3");
-  m->add(chaiscript::fun(&BlockPos::x), "x");
-  m->add(chaiscript::fun(&BlockPos::y), "y");
-  m->add(chaiscript::fun(&BlockPos::z), "z");
-  m->add(chaiscript::constructor<BlockPos(int, int, int)>(), "BlockPos");
-  m->add(chaiscript::constructor<BlockPos(Vec3 const &)>(), "BlockPos");
-  m->add(chaiscript::fun(&Vec3::x), "x");
-  m->add(chaiscript::fun(&Vec3::y), "y");
-  m->add(chaiscript::fun(&Vec3::z), "z");
-  m->add(chaiscript::constructor<Vec3(float, float, float)>(), "Vec3");
-  m->add(chaiscript::constructor<Vec3(BlockPos const &)>(), "Vec3");
-  m->add(chaiscript::fun([](std::function<bool(std::string)> const &fn) { whitelistFilter = fn; }), "setWhitelistFilter");
-  m->add(chaiscript::fun(&ServerPlayer::sendNetworkPacket), "sendPacket");
-  m->add(chaiscript::fun(&Entity::getPos), "getPos");
-  m->add(chaiscript::fun(&Entity::getDimensionId), "getDim");
-  m->add(chaiscript::fun(teleport), "teleport");
-  m->add(chaiscript::fun(teleport1), "teleport");
-  m->add(chaiscript::fun(teleport2), "teleport");
-  m->add(chaiscript::fun([](ServerPlayer &player) -> std::string { return player.getNameTag(); }), "getNameTag");
-  m->add(chaiscript::fun(onPlayerAdded), "onPlayerAdded");
-  m->add(chaiscript::fun(onPlayerJoined), "onPlayerJoined");
-  m->add(chaiscript::fun(onPlayerLeft), "onPlayerLeft");
-  m->add(chaiscript::fun([](std::function<void(ServerPlayer & sp)> fn) {
-           mc->getLevel()->forEachPlayer([&fn](Player &p) -> bool {
-             try {
-               fn(static_cast<ServerPlayer &>(p));
-             } catch (std::exception const &e) {
-               Log::error("BASE", "forEachPlayers: %s", e.what());
-               return false;
-             }
-             return true;
-           });
+  ModulePtr m(new Module());
+  m->add(fun([]() -> BlockPos const & {
+           if (!mc) throw std::runtime_error("Minecraft is not loaded");
+           return mc->getLevel()->getDefaultSpawn();
+         }),
+         "getDefaultSpawn");
+  m->add(fun([](BlockPos const &pos) {
+           if (!mc) throw std::runtime_error("Minecraft is not loaded");
+           mc->getLevel()->setDefaultSpawn(pos);
+         }),
+         "getDefaultSpawn");
+  utility::add_class<Level>(*m, "Level", {},
+                            { { fun(&Level::getDefaultSpawn), "getSpawnPoint" }, { fun(&Level::setDefaultSpawn), "setSpawnPoint" } });
+  utility::add_class<Vec3>(*m, "Vec3", { constructor<Vec3(float, float, float)>(), constructor<Vec3(BlockPos const &)>() },
+                           { { fun(&BlockPos::x), "x" }, { fun(&BlockPos::y), "y" }, { fun(&BlockPos::z), "z" } });
+  utility::add_class<BlockPos>(*m, "BlockPos", { constructor<BlockPos(int, int, int)>(), constructor<BlockPos(Vec3 const &)>() },
+                               { { fun(&BlockPos::x), "x" }, { fun(&BlockPos::y), "y" }, { fun(&BlockPos::z), "z" } });
+  m->add(user_type<Entity>(), "Entity");
+  m->add(user_type<Mob>(), "Mob");
+  m->add(base_class<Entity, Mob>());
+  m->add(user_type<Player>(), "Player");
+  m->add(base_class<Entity, Player>());
+  m->add(base_class<Mob, Player>());
+  m->add(user_type<ServerPlayer>(), "ServerPlayer");
+  m->add(base_class<Entity, ServerPlayer>());
+  m->add(base_class<Mob, ServerPlayer>());
+  m->add(base_class<Player, ServerPlayer>());
+  m->add(fun([](std::function<bool(std::string)> const &fn) { whitelistFilter = fn; }), "setWhitelistFilter");
+  m->add(fun(&ServerPlayer::sendNetworkPacket), "sendPacket");
+  m->add(fun(&Entity::getPos), "getPos");
+  m->add(fun(&Entity::getDimensionId), "getDim");
+  m->add(fun(teleport), "teleport");
+  m->add(fun(teleport1), "teleport");
+  m->add(fun(teleport2), "teleport");
+  m->add(fun([](ServerPlayer &player) -> std::string { return player.getNameTag(); }), "getNameTag");
+  m->add(fun(onPlayerAdded), "onPlayerAdded");
+  m->add(fun(onPlayerJoined), "onPlayerJoined");
+  m->add(fun(onPlayerLeft), "onPlayerLeft");
+  m->add(fun([](std::function<void(ServerPlayer & sp)> fn) {
+           if (mc)
+             mc->getLevel()->forEachPlayer([&fn](Player &p) -> bool {
+               try {
+                 fn(static_cast<ServerPlayer &>(p));
+               } catch (std::exception const &e) {
+                 Log::error("BASE", "forEachPlayers: %s", e.what());
+                 return false;
+               }
+               return true;
+             });
          }),
          "forEachPlayer");
-  chaiscript::utility::add_class<PlayerActionType>(*m, "PlayerActionType",
-                                                   { { PlayerActionType::DESTROY, "DESTROY" }, { PlayerActionType::BUILD, "BUILD" } });
-  m->add(chaiscript::fun([](std::function<bool(ServerPlayer & sp, PlayerActionType, BlockPos const &)> fn) { playerAction = fn; }), "onPlayerAction");
+  utility::add_class<PlayerActionType>(*m, "PlayerActionType", { { PlayerActionType::DESTROY, "DESTROY" }, { PlayerActionType::BUILD, "BUILD" } });
+  m->add(fun([](std::function<bool(ServerPlayer & sp, PlayerActionType, BlockPos const &)> fn) { playerAction = fn; }), "onPlayerAction");
   loadModule(m);
 }
