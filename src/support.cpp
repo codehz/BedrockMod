@@ -30,7 +30,7 @@ TInstanceHook(void, _ZN20ServerNetworkHandler24onReady_ClientGenerationER6Player
     } catch (const std::exception &e) { Log::error("ChaiExtra", e.what()); }
 }
 
-TInstanceHook(void, _ZN20ServerNetworkHandler13_onPlayerLeftEP12ServerPlayer, ServerNetworkHandler, ServerPlayer *player) {
+TInstanceHook(void, _ZN20ServerNetworkHandler13_onPlayerLeftEP12ServerPlayerb, ServerNetworkHandler, ServerPlayer *player, bool flag) {
   player->disconnect();
   player->remove();
 
