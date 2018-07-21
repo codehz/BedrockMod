@@ -45,13 +45,13 @@ struct ServerInstance {
   Minecraft *minecraft;
 };
 
-enum struct PlayerActionType { DESTROY, BUILD };
-
-std::function<bool(ServerPlayer &sp, PlayerActionType, BlockPos const &)> playerAction;
+std::function<bool(ServerPlayer &sp, BlockPos const &)> playerDestroy;
+std::function<bool(ServerPlayer &sp, ItemInstance &, BlockPos const &)> playerUseItem;
+std::function<bool(Entity &e, Vec3 const &)> entityExplode;
 
 TInstanceHook(int, _ZN8GameMode12destroyBlockERK8BlockPosa, GameMode, BlockPos const &pos, signed char flag) {
   try {
-    if (!playerAction || playerAction(this->player, PlayerActionType::DESTROY, pos)) { return original(this, pos, flag); }
+    if (!playerDestroy || playerDestroy(this->player, pos)) { return original(this, pos, flag); }
     return 0;
   } catch (std::exception const &e) {
     Log::error("PlayerAction", "Error: %s", e.what());
@@ -61,7 +61,7 @@ TInstanceHook(int, _ZN8GameMode12destroyBlockERK8BlockPosa, GameMode, BlockPos c
 
 TInstanceHook(int, _ZN12SurvivalMode12destroyBlockERK8BlockPosa, SurvivalMode, BlockPos const &pos, signed char flag) {
   try {
-    if (!playerAction || playerAction(this->player, PlayerActionType::DESTROY, pos)) { return original(this, pos, flag); }
+    if (!playerDestroy || playerDestroy(this->player, pos)) { return original(this, pos, flag); }
     return 0;
   } catch (std::exception const &e) {
     Log::error("PlayerAction", "Error: %s", e.what());
@@ -72,10 +72,10 @@ TInstanceHook(int, _ZN12SurvivalMode12destroyBlockERK8BlockPosa, SurvivalMode, B
 TInstanceHook(int, _ZN8GameMode9useItemOnER12ItemInstanceRK8BlockPosaRK4Vec3P15ItemUseCallback, GameMode, ItemInstance &item, BlockPos const &pos,
               signed char flag, Vec3 const &ppos, ItemUseCallback *cb) {
   try {
-    if (!playerAction || playerAction(this->player, PlayerActionType::BUILD, pos)) { return original(this, item, pos, flag, ppos, cb); }
+    if (!playerUseItem || playerUseItem(this->player, item, pos)) { return original(this, item, pos, flag, ppos, cb); }
     return 0;
   } catch (std::exception const &e) {
-    Log::error("PlayerAction", "Error: %s", e.what());
+    Log::error("PlayerAction", "%s", e.what());
     return original(this, item, pos, flag, ppos, cb);
   }
 }
@@ -83,11 +83,24 @@ TInstanceHook(int, _ZN8GameMode9useItemOnER12ItemInstanceRK8BlockPosaRK4Vec3P15I
 TInstanceHook(int, _ZN12SurvivalMode9useItemOnER12ItemInstanceRK8BlockPosaRK4Vec3P15ItemUseCallback, SurvivalMode, ItemInstance &item,
               BlockPos const &pos, signed char flag, Vec3 const &ppos, ItemUseCallback *cb) {
   try {
-    if (!playerAction || playerAction(this->player, PlayerActionType::BUILD, pos)) { return original(this, item, pos, flag, ppos, cb); }
+    if (!playerUseItem || playerUseItem(this->player, item, pos)) { return original(this, item, pos, flag, ppos, cb); }
     return 0;
   } catch (std::exception const &e) {
-    Log::error("PlayerAction", "Error: %s", e.what());
+    Log::error("PlayerAction", "%s", e.what());
     return original(this, item, pos, flag, ppos, cb);
+  }
+}
+
+struct BlockSource;
+
+TInstanceHook(void *, _ZN5Level7explodeER11BlockSourceP6EntityRK4Vec3fbbfb, Level, BlockSource &bs, Entity *entity, Vec3 const &pos, float value1,
+              bool flag1, bool flag2, float value2, bool flag3) {
+  try {
+    if (!entityExplode || entityExplode(*entity, pos)) { return original(this, bs, entity, pos, value1, flag1, flag2, value2, flag3); }
+    return nullptr;
+  } catch (std::exception const &e) {
+    Log::error("EntityExplode", "%s", e.what());
+    return original(this, bs, entity, pos, value1, flag1, flag2, value2, flag3);
   }
 }
 
@@ -113,7 +126,7 @@ extern "C" void mod_init() {
          "getDefaultSpawn");
   utility::add_class<mce::UUID>(*m, "UUID", {}, { { fun(&mce::UUID::asString), "to_string" } });
   utility::add_class<Vec3>(*m, "Vec3", { constructor<Vec3(float, float, float)>(), constructor<Vec3(BlockPos const &)>() },
-                           { { fun(&BlockPos::x), "x" }, { fun(&BlockPos::y), "y" }, { fun(&BlockPos::z), "z" } });
+                           { { fun(&Vec3::x), "x" }, { fun(&Vec3::y), "y" }, { fun(&Vec3::z), "z" } });
   utility::add_class<BlockPos>(*m, "BlockPos", { constructor<BlockPos(int, int, int)>(), constructor<BlockPos(Vec3 const &)>() },
                                { { fun(&BlockPos::x), "x" }, { fun(&BlockPos::y), "y" }, { fun(&BlockPos::z), "z" } });
   m->add(user_type<Entity>(), "Entity");
@@ -135,7 +148,14 @@ extern "C" void mod_init() {
   m->add(fun(teleport), "teleport");
   m->add(fun(teleport1), "teleport");
   m->add(fun(teleport2), "teleport");
-  m->add(fun([](ServerPlayer &player) -> std::string { return player.getNameTag(); }), "getNameTag");
+  m->add(fun([](Entity &entity) -> std::vector<std::string> {
+           std::vector<std::string> temp;
+           entity.getDebugText(temp);
+          //  for (auto item : temp) { Log::trace("Entity", "::%s", item.c_str()); }
+           return temp;
+         }),
+         "getDebugText");
+  m->add(fun([](Entity &entity) -> std::string { return entity.getNameTag(); }), "getNameTag");
   m->add(fun(onPlayerAdded), "onPlayerAdded");
   m->add(fun(onPlayerJoined), "onPlayerJoined");
   m->add(fun(onPlayerLeft), "onPlayerLeft");
@@ -164,12 +184,16 @@ extern "C" void mod_init() {
              });
          }),
          "forEachPlayer");
-  utility::add_class<PlayerActionType>(*m, "PlayerActionType", { { PlayerActionType::DESTROY, "DESTROY" }, { PlayerActionType::BUILD, "BUILD" } });
-  m->add(fun([](std::function<bool(ServerPlayer & sp, PlayerActionType, BlockPos const &)> fn) { playerAction = fn; }), "onPlayerAction");
+  utility::add_class<ItemInstance>(*m, "ItemInstance", {},
+                                   { { fun(&ItemInstance::getName), "getName" }, { fun(&ItemInstance::getCustomName), "getCustomName" } });
+  m->add(fun([](decltype(playerDestroy) fn) { playerDestroy = fn; }), "onPlayerDestroy");
+  m->add(fun([](decltype(playerUseItem) fn) { playerUseItem = fn; }), "onPlayerUseItem");
+  m->add(fun([](decltype(entityExplode) fn) { entityExplode = fn; }), "onEntityExplode");
   m->add(fun([](Player &player) -> mce::UUID { return *(mce::UUID *)((char *)&player + uuidoffset); }), "getUUID");
   m->add(fun(&kickPlayer), "kick");
 
   getChai().add(bootstrap::standard_library::vector_type<std::vector<ServerPlayer *>>("PlayerList"));
+  getChai().add(bootstrap::standard_library::vector_type<std::vector<std::string>>("StringList"));
 
   loadModule(m);
 }

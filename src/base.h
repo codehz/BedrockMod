@@ -76,6 +76,7 @@ struct Entity {
   Vec3 const &getPos() const;
   Level *getLevel() const;
   int getDimensionId() const;
+  void getDebugText(std::vector<std::string> &);
 };
 
 struct Mob : Entity {
@@ -111,7 +112,10 @@ struct Level {
 
 enum struct InputMode { UNK };
 
-struct ItemInstance;
+struct ItemInstance {
+  std::string getName() const;
+  std::string getCustomName() const;
+};
 struct ItemUseCallback;
 
 struct GameMode {
