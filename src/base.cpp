@@ -126,12 +126,7 @@ extern "C" void mod_init() {
   m->add(base_class<Entity, ServerPlayer>());
   m->add(base_class<Mob, ServerPlayer>());
   m->add(base_class<Player, ServerPlayer>());
-  m->add(fun([](std::string uuid) -> mce::UUID {
-           mce::UUID ret;
-           ret.fromString(uuid);
-           return ret;
-         }),
-         "makeUUID");
+  m->add(fun(&mce::UUID::fromString), "UUID");
   m->add(fun([](std::function<bool(mce::UUID &)> const &fn) { whitelistFilter = fn; }), "setWhitelistFilter");
   m->add(fun(&ServerPlayer::sendNetworkPacket), "sendPacket");
   m->add(fun(&Entity::getPos), "getPos");
@@ -144,8 +139,10 @@ extern "C" void mod_init() {
   m->add(fun(onPlayerAdded), "onPlayerAdded");
   m->add(fun(onPlayerJoined), "onPlayerJoined");
   m->add(fun(onPlayerLeft), "onPlayerLeft");
-  m->add(fun([](mce::UUID const &uuid) {
+  m->add(fun([](mce::UUID uuid) {
+           Log::trace("getPlayer", "mc: %08x", mc);
            if (!mc) throw std::runtime_error("Minecraft is not loaded");
+           Log::trace("getPlayer", "Level: %08x", mc->getLevel());
            return mc->getLevel()->getPlayer(uuid);
          }),
          "getPlayer");
@@ -170,6 +167,7 @@ extern "C" void mod_init() {
   utility::add_class<PlayerActionType>(*m, "PlayerActionType", { { PlayerActionType::DESTROY, "DESTROY" }, { PlayerActionType::BUILD, "BUILD" } });
   m->add(fun([](std::function<bool(ServerPlayer & sp, PlayerActionType, BlockPos const &)> fn) { playerAction = fn; }), "onPlayerAction");
   m->add(fun([](Player &player) -> mce::UUID { return *(mce::UUID *)((char *)&player + uuidoffset); }), "getUUID");
+  m->add(fun(&kickPlayer), "kick");
 
   getChai().add(bootstrap::standard_library::vector_type<std::vector<ServerPlayer *>>("PlayerList"));
 

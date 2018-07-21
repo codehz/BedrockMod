@@ -30,7 +30,7 @@ TInstanceHook(void, _ZN20ServerNetworkHandler24onReady_ClientGenerationER6Player
     } catch (const std::exception &e) { Log::error("ChaiExtra", e.what()); }
 }
 
-TInstanceHook(void, _ZN20ServerNetworkHandler13_onPlayerLeftEP12ServerPlayerb, ServerNetworkHandler, ServerPlayer *player, bool flag) {
+void kickPlayer(ServerPlayer *player) {
   player->disconnect();
   player->remove();
 
@@ -39,6 +39,10 @@ TInstanceHook(void, _ZN20ServerNetworkHandler13_onPlayerLeftEP12ServerPlayerb, S
         left(*player);
       } catch (const std::exception &e) { Log::error("ChaiExtra", e.what()); }
   }
+}
+
+TInstanceHook(void, _ZN20ServerNetworkHandler13_onPlayerLeftEP12ServerPlayerb, ServerNetworkHandler, ServerPlayer *player, bool flag) {
+  kickPlayer(player);
 }
 
 TInstanceHook(void, _ZN20ServerNetworkHandler12onDisconnectERK17NetworkIdentifierRKSsbS4_, ServerNetworkHandler, NetworkIdentifier const &nid,

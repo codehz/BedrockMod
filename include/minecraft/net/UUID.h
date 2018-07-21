@@ -5,6 +5,6 @@ struct UUID {
   uint64_t most, least;
   UUID() {}
   const std::string asString() const;
-  void fromString(std::string const &);
+  static mce::UUID fromString(std::string const &);
 };
 } // namespace mce

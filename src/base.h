@@ -155,3 +155,4 @@ extern void onPlayerJoined(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerLeft(std::function<void(ServerPlayer &player)> callback);
 
 extern ServerPlayer *findPlayer(NetworkIdentifier const &nid, unsigned char subIndex);
+extern void kickPlayer(ServerPlayer *player);
