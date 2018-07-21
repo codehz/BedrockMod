@@ -69,7 +69,6 @@ struct Sqlite3Stmt {
   }
   Boxed_Value get(int col) {
     auto type = sqlite3_column_type(stmt, col);
-    Log::trace("Sqlite3", "type: %d", type);
     switch (type) {
     case SQLITE_INTEGER: return Boxed_Value(sqlite3_column_int64(stmt, col));
     case SQLITE_FLOAT: return Boxed_Value(sqlite3_column_double(stmt, col));
@@ -138,7 +137,7 @@ struct Sqlite3 {
   }
 };
 
-Sqlite3 global{ "user/chai/master.db" }, world{ "worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/chai.db" };
+Sqlite3 global{ "user/chai/master.db" }, world{ "worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/chai.db" }, memdb{ ":memory:" };
 
 extern "C" void mod_init() {
   ModulePtr m(new Module());
@@ -157,6 +156,7 @@ extern "C" void mod_init() {
                                     { fun(&Sqlite3Stmt::bindNamed), "bind" } });
   m->add_global_const(const_var(&global), "GlobalDB");
   m->add_global_const(const_var(&world), "WorldDB");
+  m->add_global_const(const_var(&memdb), "MemDB");
 
   loadModule(m);
 }
