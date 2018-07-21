@@ -47,7 +47,7 @@ struct ServerInstance {
 
 std::function<bool(ServerPlayer &sp, BlockPos const &)> playerDestroy;
 std::function<bool(ServerPlayer &sp, ItemInstance &, BlockPos const &)> playerUseItem;
-std::function<bool(Entity &e, Vec3 const &)> entityExplode;
+std::function<bool(Entity &e, Vec3 const &, float range)> entityExplode;
 
 TInstanceHook(int, _ZN8GameMode12destroyBlockERK8BlockPosa, GameMode, BlockPos const &pos, signed char flag) {
   try {
@@ -93,14 +93,14 @@ TInstanceHook(int, _ZN12SurvivalMode9useItemOnER12ItemInstanceRK8BlockPosaRK4Vec
 
 struct BlockSource;
 
-TInstanceHook(void *, _ZN5Level7explodeER11BlockSourceP6EntityRK4Vec3fbbfb, Level, BlockSource &bs, Entity *entity, Vec3 const &pos, float value1,
-              bool flag1, bool flag2, float value2, bool flag3) {
+TInstanceHook(void *, _ZN5Level7explodeER11BlockSourceP6EntityRK4Vec3fbbfb, Level, BlockSource &bs, Entity *entity, Vec3 const &pos, float range,
+              bool flag1, bool flag2, float value, bool flag3) {
   try {
-    if (!entityExplode || entityExplode(*entity, pos)) { return original(this, bs, entity, pos, value1, flag1, flag2, value2, flag3); }
+    if (!entityExplode || entityExplode(*entity, pos, range)) { return original(this, bs, entity, pos, range, flag1, flag2, value, flag3); }
     return nullptr;
   } catch (std::exception const &e) {
     Log::error("EntityExplode", "%s", e.what());
-    return original(this, bs, entity, pos, value1, flag1, flag2, value2, flag3);
+    return original(this, bs, entity, pos, range, flag1, flag2, value, flag3);
   }
 }
 
