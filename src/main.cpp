@@ -51,6 +51,7 @@ extern "C" chaiscript::ChaiScript &getChai() { return chai; }
 
 extern "C" void mod_init() {
   chai.add(chaiscript::user_type<LogForChai>(), "LogTy");
+  chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_TRACE>), "trace");
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_NOTICE>), "notice");
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_INFO>), "info");
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_DEBUG>), "debug");

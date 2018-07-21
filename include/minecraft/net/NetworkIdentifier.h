@@ -6,7 +6,7 @@
 class NetworkIdentifier {
 
 public:
-    char guid[0x10];
+    char filler[0x10];
     sockaddr_storage sa; // 90
     int family;
 

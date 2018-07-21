@@ -7,6 +7,7 @@
 #include <chaiscript/chaiscript.hpp>
 
 #include <minecraft/net/NetworkIdentifier.h>
+#include <minecraft/net/UUID.h>
 
 struct EntityUniqueID {
   long long high, low;
@@ -15,15 +16,6 @@ struct EntityUniqueID {
 struct EntityRuntimeID {
   long long eid = 0;
 };
-
-namespace mce {
-struct UUID {
-  uint64_t most, least;
-  UUID() {}
-  const std::string asString() const;
-  void fromString(std::string const &);
-};
-} // namespace mce
 
 struct Vec3;
 

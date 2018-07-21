@@ -29,7 +29,7 @@ std::function<bool(mce::UUID &)> whitelistFilter;
 TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::UUID &uuid, std::string const &msg) {
   if (whitelistFilter) try {
       return whitelistFilter(uuid);
-    } catch (std::exception const &e) { Log::error("Player", "Error: %s", e.what()); }
+    } catch (std::exception const &e) { Log::error("Player", "%s", e.what()); }
   return true;
 }
 
@@ -95,6 +95,9 @@ extern "C" void mod_set_server(ServerInstance *si) {
   si->minecraft->activateWhitelist();
   mc = si->minecraft;
 }
+
+constexpr auto movsdoffset   = 38;
+const static auto uuidoffset = *(short *)((char *)dlsym(MinecraftHandle(), "_ZN20MinecraftScreenModel18getLocalPlayerUUIDEv") + movsdoffset);
 
 extern "C" void mod_init() {
   ModulePtr m(new Module());
@@ -166,6 +169,7 @@ extern "C" void mod_init() {
          "forEachPlayer");
   utility::add_class<PlayerActionType>(*m, "PlayerActionType", { { PlayerActionType::DESTROY, "DESTROY" }, { PlayerActionType::BUILD, "BUILD" } });
   m->add(fun([](std::function<bool(ServerPlayer & sp, PlayerActionType, BlockPos const &)> fn) { playerAction = fn; }), "onPlayerAction");
+  m->add(fun([](Player &player) -> mce::UUID { return *(mce::UUID *)((char *)&player + uuidoffset); }), "getUUID");
 
   getChai().add(bootstrap::standard_library::vector_type<std::vector<ServerPlayer *>>("PlayerList"));
 

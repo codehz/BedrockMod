@@ -18,7 +18,7 @@ struct Sqlite3Error : std::runtime_error {
       : std::runtime_error(err) {}
 };
 
-enum class Sqlite3StmtStepResult { OK = 0, DONE = 101 };
+enum class Sqlite3StmtStepResult { OK = 0, ROW = 100, DONE = 101 };
 
 struct Sqlite3Stmt {
   sqlite3_stmt *stmt;
@@ -26,14 +26,22 @@ struct Sqlite3Stmt {
       : stmt(stmt) {}
   Sqlite3Stmt(Sqlite3Stmt const &) = delete;
   Sqlite3Stmt &operator=(Sqlite3Stmt const &) = delete;
-  Sqlite3StmtStepResult step() { return (Sqlite3StmtStepResult)sqlite3_step(stmt); }
+  Sqlite3StmtStepResult step() {
+    auto ret = sqlite3_step(stmt);
+    if (ret != 0 && ret != 101 && ret != 100) {
+      Log::error("Sqlite3", "step(): %s", sqlite3_errstr(ret));
+      throw Sqlite3Error(sqlite3_errstr(ret));
+    }
+    return (Sqlite3StmtStepResult)ret;
+  }
   void reset() {
     int err = 0;
     if (sqlite3_reset(stmt)) {
-      Log::error("Sqlite3", "reset() Err: %s", sqlite3_errstr(err));
+      Log::error("Sqlite3", "reset(): %s", sqlite3_errstr(err));
       throw Sqlite3Error(sqlite3_errstr(err));
     }
   }
+  void clear() { sqlite3_clear_bindings(stmt); }
   void bind(int idx, Boxed_Value const &value) {
     if (value.is_null() || value.is_undef()) {
       sqlite3_bind_null(stmt, idx);
@@ -61,10 +69,11 @@ struct Sqlite3Stmt {
   }
   Boxed_Value get(int col) {
     auto type = sqlite3_column_type(stmt, col);
+    Log::trace("Sqlite3", "type: %d", type);
     switch (type) {
     case SQLITE_INTEGER: return Boxed_Value(sqlite3_column_int64(stmt, col));
     case SQLITE_FLOAT: return Boxed_Value(sqlite3_column_double(stmt, col));
-    case SQLITE3_TEXT: return Boxed_Value(sqlite3_column_text(stmt, col));
+    case SQLITE3_TEXT: return Boxed_Value(std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, col))));
     default: return Boxed_Value(nullptr);
     }
   }
@@ -120,7 +129,11 @@ struct Sqlite3 {
   }
   std::shared_ptr<Sqlite3Stmt> prepare(std::string sql) const {
     sqlite3_stmt *stmt;
-    sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    auto err = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
+    if (err != SQLITE_OK) {
+      Log::error("Sqlite3", "prepare(%s) Err: %s", sql.c_str(), sqlite3_errstr(err));
+      throw Sqlite3Error(sqlite3_errstr(err));
+    }
     return std::make_shared<Sqlite3Stmt>(stmt);
   }
 };
@@ -130,12 +143,15 @@ Sqlite3 global{ "user/chai/master.db" }, world{ "worlds/" + std::string(mcpelaun
 extern "C" void mod_init() {
   ModulePtr m(new Module());
 
-  utility::add_class<Sqlite3StmtStepResult>(*m, "Sqlite3StmtStepResult",
-                                            { { Sqlite3StmtStepResult::OK, "OK" }, { Sqlite3StmtStepResult::DONE, "DONE" } });
+  utility::add_class<Sqlite3StmtStepResult>(
+      *m, "Sqlite3StmtStepResult",
+      { { Sqlite3StmtStepResult::OK, "OK" }, { Sqlite3StmtStepResult::ROW, "ROW" }, { Sqlite3StmtStepResult::DONE, "DONE" } });
   utility::add_class<Sqlite3>(*m, "Sqlite3", {},
                               { { fun(&Sqlite3::exec), "exec" }, { fun(&Sqlite3::exec0), "exec" }, { fun(&Sqlite3::prepare), "prepare" } });
   utility::add_class<Sqlite3Stmt>(*m, "Sqlite3Stmt", {},
                                   { { fun(&Sqlite3Stmt::step), "step" },
+                                    { fun(&Sqlite3Stmt::reset), "reset" },
+                                    { fun(&Sqlite3Stmt::clear), "clear" },
                                     { fun(&Sqlite3Stmt::get), "get" },
                                     { fun(&Sqlite3Stmt::bind), "bind" },
                                     { fun(&Sqlite3Stmt::bindNamed), "bind" } });
