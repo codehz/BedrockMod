@@ -29,7 +29,7 @@ static void uuid_to_text(sqlite3_context *context, int argc, sqlite3_value **arg
   auto puuid = (UUID *)sqlite3_value_blob(argv[0]);
   if (len != sizeof(UUID)) { return sqlite3_result_error(context, "UUID must be 16 bytes", -1); }
   auto str = puuid->asString();
-  sqlite3_result_text(context, str.c_str(), str.length() + 1, SQLITE_TRANSIENT);
+  sqlite3_result_text(context, str.c_str(), str.length(), SQLITE_TRANSIENT);
 }
 
 void register_uuid(sqlite3 *db) {
