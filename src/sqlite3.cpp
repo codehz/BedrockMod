@@ -5,9 +5,38 @@
 #include <functional>
 #include <vector>
 
+#include <minecraft/net/UUID.h>
+
 #include <sqlite3/sqlite3.h>
 
 using namespace chaiscript;
+using namespace mce;
+
+static void valid_uuid(sqlite3_context *context, int argc, sqlite3_value **argv) {
+  auto len   = sqlite3_value_bytes(argv[0]);
+  auto puuid = (UUID *)sqlite3_value_blob(argv[0]);
+  sqlite3_result_int(context, len == sizeof(UUID) && puuid->least != 0 && puuid->most != 0 ? 1 : 0);
+}
+
+static void uuid_to_blob(sqlite3_context *context, int argc, sqlite3_value **argv) {
+  std::string uuid_str = reinterpret_cast<const char *>(sqlite3_value_text(argv[0]));
+  auto uuid            = UUID::fromString(uuid_str);
+  sqlite3_result_blob(context, &uuid, sizeof(UUID), SQLITE_TRANSIENT);
+}
+
+static void uuid_to_text(sqlite3_context *context, int argc, sqlite3_value **argv) {
+  auto len   = sqlite3_value_bytes(argv[0]);
+  auto puuid = (UUID *)sqlite3_value_blob(argv[0]);
+  if (len != sizeof(UUID)) { return sqlite3_result_error(context, "UUID must be 16 bytes", -1); }
+  auto str = puuid->asString();
+  sqlite3_result_text(context, str.c_str(), str.length() + 1, SQLITE_TRANSIENT);
+}
+
+void register_uuid(sqlite3 *db) {
+  sqlite3_create_function(db, "valid_uuid", 1, SQLITE_UTF8, 0, valid_uuid, 0, 0);
+  sqlite3_create_function(db, "uuid_to_blob", 1, SQLITE_UTF8, 0, uuid_to_blob, 0, 0);
+  sqlite3_create_function(db, "uuid_to_text", 1, SQLITE_UTF8, 0, uuid_to_text, 0, 0);
+}
 
 extern "C" {
 const char *mcpelauncher_property_get(const char *name, const char *def);
@@ -45,19 +74,20 @@ struct Sqlite3Stmt {
   void bind(int idx, Boxed_Value const &value) {
     if (value.is_null() || value.is_undef()) {
       sqlite3_bind_null(stmt, idx);
-    } else if (value.is_type(chaiscript::user_type<int>())) {
+    } else if (value.is_type(user_type<int>())) {
       sqlite3_bind_int(stmt, idx, boxed_cast<int>(value));
-    } else if (value.is_type(chaiscript::user_type<int64_t>())) {
+    } else if (value.is_type(user_type<int64_t>())) {
       sqlite3_bind_int64(stmt, idx, boxed_cast<int64_t>(value));
-    } else if (value.is_type(chaiscript::user_type<float>())) {
+    } else if (value.is_type(user_type<float>())) {
       sqlite3_bind_double(stmt, idx, boxed_cast<float>(value));
-    } else if (value.is_type(chaiscript::user_type<double>())) {
+    } else if (value.is_type(user_type<double>())) {
       sqlite3_bind_double(stmt, idx, boxed_cast<double>(value));
-    } else if (value.is_type(chaiscript::user_type<std::string>())) {
-      auto str     = boxed_cast<std::string>(value);
-      char *buffer = (char *)malloc(str.length() + 1);
-      strncpy(buffer, str.c_str(), str.length() + 1);
-      sqlite3_bind_text(stmt, idx, buffer, -1, free);
+    } else if (value.is_type(user_type<std::string>())) {
+      auto str = boxed_cast<std::string>(value);
+      sqlite3_bind_text(stmt, idx, str.c_str(), str.length() + 1, SQLITE_TRANSIENT);
+    } else if (value.is_type(user_type<UUID>())) {
+      auto &uuid = boxed_cast<UUID const &>(value);
+      sqlite3_bind_blob(stmt, idx, &uuid, sizeof(UUID), SQLITE_TRANSIENT);
     } else {
       throw Sqlite3Error("Failed to convert the type");
     }
@@ -73,6 +103,11 @@ struct Sqlite3Stmt {
     case SQLITE_INTEGER: return Boxed_Value(sqlite3_column_int64(stmt, col));
     case SQLITE_FLOAT: return Boxed_Value(sqlite3_column_double(stmt, col));
     case SQLITE3_TEXT: return Boxed_Value(std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, col))));
+    case SQLITE_BLOB: {
+      auto size = sqlite3_column_bytes(stmt, col);
+      if (size != sizeof(UUID)) return Boxed_Value(nullptr);
+      return Boxed_Value(*(UUID *)sqlite3_column_blob(stmt, col));
+    }
     default: return Boxed_Value(nullptr);
     }
   }
@@ -95,9 +130,12 @@ struct Sqlite3 {
       Log::error("Sqlite3", "%s: %s", name.c_str(), err);
       sqlite3_free(err);
     }
+    register_uuid(db);
   }
   Sqlite3(sqlite3 *db)
-      : db(db) {}
+      : db(db) {
+    register_uuid(db);
+  }
   Sqlite3(Sqlite3 const &) = delete;
   Sqlite3 &operator=(Sqlite3 const &) = delete;
   ~Sqlite3() { sqlite3_close(db); }
@@ -141,8 +179,7 @@ struct Sqlite3 {
 
 extern "C" sqlite3 *getMasterDB();
 
-Sqlite3 global{ getMasterDB() }, world{ "worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/chai.db" },
-    memdb{ ":memory:" };
+Sqlite3 global{ getMasterDB() }, world{ "worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/chai.db" }, memdb{ ":memory:" };
 
 extern "C" void mod_init() {
   ModulePtr m(new Module());
