@@ -362,15 +362,15 @@ struct StubCommand : Command {
         try {
           auto ret = selector.results(orig);
           if (ret.empty()) {
-            auto boxed = it2->second->execute({ orig }, {}, content.substr(1 + beg->length()));
+            auto boxed = it2->second->execute({ orig }, {}, content.substr(std::min(content.length(), 1 + beg->length())));
             if (boxed.is_type(user_type<std::string>())) {
               std::string result = boxed_cast<std::string>(boxed);
               if (!result.empty()) outp.addMessage(result);
             }
           } else {
             for (auto item : *ret.content) { Log::trace("CMD", "item: %s", item->getNameTag().c_str()); }
-            auto boxed =
-                it2->second->execute({ orig }, reinterpret_cast<std::vector<ServerPlayer *> &>(*ret.content), content.substr(2 + beg->length()));
+            auto boxed = it2->second->execute({ orig }, reinterpret_cast<std::vector<ServerPlayer *> &>(*ret.content),
+                                              content.substr(std::min(content.length(), 2 + beg->length())));
             if (boxed.is_type(user_type<std::string>())) {
               std::string result = boxed_cast<std::string>(boxed);
               if (!result.empty()) outp.addMessage(result);
