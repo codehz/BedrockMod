@@ -13,8 +13,13 @@ jobs:
           environment:
             CPP: /data/sdk/bin/i686-linux-android-g++
             CC : /data/sdk/bin/i686-linux-android-gcc
+      - run:
+          name: package
+          command:
+            cd /data/projects/out
+            tar cvf mods.tar.xz *.so
       - store_artifacts:
-          path: /data/projects/out
+          path: /data/projects/out/mods.tar.xz
 
 workflows:
   version: 2
