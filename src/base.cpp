@@ -33,8 +33,14 @@ TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::
   return true;
 }
 
+struct ServerNetworkHandler {
+  void addToBlacklist(mce::UUID const &, std::string const &);
+  void removeFromBlacklist(mce::UUID const &, std::string const &);
+};
+
 struct Minecraft {
   void activateWhitelist();
+  ServerNetworkHandler *getServerNetworkHandler();
   Level *getLevel() const;
 };
 
@@ -234,6 +240,10 @@ extern "C" void mod_init() {
   m->add(fun([](decltype(checkAbility) fn) { checkAbility = fn; }), "onCheckAbility");
   m->add(fun([](Player &player) -> mce::UUID { return *(mce::UUID *)((char *)&player + uuidoffset); }), "getUUID");
   m->add(fun(&kickPlayer), "kick");
+  m->add(fun([](mce::UUID const &uuid, std::string const &reason) { mc->getServerNetworkHandler()->addToBlacklist(uuid, reason); }),
+         "addToBlacklist");
+  m->add(fun([](mce::UUID const &uuid, std::string const &reason) { mc->getServerNetworkHandler()->removeFromBlacklist(uuid, reason); }),
+         "removeFromBlacklist");
 
   getChai().add(bootstrap::standard_library::vector_type<std::vector<ServerPlayer *>>("PlayerList"));
   getChai().add(bootstrap::standard_library::vector_type<std::vector<std::string>>("StringList"));
