@@ -17,6 +17,7 @@ jobs:
           name: package
           command:
             cd /data/projects/out &&
+            strip * &&
             tar cvf mods.tar.xz *.so
       - store_artifacts:
           path: /data/projects/out/mods.tar.xz
