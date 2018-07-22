@@ -340,7 +340,7 @@ struct StubCommand : Command {
           return;
         }
         try {
-          auto boxed = it->second->execute({ orig }, content.substr(1 + beg->length()));
+          auto boxed = it->second->execute({ orig }, content.substr(std::min(content.length(), 2 + beg->length())));
           if (boxed.is_type(user_type<std::string>())) {
             std::string result = boxed_cast<std::string>(boxed);
             if (!result.empty()) outp.addMessage(result);
@@ -362,7 +362,7 @@ struct StubCommand : Command {
         try {
           auto ret = selector.results(orig);
           if (ret.empty()) {
-            auto boxed = it2->second->execute({ orig }, {}, content.substr(std::min(content.length(), 1 + beg->length())));
+            auto boxed = it2->second->execute({ orig }, {}, content.substr(std::min(content.length(), 2 + beg->length())));
             if (boxed.is_type(user_type<std::string>())) {
               std::string result = boxed_cast<std::string>(boxed);
               if (!result.empty()) outp.addMessage(result);
