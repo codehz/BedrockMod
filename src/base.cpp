@@ -50,6 +50,7 @@ std::function<bool(ServerPlayer &sp, ItemInstance &, BlockPos const &)> playerUs
 std::function<bool(Entity &e, Vec3 const &, float range)> entityExplode;
 std::function<bool(ServerPlayer &sp, Entity &e, Vec3 const &)> playerInteract;
 std::function<bool(ServerPlayer &sp, Entity &e)> playerAttack;
+std::function<int(ServerPlayer &sp, std::string &ability)> checkAbility;
 
 TInstanceHook(int, _ZN8GameMode12destroyBlockERK8BlockPosa, GameMode, BlockPos const &pos, signed char flag) {
   try {
@@ -123,6 +124,21 @@ TInstanceHook(int, _ZN8GameMode6attackER6Entity, GameMode, Entity &ent) {
   } catch (std::exception const &e) {
     Log::error("PlayerAction", "%s", e.what());
     return original(this, ent);
+  }
+}
+
+TInstanceHook(bool, _ZN6Player13canUseAbilityERKSs, Player, std::string &abi) {
+  try {
+    if (checkAbility) {
+      switch (checkAbility(*reinterpret_cast<ServerPlayer *>(this), abi)) {
+      case 1: return true;
+      case 0: return false;
+      }
+    }
+    return original(this, abi);
+  } catch (std::exception const &e) {
+    Log::error("PlayerAction", "%s", e.what());
+    return original(this, abi);
   }
 }
 
@@ -215,6 +231,7 @@ extern "C" void mod_init() {
   m->add(fun([](decltype(entityExplode) fn) { entityExplode = fn; }), "onEntityExplode");
   m->add(fun([](decltype(playerInteract) fn) { playerInteract = fn; }), "onPlayerInteract");
   m->add(fun([](decltype(playerAttack) fn) { playerAttack = fn; }), "onPlayerAttack");
+  m->add(fun([](decltype(checkAbility) fn) { checkAbility = fn; }), "onCheckAbility");
   m->add(fun([](Player &player) -> mce::UUID { return *(mce::UUID *)((char *)&player + uuidoffset); }), "getUUID");
   m->add(fun(&kickPlayer), "kick");
 

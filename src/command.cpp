@@ -204,15 +204,15 @@ enum struct CommandOriginType {
 
 struct CommandOrigin {
   virtual ~CommandOrigin();
-  virtual void getRequestId()               = 0;
-  virtual void getName()                    = 0;
-  virtual void getBlockPosition()           = 0;
-  virtual void getWorldPosition()           = 0;
-  virtual Level *getLevel() const           = 0;
-  virtual void *getDimension()              = 0;
-  virtual Entity *getEntity() const         = 0;
-  virtual void *getPermissionsLevel() const = 0;
-  virtual void *clone() const               = 0;
+  virtual void getRequestId()             = 0;
+  virtual void getName()                  = 0;
+  virtual void getBlockPosition()         = 0;
+  virtual void getWorldPosition()         = 0;
+  virtual Level *getLevel() const         = 0;
+  virtual void *getDimension()            = 0;
+  virtual Entity *getEntity() const       = 0;
+  virtual int getPermissionsLevel() const = 0;
+  virtual void *clone() const             = 0;
   virtual bool canCallHiddenCommands() const;
   virtual bool hasChatPerms() const;
   virtual bool hasTellPerms() const;
@@ -237,6 +237,7 @@ struct CommandSender {
     } else
       throw std::runtime_error("CommandOrigin is not player!");
   }
+  int getPermissionsLevel() { return orig->getPermissionsLevel(); }
 };
 
 void replaceAll(std::string &str, const std::string &from, const std::string &to) {
@@ -334,6 +335,10 @@ struct StubCommand : Command {
       std::istream_iterator<std::string> beg(buf), end(buf);
       auto it = CustomCommandMap.find(*beg);
       if (it != CustomCommandMap.end()) {
+        if (it->second->perm < orig.getPermissionsLevel()) {
+          outp.error("Permission Denied");
+          return;
+        }
         try {
           auto boxed = it->second->execute({ orig }, content.substr(1 + beg->length()));
           if (boxed.is_type(user_type<std::string>())) {
@@ -350,6 +355,10 @@ struct StubCommand : Command {
       }
       auto it2 = CustomCommandWithPlayerSelectorMap.find(*beg);
       if (it2 != CustomCommandWithPlayerSelectorMap.end()) {
+        if (it->second->perm < orig.getPermissionsLevel()) {
+          outp.error("Permission Denied");
+          return;
+        }
         try {
           auto ret = selector.results(orig);
           if (ret.empty()) {
@@ -429,6 +438,12 @@ defcmd2(std::string name, std::string desc, unsigned char flag, unsigned char pe
 
 extern "C" void mod_init() {
   ModulePtr m(new Module());
+  utility::add_class<CommandSender>(*m, "CommandOrigin", {},
+                                    {
+                                        { fun(&CommandSender::isPlayer), "isPlayer" },
+                                        { fun(&CommandSender::getPlayer), "getPlayer" },
+                                        { fun(&CommandSender::getPermissionsLevel), "getPermissionsLevel" },
+                                    });
   m->add(user_type<CommandSender>(), "CommandOrigin");
   m->add(fun(&CommandSender::isPlayer), "isPlayer");
   m->add(fun(&CommandSender::getPlayer), "getPlayer");
