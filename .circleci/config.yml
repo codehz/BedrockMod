@@ -16,7 +16,7 @@ jobs:
       - run:
           name: package
           command:
-            cd /data/projects/out
+            cd /data/projects/out &&
             tar cvf mods.tar.xz *.so
       - store_artifacts:
           path: /data/projects/out/mods.tar.xz
