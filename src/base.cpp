@@ -48,6 +48,7 @@ struct ServerInstance {
 std::function<bool(ServerPlayer &sp, BlockPos const &)> playerDestroy;
 std::function<bool(ServerPlayer &sp, ItemInstance &, BlockPos const &)> playerUseItem;
 std::function<bool(Entity &e, Vec3 const &, float range)> entityExplode;
+std::function<bool(ServerPlayer &sp, Entity &e, Vec3 const &)> playerInteract;
 
 TInstanceHook(int, _ZN8GameMode12destroyBlockERK8BlockPosa, GameMode, BlockPos const &pos, signed char flag) {
   try {
@@ -104,6 +105,16 @@ TInstanceHook(void *, _ZN5Level7explodeER11BlockSourceP6EntityRK4Vec3fbbfb, Leve
   }
 }
 
+TInstanceHook(int, _ZN8GameMode8interactER6EntityRK4Vec3, GameMode, Entity &ent, Vec3 const &pos) {
+  try {
+    if (!playerInteract || playerInteract(this->player, ent, pos)) { return original(this, ent, pos); }
+    return 0;
+  } catch (std::exception const &e) {
+    Log::error("PlayerAction", "%s", e.what());
+    return original(this, ent, pos);
+  }
+}
+
 extern "C" void mod_set_server(ServerInstance *si) {
   si->minecraft->activateWhitelist();
   mc = si->minecraft;
@@ -151,7 +162,7 @@ extern "C" void mod_init() {
   m->add(fun([](Entity &entity) -> std::vector<std::string> {
            std::vector<std::string> temp;
            entity.getDebugText(temp);
-          //  for (auto item : temp) { Log::trace("Entity", "::%s", item.c_str()); }
+           //  for (auto item : temp) { Log::trace("Entity", "::%s", item.c_str()); }
            return temp;
          }),
          "getDebugText");
@@ -185,10 +196,13 @@ extern "C" void mod_init() {
          }),
          "forEachPlayer");
   utility::add_class<ItemInstance>(*m, "ItemInstance", {},
-                                   { { fun(&ItemInstance::getName), "getName" }, { fun(&ItemInstance::getCustomName), "getCustomName" } });
+                                   { { fun(&ItemInstance::getName), "getName" },
+                                     { fun(&ItemInstance::getCustomName), "getCustomName" },
+                                     { fun(&ItemInstance::isNull), "isNull" } });
   m->add(fun([](decltype(playerDestroy) fn) { playerDestroy = fn; }), "onPlayerDestroy");
   m->add(fun([](decltype(playerUseItem) fn) { playerUseItem = fn; }), "onPlayerUseItem");
   m->add(fun([](decltype(entityExplode) fn) { entityExplode = fn; }), "onEntityExplode");
+  m->add(fun([](decltype(playerInteract) fn) { playerInteract = fn; }), "onPlayerInteract");
   m->add(fun([](Player &player) -> mce::UUID { return *(mce::UUID *)((char *)&player + uuidoffset); }), "getUUID");
   m->add(fun(&kickPlayer), "kick");
 

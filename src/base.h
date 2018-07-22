@@ -113,6 +113,7 @@ struct Level {
 enum struct InputMode { UNK };
 
 struct ItemInstance {
+  bool isNull() const;
   std::string getName() const;
   std::string getCustomName() const;
 };
