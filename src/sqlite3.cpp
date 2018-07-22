@@ -72,7 +72,7 @@ struct Sqlite3Stmt {
     switch (type) {
     case SQLITE_INTEGER: return Boxed_Value(sqlite3_column_int64(stmt, col));
     case SQLITE_FLOAT: return Boxed_Value(sqlite3_column_double(stmt, col));
-    case SQLITE3_TEXT: return Boxed_Value(std::string(reinterpret_cast<const char*>(sqlite3_column_text(stmt, col))));
+    case SQLITE3_TEXT: return Boxed_Value(std::string(reinterpret_cast<const char *>(sqlite3_column_text(stmt, col))));
     default: return Boxed_Value(nullptr);
     }
   }
@@ -96,6 +96,8 @@ struct Sqlite3 {
       sqlite3_free(err);
     }
   }
+  Sqlite3(sqlite3 *db)
+      : db(db) {}
   Sqlite3(Sqlite3 const &) = delete;
   Sqlite3 &operator=(Sqlite3 const &) = delete;
   ~Sqlite3() { sqlite3_close(db); }
@@ -137,7 +139,10 @@ struct Sqlite3 {
   }
 };
 
-Sqlite3 global{ "user/chai/master.db" }, world{ "worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/chai.db" }, memdb{ ":memory:" };
+extern "C" sqlite3 *getMasterDB();
+
+Sqlite3 global{ getMasterDB() }, world{ "worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/chai.db" },
+    memdb{ ":memory:" };
 
 extern "C" void mod_init() {
   ModulePtr m(new Module());
