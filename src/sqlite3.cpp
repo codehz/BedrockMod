@@ -125,7 +125,7 @@ struct Sqlite3 {
       sqlite3_free((void *)msg);
     }
     char *err = 0;
-    sqlite3_exec(db, "PRAGMA synchronous = OFF; PRAGMA journal_mode = MEMORY;", nullptr, nullptr, &err);
+    sqlite3_exec(db, "PRAGMA synchronous = OFF; PRAGMA journal_mode = MEMORY; PRAGMA foreign_keys = ON;", nullptr, nullptr, &err);
     if (err != nullptr) {
       Log::error("Sqlite3", "%s: %s", name.c_str(), err);
       sqlite3_free(err);
@@ -170,8 +170,8 @@ struct Sqlite3 {
     sqlite3_stmt *stmt;
     auto err = sqlite3_prepare_v2(db, sql.c_str(), -1, &stmt, nullptr);
     if (err != SQLITE_OK) {
-      Log::error("Sqlite3", "prepare(%s) Err: %s", sql.c_str(), sqlite3_errstr(err));
-      throw Sqlite3Error(sqlite3_errstr(err));
+      Log::error("Sqlite3", "prepare(%s) Err: %s", sql.c_str(), sqlite3_errmsg(db));
+      throw Sqlite3Error(sqlite3_errmsg(db));
     }
     return std::make_shared<Sqlite3Stmt>(stmt);
   }
@@ -179,7 +179,7 @@ struct Sqlite3 {
 
 extern "C" sqlite3 *getMasterDB();
 
-Sqlite3 global{ getMasterDB() }, world{ "worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/chai.db" }, memdb{ ":memory:" };
+Sqlite3 profile{ getMasterDB() }, world{ "worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/chai.db" }, memdb{ ":memory:" };
 
 extern "C" void mod_init() {
   ModulePtr m(new Module());
@@ -196,7 +196,7 @@ extern "C" void mod_init() {
                                     { fun(&Sqlite3Stmt::get), "get" },
                                     { fun(&Sqlite3Stmt::bind), "bind" },
                                     { fun(&Sqlite3Stmt::bindNamed), "bind" } });
-  m->add_global_const(const_var(&global), "GlobalDB");
+  m->add_global_const(const_var(&profile), "ProfileDB");
   m->add_global_const(const_var(&world), "WorldDB");
   m->add_global_const(const_var(&memdb), "MemDB");
 
