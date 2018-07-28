@@ -86,7 +86,7 @@ struct InputControl : BaseControl {
     JSON ret = BaseControl::toJSON();
 
     ret["placeholder"]  = JSON(placeholder);
-    ret["defaultValue"] = JSON(defaultValue);
+    ret["default"] = JSON(defaultValue);
     return ret;
   }
 };
@@ -101,7 +101,7 @@ struct ToggleControl : BaseControl {
   JSON toJSON() const {
     JSON ret = BaseControl::toJSON();
 
-    ret["defaultValue"] = JSON(defaultValue);
+    ret["default"] = JSON(defaultValue);
     return ret;
   }
 };
@@ -122,7 +122,7 @@ struct SliderControl : BaseControl {
     ret["min"]          = JSON(min);
     ret["max"]          = JSON(max);
     ret["step"]         = JSON(step);
-    ret["defaultValue"] = JSON(defaultValue);
+    ret["default"] = JSON(defaultValue);
     return ret;
   }
 };
@@ -140,7 +140,7 @@ struct StepsControl : BaseControl {
 
     int index = 0;
     for (auto step : steps) ret["steps"][index++] = JSON(step);
-    ret["defaultValue"] = JSON(defaultValue);
+    ret["default"] = JSON(defaultValue);
     return ret;
   }
 };
@@ -157,7 +157,7 @@ struct DropdownControl : BaseControl {
 
     int index = 0;
     for (auto option : options) ret["options"][index++] = JSON(option);
-    ret["defaultValue"] = JSON(defaultValue);
+    ret["default"] = JSON(defaultValue);
     return ret;
   }
 };
