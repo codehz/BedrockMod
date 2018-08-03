@@ -156,8 +156,26 @@ extern "C" void mod_set_server(ServerInstance *si) {
 constexpr auto movsdoffset   = 38;
 const static auto uuidoffset = *(short *)((char *)dlsym(MinecraftHandle(), "_ZN20MinecraftScreenModel18getLocalPlayerUUIDEv") + movsdoffset);
 
+struct PlayerMap {
+  std::unordered_map<mce::UUID, Boxed_Value> datas;
+  Boxed_Value &operator[](ServerPlayer &player) { return datas[*(mce::UUID *)((char *)&player + uuidoffset)]; }
+  bool contains(ServerPlayer &player) const { return datas.count(*(mce::UUID *)((char *)&player + uuidoffset)) != 0; }
+  void erase(ServerPlayer &player) { datas.erase(*(mce::UUID *)((char *)&player + uuidoffset)); }
+  void clear() { datas.clear(); }
+  PlayerMap() {}
+};
+
 extern "C" void mod_init() {
   ModulePtr m(new Module());
+  utility::add_class<PlayerMap>(*m, "PlayerMap", { constructor<PlayerMap()>() },
+                                { { fun(&PlayerMap::operator[]), "[]" },
+                                  { fun(&PlayerMap::contains), "contains" },
+                                  { fun(&PlayerMap::erase), "erase" },
+                                  { fun(&PlayerMap::clear), "clear" } });
+  utility::add_class<Item>(
+      *m, "Item", {},
+      { { fun(&Item::getItem), "getItem" }, { fun(&Item::findItem), "findItem" }, { fun(&Item::getId), "getId" }, { fun(&Item::operator==), "==" } });
+  m->add_global_const(const_var(&Item::mItemLookupMap), "ItemMap");
   m->add(fun([]() -> BlockPos const & {
            if (!mc) throw std::runtime_error("Minecraft is not loaded");
            return mc->getLevel()->getDefaultSpawn();
@@ -168,11 +186,15 @@ extern "C" void mod_init() {
            mc->getLevel()->setDefaultSpawn(pos);
          }),
          "getDefaultSpawn");
-  utility::add_class<mce::UUID>(*m, "UUID", {}, { { fun(&mce::UUID::asString), "to_string" } });
-  utility::add_class<Vec3>(*m, "Vec3", { constructor<Vec3(float, float, float)>(), constructor<Vec3(BlockPos const &)>() },
+  utility::add_class<mce::UUID>(
+      *m, "UUID", { constructor<mce::UUID(const mce::UUID &)>() },
+      { { fun(&mce::UUID::asString), "to_string" }, { fun(&mce::UUID::operator==), "==" }, { fun(&mce::UUID::operator!=), "!=" } });
+  utility::add_class<Vec3>(*m, "Vec3",
+                           { constructor<Vec3(float, float, float)>(), constructor<Vec3(BlockPos const &)>(), constructor<Vec3(Vec3 const &)>() },
                            { { fun(&Vec3::x), "x" }, { fun(&Vec3::y), "y" }, { fun(&Vec3::z), "z" } });
-  utility::add_class<BlockPos>(*m, "BlockPos", { constructor<BlockPos(int, int, int)>(), constructor<BlockPos(Vec3 const &)>() },
-                               { { fun(&BlockPos::x), "x" }, { fun(&BlockPos::y), "y" }, { fun(&BlockPos::z), "z" } });
+  utility::add_class<BlockPos>(
+      *m, "BlockPos", { constructor<BlockPos(int, int, int)>(), constructor<BlockPos(Vec3 const &)>(), constructor<BlockPos(BlockPos const &)>() },
+      { { fun(&BlockPos::x), "x" }, { fun(&BlockPos::y), "y" }, { fun(&BlockPos::z), "z" } });
   m->add(user_type<Entity>(), "Entity");
   m->add(user_type<Mob>(), "Mob");
   m->add(base_class<Entity, Mob>());
@@ -200,6 +222,7 @@ extern "C" void mod_init() {
          }),
          "getDebugText");
   m->add(fun([](Entity &entity) -> std::string { return entity.getNameTag(); }), "getNameTag");
+  m->add(fun(&Player::getCommandPermissionLevel), "getPermissionLevel");
   m->add(fun(onPlayerAdded), "onPlayerAdded");
   m->add(fun(onPlayerJoined), "onPlayerJoined");
   m->add(fun(onPlayerLeft), "onPlayerLeft");
@@ -231,7 +254,8 @@ extern "C" void mod_init() {
   utility::add_class<ItemInstance>(*m, "ItemInstance", {},
                                    { { fun(&ItemInstance::getName), "getName" },
                                      { fun(&ItemInstance::getCustomName), "getCustomName" },
-                                     { fun(&ItemInstance::isNull), "isNull" } });
+                                     { fun(&ItemInstance::isNull), "isNull" },
+                                     { fun(&ItemInstance::getId), "getId" } });
   m->add(fun([](decltype(playerDestroy) fn) { playerDestroy = fn; }), "onPlayerDestroy");
   m->add(fun([](decltype(playerUseItem) fn) { playerUseItem = fn; }), "onPlayerUseItem");
   m->add(fun([](decltype(entityExplode) fn) { entityExplode = fn; }), "onEntityExplode");

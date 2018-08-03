@@ -9,6 +9,24 @@
 #include <minecraft/net/NetworkIdentifier.h>
 #include <minecraft/net/UUID.h>
 
+#include <log.h>
+#include <memory>
+#include <unordered_map>
+
+struct Item {
+  static std::unordered_map<std::string, std::unique_ptr<Item>> mItemLookupMap;
+  unsigned short filler[0x1000];
+  static Item *getItem(short id);
+  static Item *findItem(std::string str) {
+    std::unique_ptr<Item> &ret = mItemLookupMap[str];
+    return ret ? ret.get() : nullptr;
+  };
+  Item(Item const &) = delete;
+  Item &operator=(Item const &) = delete;
+  unsigned short getId() const { return filler[9]; }
+  bool operator==(Item const &rhs) const { return this == &rhs; }
+};
+
 struct EntityUniqueID {
   long long high, low;
 };
@@ -26,6 +44,10 @@ struct BlockPos {
       , y(y)
       , z(z) {}
   BlockPos(Vec3 const &);
+  BlockPos(BlockPos const &p)
+      : x(p.x)
+      , y(p.y)
+      , z(p.z) {}
 };
 
 struct Vec3 {
@@ -69,6 +91,16 @@ struct Packet {
 };
 struct Level;
 
+struct BlockEntity {
+  void setData(int val);
+  int getData() const;
+  void setChanged();
+};
+
+struct BlockSource {
+  BlockEntity &getBlockEntity(BlockPos const &);
+};
+
 struct Entity {
   const std::string &getNameTag() const;
   EntityRuntimeID getRuntimeID() const;
@@ -77,6 +109,7 @@ struct Entity {
   Level *getLevel() const;
   int getDimensionId() const;
   void getDebugText(std::vector<std::string> &);
+  BlockSource &getRegion() const;
 };
 
 struct Mob : Entity {
@@ -88,6 +121,7 @@ struct Player : Mob {
   NetworkIdentifier const &getClientId() const;
   unsigned char getClientSubId() const;
   BlockPos getSpawnPosition();
+  int getCommandPermissionLevel() const;
 };
 
 struct ServerPlayer : Player {
@@ -114,6 +148,7 @@ enum struct InputMode { UNK };
 
 struct ItemInstance {
   bool isNull() const;
+  short getId() const;
   std::string getName() const;
   std::string getCustomName() const;
 };
