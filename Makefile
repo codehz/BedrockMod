@@ -5,7 +5,7 @@ LDFLAGS = -L./lib -lminecraftpe
 LPLAYER = -Lout -lsupport
 LCHAI = -Lout -lchai
 
-MODS = chat command form base test tick prop sqlite3
+MODS = chat command form base test tick prop sqlite3 dbus_chat
 
 $(shell mkdir -p objs deps out ref >/dev/null)
 
