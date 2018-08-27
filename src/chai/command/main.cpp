@@ -18,7 +18,7 @@
 #include <minecraft/command/CommandParameterData.h>
 #include <minecraft/command/CommandRegistry.h>
 
-#include "base.h"
+#include <base.h>
 
 using namespace json;
 using namespace chaiscript;

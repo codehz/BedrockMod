@@ -11,7 +11,7 @@
 
 #include <minecraft/net/NetworkIdentifier.h>
 
-#include "base.h"
+#include <base.h>
 
 using namespace chaiscript;
 

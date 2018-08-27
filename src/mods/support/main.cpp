@@ -4,7 +4,7 @@
 #include <fix/string.h>
 #include <log.h>
 
-#include "base.h"
+#include <base.h>
 
 std::unordered_map<NetworkIdentifier, std::vector<ServerPlayer *>> playermap;
 std::vector<std::function<void(ServerPlayer &)>> addedHandles, joinedHandles, leftsHandles;

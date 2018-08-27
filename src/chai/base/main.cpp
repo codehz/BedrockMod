@@ -7,7 +7,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "base.h"
+#include <base.h>
 
 using namespace chaiscript;
 

@@ -1,6 +1,6 @@
 test
 lib
 out
-deps
-objs
+dep
+obj
 ref

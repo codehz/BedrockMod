@@ -6,11 +6,11 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "make -j",
+      "command": "make -j8",
       "options": {
         "env": {
-          "CPP": "/data/ndk/bin/i686-linux-android-g++",
-          "CC": "/data/ndk/bin/i686-linux-android-gcc"
+          "CXX": "/opt/mcpe-sdk/bin/i686-linux-android-g++",
+          "CC": "/opt/mcpe-sdk/bin/i686-linux-android-gcc"
         }
       },
       "group": {
