@@ -1,6 +1,6 @@
-test
-lib
-out
-dep
-obj
-ref
+/test
+/lib
+/out
+/dep
+/obj
+/ref
