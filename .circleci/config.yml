@@ -11,7 +11,7 @@ jobs:
           name: build
           command: make
           environment:
-            CPP: /data/sdk/bin/i686-linux-android-g++
+            CXX: /data/sdk/bin/i686-linux-android-g++
             CC : /data/sdk/bin/i686-linux-android-gcc
       - run:
           name: package
