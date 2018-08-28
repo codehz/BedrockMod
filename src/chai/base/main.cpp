@@ -185,7 +185,7 @@ extern "C" void mod_init() {
            if (!mc) throw std::runtime_error("Minecraft is not loaded");
            mc->getLevel()->setDefaultSpawn(pos);
          }),
-         "getDefaultSpawn");
+         "setDefaultSpawn");
   utility::add_class<mce::UUID>(
       *m, "UUID", { constructor<mce::UUID(const mce::UUID &)>() },
       { { fun(&mce::UUID::asString), "to_string" }, { fun(&mce::UUID::operator==), "==" }, { fun(&mce::UUID::operator!=), "!=" } });
