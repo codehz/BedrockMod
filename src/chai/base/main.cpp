@@ -12,15 +12,15 @@
 using namespace chaiscript;
 
 struct TeleportCommand {
-  void teleport(Entity &entity, Vec3 pos, Vec3 *center, DimensionId dim) const;
+  void teleport(Actor &actor, Vec3 pos, Vec3 *center, DimensionId dim) const;
 };
 
-void teleport(Entity &entity, Vec3 target, int dim, Vec3 *center) {
+void teleport(Actor &actor, Vec3 target, int dim, Vec3 *center) {
   auto real = center != nullptr ? *center : target;
-  ((TeleportCommand *)nullptr)->teleport(entity, target, &real, { dim });
+  ((TeleportCommand *)nullptr)->teleport(actor, target, &real, { dim });
 }
-void teleport1(Entity &entity, Vec3 target, int dim) { teleport(entity, target, dim, nullptr); }
-void teleport2(Entity &entity, Vec3 target) { teleport(entity, target, entity.getDimensionId(), nullptr); }
+void teleport1(Actor &actor, Vec3 target, int dim) { teleport(actor, target, dim, nullptr); }
+void teleport2(Actor &actor, Vec3 target) { teleport(actor, target, actor.getDimensionId(), nullptr); }
 
 struct Whitelist {};
 
@@ -39,6 +39,7 @@ struct ServerNetworkHandler {
 };
 
 struct Minecraft {
+  void init(bool);
   void activateWhitelist();
   ServerNetworkHandler *getServerNetworkHandler();
   Level *getLevel() const;
@@ -46,16 +47,11 @@ struct Minecraft {
 
 Minecraft *mc;
 
-struct ServerInstance {
-  char filler[0x10];
-  Minecraft *minecraft;
-};
-
 std::function<bool(ServerPlayer &sp, BlockPos const &)> playerDestroy;
 std::function<bool(ServerPlayer &sp, ItemInstance &, BlockPos const &)> playerUseItem;
-std::function<bool(Entity &e, Vec3 const &, float range)> entityExplode;
-std::function<bool(ServerPlayer &sp, Entity &e, Vec3 const &)> playerInteract;
-std::function<bool(ServerPlayer &sp, Entity &e)> playerAttack;
+std::function<bool(Actor &e, Vec3 const &, float range)> entityExplode;
+std::function<bool(ServerPlayer &sp, Actor &e, Vec3 const &)> playerInteract;
+std::function<bool(ServerPlayer &sp, Actor &e)> playerAttack;
 std::function<int(ServerPlayer &sp, std::string &ability)> checkAbility;
 
 TInstanceHook(int, _ZN8GameMode12destroyBlockERK8BlockPosa, GameMode, BlockPos const &pos, signed char flag) {
@@ -102,18 +98,18 @@ TInstanceHook(int, _ZN12SurvivalMode9useItemOnER12ItemInstanceRK8BlockPosaRK4Vec
 
 struct BlockSource;
 
-TInstanceHook(void *, _ZN5Level7explodeER11BlockSourceP6EntityRK4Vec3fbbfb, Level, BlockSource &bs, Entity *entity, Vec3 const &pos, float range,
+TInstanceHook(void *, _ZN5Level7explodeER11BlockSourceP5ActorRK4Vec3fbbfb, Level, BlockSource &bs, Actor *actor, Vec3 const &pos, float range,
               bool flag1, bool flag2, float value, bool flag3) {
   try {
-    if (!entityExplode || entityExplode(*entity, pos, range)) { return original(this, bs, entity, pos, range, flag1, flag2, value, flag3); }
+    if (!entityExplode || entityExplode(*actor, pos, range)) { return original(this, bs, actor, pos, range, flag1, flag2, value, flag3); }
     return nullptr;
   } catch (std::exception const &e) {
     Log::error("EntityExplode", "%s", e.what());
-    return original(this, bs, entity, pos, range, flag1, flag2, value, flag3);
+    return original(this, bs, actor, pos, range, flag1, flag2, value, flag3);
   }
 }
 
-TInstanceHook(int, _ZN8GameMode8interactER6EntityRK4Vec3, GameMode, Entity &ent, Vec3 const &pos) {
+TInstanceHook(int, _ZN8GameMode8interactER5ActorRK4Vec3, GameMode, Actor &ent, Vec3 const &pos) {
   try {
     if (!playerInteract || playerInteract(this->player, ent, pos)) { return original(this, ent, pos); }
     return 0;
@@ -123,7 +119,7 @@ TInstanceHook(int, _ZN8GameMode8interactER6EntityRK4Vec3, GameMode, Entity &ent,
   }
 }
 
-TInstanceHook(int, _ZN8GameMode6attackER6Entity, GameMode, Entity &ent) {
+TInstanceHook(int, _ZN8GameMode6attackER5Actor, GameMode, Actor &ent) {
   try {
     if (!playerAttack || playerAttack(this->player, ent)) { return original(this, ent); }
     return 0;
@@ -148,9 +144,15 @@ TInstanceHook(bool, _ZN6Player13canUseAbilityERKSs, Player, std::string &abi) {
   }
 }
 
+struct ServerInstance;
+
 extern "C" void mod_set_server(ServerInstance *si) {
-  si->minecraft->activateWhitelist();
-  mc = si->minecraft;
+  mc->activateWhitelist();
+}
+
+TInstanceHook(void, _ZN9Minecraft4initEb, Minecraft, bool v) {
+  original(this, v);
+  mc = this;
 }
 
 constexpr auto movsdoffset   = 38;
@@ -174,8 +176,7 @@ extern "C" void mod_init() {
                                   { fun(&PlayerMap::clear), "clear" } });
   utility::add_class<Item>(
       *m, "Item", {},
-      { { fun(&Item::getItem), "getItem" }, { fun(&Item::findItem), "findItem" }, { fun(&Item::getId), "getId" }, { fun(&Item::operator==), "==" } });
-  m->add_global_const(const_var(&Item::mItemLookupMap), "ItemMap");
+      { { fun(&ItemRegistry::getItem), "getItem" }, { fun(&ItemRegistry::findItem), "findItem" }, { fun(&Item::getId), "getId" }, { fun(&Item::operator==), "==" } });
   m->add(fun([]() -> BlockPos const & {
            if (!mc) throw std::runtime_error("Minecraft is not loaded");
            return mc->getLevel()->getDefaultSpawn();
@@ -195,33 +196,33 @@ extern "C" void mod_init() {
   utility::add_class<BlockPos>(
       *m, "BlockPos", { constructor<BlockPos(int, int, int)>(), constructor<BlockPos(Vec3 const &)>(), constructor<BlockPos(BlockPos const &)>() },
       { { fun(&BlockPos::x), "x" }, { fun(&BlockPos::y), "y" }, { fun(&BlockPos::z), "z" } });
-  m->add(user_type<Entity>(), "Entity");
+  m->add(user_type<Actor>(), "Actor");
   m->add(user_type<Mob>(), "Mob");
-  m->add(base_class<Entity, Mob>());
+  m->add(base_class<Actor, Mob>());
   m->add(user_type<Player>(), "Player");
-  m->add(base_class<Entity, Player>());
+  m->add(base_class<Actor, Player>());
   m->add(base_class<Mob, Player>());
   m->add(user_type<ServerPlayer>(), "ServerPlayer");
-  m->add(base_class<Entity, ServerPlayer>());
+  m->add(base_class<Actor, ServerPlayer>());
   m->add(base_class<Mob, ServerPlayer>());
   m->add(base_class<Player, ServerPlayer>());
   m->add(fun(&mce::UUID::fromString), "UUID");
   m->add(fun([](std::function<bool(mce::UUID &)> const &fn) { whitelistFilter = fn; }), "setWhitelistFilter");
   m->add(fun(&ServerPlayer::sendNetworkPacket), "sendPacket");
-  m->add(fun(&Entity::getPos), "getPos");
-  m->add(fun(&Entity::getDimensionId), "getDim");
+  m->add(fun(&Actor::getPos), "getPos");
+  m->add(fun(&Actor::getDimensionId), "getDim");
   m->add(fun(&Player::getSpawnPosition), "getSpawnPos");
   m->add(fun(teleport), "teleport");
   m->add(fun(teleport1), "teleport");
   m->add(fun(teleport2), "teleport");
-  m->add(fun([](Entity &entity) -> std::vector<std::string> {
+  m->add(fun([](Actor &actor) -> std::vector<std::string> {
            std::vector<std::string> temp;
-           entity.getDebugText(temp);
-           //  for (auto item : temp) { Log::trace("Entity", "::%s", item.c_str()); }
+           actor.getDebugText(temp);
+           //  for (auto item : temp) { Log::trace("Actor", "::%s", item.c_str()); }
            return temp;
          }),
          "getDebugText");
-  m->add(fun([](Entity &entity) -> std::string { return entity.getNameTag(); }), "getNameTag");
+  m->add(fun([](Actor &actor) -> std::string { return actor.getNameTag(); }), "getNameTag");
   m->add(fun(&Player::getCommandPermissionLevel), "getPermissionLevel");
   m->add(fun(onPlayerAdded), "onPlayerAdded");
   m->add(fun(onPlayerJoined), "onPlayerJoined");

@@ -13,14 +13,19 @@
 #include <memory>
 #include <unordered_map>
 
-struct Item {
+struct Item;
+
+struct ItemRegistry {
   static std::unordered_map<std::string, std::unique_ptr<Item>> mItemLookupMap;
-  unsigned short filler[0x1000];
   static Item *getItem(short id);
   static Item *findItem(std::string str) {
     std::unique_ptr<Item> &ret = mItemLookupMap[str];
     return ret ? ret.get() : nullptr;
   };
+};
+
+struct Item {
+  unsigned short filler[0x1000];
   Item(Item const &) = delete;
   Item &operator=(Item const &) = delete;
   unsigned short getId() const { return filler[9]; }
@@ -101,7 +106,7 @@ struct BlockSource {
   BlockEntity &getBlockEntity(BlockPos const &);
 };
 
-struct Entity {
+struct Actor {
   const std::string &getNameTag() const;
   EntityRuntimeID getRuntimeID() const;
   Vec2 const &getRotation() const;
@@ -112,7 +117,7 @@ struct Entity {
   BlockSource &getRegion() const;
 };
 
-struct Mob : Entity {
+struct Mob : Actor {
   float getYHeadRot() const;
 };
 
@@ -170,8 +175,8 @@ struct GameMode {
   virtual long double getPickRange(InputMode const &, bool);
   virtual int useItem(ItemInstance &);
   virtual int useItemOn(ItemInstance &, BlockPos const &, signed char, Vec3 const &, ItemUseCallback *);
-  virtual int interact(Entity &, Vec3 const &);
-  virtual int attack(Entity &);
+  virtual int interact(Actor &, Vec3 const &);
+  virtual int attack(Actor &);
   virtual int releaseUsingItem(void);
   virtual int setTrialMode(bool);
   virtual int isInTrialMode(void);

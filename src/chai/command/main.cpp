@@ -173,12 +173,12 @@ void regCommand(T const &cmd, std::vector<std::string> &enumValues, std::vector<
   commands.push_back(commandData);
 }
 
-TClasslessInstanceHook(void *, _ZN23AvailableCommandsPacketC2ERKSt6vectorISsSaISsEES4_OS0_INS_8EnumDataESaIS5_EEOS0_INS_11CommandDataESaIS9_EE,
+TClasslessInstanceHook(void *, _ZN23AvailableCommandsPacketC2ERKSt6vectorISsSaISsEES4_OS0_INS_8EnumDataESaIS5_EEOS0_INS_11CommandDataESaIS9_EEOS0_INS_12SoftEnumDataESaISD_EE,
                        std::vector<std::string> &enumValues, std::vector<std::string> &postfixs, std::vector<EnumData> &enumdatas,
-                       std::vector<CommandData> &commands) {
+                       std::vector<CommandData> &commands, std::vector<EnumData> &softenumdatas) {
   for (auto cmd : CustomCommandMap) { regCommand(cmd, enumValues, postfixs, enumdatas, commands); }
   for (auto cmd : CustomCommandWithPlayerSelectorMap) { regCommand(cmd, enumValues, postfixs, enumdatas, commands); }
-  return original(this, enumValues, postfixs, enumdatas, commands);
+  return original(this, enumValues, postfixs, enumdatas, commands, softenumdatas);
 }
 
 struct CommandContext {
@@ -210,7 +210,7 @@ struct CommandOrigin {
   virtual void getWorldPosition()         = 0;
   virtual Level *getLevel() const         = 0;
   virtual void *getDimension()            = 0;
-  virtual Entity *getEntity() const       = 0;
+  virtual Actor *getEntity() const       = 0;
   virtual int getPermissionsLevel() const = 0;
   virtual void *clone() const             = 0;
   virtual bool canCallHiddenCommands() const;
