@@ -138,7 +138,12 @@ struct PacketSender {
   virtual void *sendToClient(NetworkIdentifier const &, Packet const &, unsigned char) = 0;
 };
 
+struct LevelStorage {
+  void save(Actor&);
+};
+
 struct Level {
+  LevelStorage *getLevelStorage();
   ServerPlayer *getPlayer(const std::string &name) const;
   ServerPlayer *getPlayer(mce::UUID const &uuid) const;
   ServerPlayer *getPlayer(EntityUniqueID uuid) const;
