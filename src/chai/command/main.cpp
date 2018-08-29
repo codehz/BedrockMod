@@ -211,7 +211,7 @@ struct CommandOrigin {
   virtual Level *getLevel() const         = 0;
   virtual void *getDimension()            = 0;
   virtual Actor *getEntity() const       = 0;
-  virtual int getPermissionsLevel() const = 0;
+  virtual unsigned char getPermissionsLevel() const = 0;
   virtual void *clone() const             = 0;
   virtual bool canCallHiddenCommands() const;
   virtual bool hasChatPerms() const;
@@ -237,7 +237,7 @@ struct CommandSender {
     } else
       throw std::runtime_error("CommandOrigin is not player!");
   }
-  int getPermissionsLevel() { return orig->getPermissionsLevel(); }
+  unsigned char getPermissionsLevel() { return orig->getPermissionsLevel(); }
 };
 
 void replaceAll(std::string &str, const std::string &from, const std::string &to) {
@@ -337,7 +337,7 @@ struct StubCommand : Command {
       if (it != CustomCommandMap.end()) {
         if (it->second->perm < orig.getPermissionsLevel()) {
           std::stringstream ss;
-          ss << "Permission Denied, Requested Command " << *beg << "(" << it->second->perm << ") But your permissions level is " << orig.getPermissionsLevel() << std::endl;
+          ss << "Permission Denied, Requested Command " << *beg << "(" << (int)it->second->perm << ") But your permissions level is " << (int)orig.getPermissionsLevel() << std::endl;
           outp.error(ss.str());
           return;
         }
