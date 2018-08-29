@@ -9,6 +9,8 @@
 
 #include <sqlite3/sqlite3.h>
 
+#include <sys/stat.h>
+
 using namespace chaiscript;
 using namespace mce;
 
@@ -114,10 +116,38 @@ struct Sqlite3Stmt {
   ~Sqlite3Stmt() { sqlite3_finalize(stmt); }
 };
 
+int createPath(mode_t mode, std::string &path) {
+  struct stat st;
+
+  for (std::string::iterator iter = path.begin(); iter != path.end();) {
+    std::string::iterator newIter = std::find(iter, path.end(), '/');
+    std::string newPath           = std::string(path.begin(), newIter);
+
+    if (stat(newPath.c_str(), &st) != 0) {
+      if (mkdir(newPath.c_str(), mode) != 0 && errno != EEXIST) {
+        Log::error("Sqlite3", "Cannot create folder [%s]: %s", newPath.c_str(), strerror(errno));
+        return -1;
+      }
+    } else if (!S_ISDIR(st.st_mode)) {
+      errno = ENOTDIR;
+      Log::error("Sqlite3", "Path [%s] is not a dir", newPath.c_str());
+      return -1;
+    }
+
+    iter = newIter;
+    if (newIter != path.end()) ++iter;
+  }
+  return 0;
+}
+
 struct Sqlite3 {
   using callback_t = std::function<int(std::map<std::string, std::string> &smap)>;
   sqlite3 *db;
   Sqlite3(std::string name) {
+    if (name != ":memory:") {
+      auto dir = name.substr(0, name.find_last_of("/"));
+      createPath(0755, dir);
+    }
     auto result = sqlite3_open(name.c_str(), &db);
     if (result != SQLITE_OK) {
       auto msg = sqlite3_errmsg(db);
