@@ -336,7 +336,9 @@ struct StubCommand : Command {
       auto it = CustomCommandMap.find(*beg);
       if (it != CustomCommandMap.end()) {
         if (it->second->perm < orig.getPermissionsLevel()) {
-          outp.error("Permission Denied");
+          std::stringstream ss;
+          ss << "Permission Denied, Requested Command " << *beg << "(" << it->second->perm << ") But your permissions level is " << orig.getPermissionsLevel() << std::endl;
+          outp.error(ss.str());
           return;
         }
         try {
