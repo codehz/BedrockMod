@@ -49,7 +49,7 @@ Minecraft *mc;
 
 std::function<bool(ServerPlayer &sp, BlockPos const &)> playerDestroy;
 std::function<bool(ServerPlayer &sp, ItemInstance &, BlockPos const &)> playerUseItem;
-std::function<bool(Actor &e, Vec3 const &, float range)> entityExplode;
+std::function<bool(Actor &e, Vec3 const &, float range)> actorExplode;
 std::function<bool(ServerPlayer &sp, Actor &e, Vec3 const &)> playerInteract;
 std::function<bool(ServerPlayer &sp, Actor &e)> playerAttack;
 std::function<int(ServerPlayer &sp, std::string &ability)> checkAbility;
@@ -101,7 +101,7 @@ struct BlockSource;
 TInstanceHook(void *, _ZN5Level7explodeER11BlockSourceP5ActorRK4Vec3fbbfb, Level, BlockSource &bs, Actor *actor, Vec3 const &pos, float range,
               bool flag1, bool flag2, float value, bool flag3) {
   try {
-    if (!entityExplode || entityExplode(*actor, pos, range)) { return original(this, bs, actor, pos, range, flag1, flag2, value, flag3); }
+    if (!actorExplode || actorExplode(*actor, pos, range)) { return original(this, bs, actor, pos, range, flag1, flag2, value, flag3); }
     return nullptr;
   } catch (std::exception const &e) {
     Log::error("EntityExplode", "%s", e.what());
@@ -259,7 +259,7 @@ extern "C" void mod_init() {
                                      { fun(&ItemInstance::getId), "getId" } });
   m->add(fun([](decltype(playerDestroy) fn) { playerDestroy = fn; }), "onPlayerDestroy");
   m->add(fun([](decltype(playerUseItem) fn) { playerUseItem = fn; }), "onPlayerUseItem");
-  m->add(fun([](decltype(entityExplode) fn) { entityExplode = fn; }), "onEntityExplode");
+  m->add(fun([](decltype(actorExplode) fn) { actorExplode = fn; }), "onActorExplode");
   m->add(fun([](decltype(playerInteract) fn) { playerInteract = fn; }), "onPlayerInteract");
   m->add(fun([](decltype(playerAttack) fn) { playerAttack = fn; }), "onPlayerAttack");
   m->add(fun([](decltype(checkAbility) fn) { checkAbility = fn; }), "onCheckAbility");
