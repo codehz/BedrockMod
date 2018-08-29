@@ -335,7 +335,7 @@ struct StubCommand : Command {
       std::istream_iterator<std::string> beg(buf), end(buf);
       auto it = CustomCommandMap.find(*beg);
       if (it != CustomCommandMap.end()) {
-        if (it->second->perm < orig.getPermissionsLevel()) {
+        if (it->second->perm > orig.getPermissionsLevel()) {
           std::stringstream ss;
           ss << "Permission Denied, Requested Command " << *beg << "(" << (int)it->second->perm << ") But your permissions level is " << (int)orig.getPermissionsLevel() << std::endl;
           outp.error(ss.str());
