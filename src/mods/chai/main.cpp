@@ -62,9 +62,14 @@ extern "C" void mod_init() {
   chai.add(chaiscript::bootstrap::standard_library::map_type<std::map<std::string, std::string>>("StringMap"));
 }
 
+extern "C" {
+const char *mcpelauncher_property_get(const char *name, const char *def);
+}
+
 extern "C" void mod_exec() {
   try {
     chai.use("init.chai");
+    chai.eval_file("worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/init.chai");
   } catch (const chaiscript::exception::eval_error &e) {
     auto print = e.pretty_print();
     Log::error("ChaiSupport", "EvalError: %s", print.c_str());
