@@ -22,7 +22,7 @@ namespace detail {
 template <typename Tag, typename Fn>
 static void define_impl(const char * name, Fn fn)
 {
-    Log::trace("define_impl", "%s", name);
+    Log::trace("guile", "register %s", name);
     using args_t = function_args_t<Fn>;
     constexpr auto args_size = pack_size<args_t>::value;
     constexpr auto has_rest  = std::is_same<pack_last_t<args_t>, scm::args>{};
@@ -32,7 +32,6 @@ static void define_impl(const char * name, Fn fn)
 #if SCM_AUTO_EXPORT
     scm_c_export(name);
 #endif
-    Log::trace("define_impl", "%s done!", name);
 }
 
 } // namespace detail
