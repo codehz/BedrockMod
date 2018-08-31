@@ -1,17 +1,17 @@
 CFLAGSQL = -std=c99 -Iinclude -O3 -fdiagnostics-color=always -fmax-errors=1
-CXXFLAGS = -ffast-math -std=c++14 -Iinclude -DCHAISCRIPT_NO_THREADS -Wno-invalid-offsetof -O3 -fdiagnostics-color=always -fmax-errors=1
+CXXFLAGS = -ffast-math -std=c++14 -Iinclude -Iinclude/guile/2.2 -Iinclude/gmp -DCHAISCRIPT_NO_THREADS -Wno-invalid-offsetof -O3 -fdiagnostics-color=always -fmax-errors=1
 LDFLAGS = -L./lib -lminecraftpe
 
 LPLAYER = -Lout -lsupport
-LCHAI = -Lout -lchai
+LCHAI = -Lout -lscript
 
 MODS = $(shell ls src/mods)
-CHAI_MODS = $(shell ls src/chai)
+SCRIPT_MODS = $(shell ls src/script)
 
 $(shell mkdir -p obj dep out ref >/dev/null)
 
 .PHONY: all
-all: $(addsuffix .so,$(addprefix out/lib,$(MODS)))  $(addsuffix .so,$(addprefix out/chai_,$(CHAI_MODS)))
+all: $(addsuffix .so,$(addprefix out/lib,$(MODS)))  $(addsuffix .so,$(addprefix out/script_,$(SCRIPT_MODS)))
 
 .PHONY: clean
 clean:
@@ -28,13 +28,13 @@ ref/bridge.so: obj/sqlite.o
 out/libsupport.so: obj/fix.o obj/string.o obj/mods/support/main.o lib/libminecraftpe.so
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
-out/chai_sqlite3.so: ref/bridge.so
-out/chai_%.so: obj/chai/%/main.o obj/hack.o out/libsupport.so lib/libminecraftpe.so out/libchai.so
-	@echo LD $@
-	@$(CXX) $(LDFLAGS) $(LPLAYER) $(LCHAI) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lref -l:,$(notdir $(filter ref/%.so,$^)))
-out/libchai.so: obj/fix.o obj/mods/chai/main.o lib/libminecraftpe.so out/libsupport.so
+out/libscript.so: obj/fix.o obj/mods/script/main.o lib/libminecraftpe.so out/libsupport.so
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) $(LPLAYER) -shared -fPIC -o $@ $(filter %.o,$^)
+out/script_sqlite3.so: ref/bridge.so
+out/script_%.so: obj/script/%/main.o obj/hack.o out/libsupport.so lib/libminecraftpe.so out/libscript.so
+	@echo LD $@
+	@$(CXX) $(LDFLAGS) $(LPLAYER) $(LCHAI) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lref -l:,$(notdir $(filter ref/%.so,$^)))
 
 .PRECIOUS: dep/%.d
 dep/%.d: src/%.cpp

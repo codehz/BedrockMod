@@ -3,7 +3,9 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/include"
+                "${workspaceFolder}/include",
+                "${workspaceFolder}/include/guile/2.2",
+                "${workspaceFolder}/include/gmp"
             ],
             "defines": [],
             "compilerPath": "/data/ndk/bin/i686-linux-android-g++",
