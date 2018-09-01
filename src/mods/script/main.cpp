@@ -2,7 +2,6 @@
 #include <dirent.h>
 #include <libguile.h>
 #include <log.h>
-#include <scm/scm.hpp>
 #include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -87,7 +86,7 @@ static std::string formatString(scm::val fmt, scm::args xs) {
 
 static scm::val unwrapString(std::string str) { return scm_from_utf8_string(str.c_str()); }
 
-extern "C" void mod_init() {
+static void init_guile() {
   scm_init_guile();
   scm::type<std::string>("str").constructor(&makeString);
   scm::group("str").define("concat", &concatString).define("format", &formatString);
@@ -103,6 +102,9 @@ extern "C" void mod_init() {
       .define("fatal", &Slog<LogLevel::LOG_FATAL>);
   scm_c_eval_string(R"((set! %load-hook (lambda (filename) (log-trace (str "loader") (str-format "Loading script ~a" filename)))))");
   scm_c_eval_string(R"((set! %load-path '("user/scm/modules" "user/scm/scripts")))");
+}
+
+static void init_chai() {
   chai.add(chaiscript::user_type<LogForChai>(), "LogTy");
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_TRACE>), "trace");
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_INFO>), "info");
@@ -113,6 +115,11 @@ extern "C" void mod_init() {
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_FATAL>), "fatal");
   chai.add_global_const(chaiscript::const_var(LogInstance), "Log");
   chai.add(chaiscript::bootstrap::standard_library::map_type<std::map<std::string, std::string>>("StringMap"));
+}
+
+extern "C" void mod_init() {
+  init_guile();
+  init_chai();
 }
 
 extern "C" {
