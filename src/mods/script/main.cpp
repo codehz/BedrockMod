@@ -112,20 +112,22 @@ extern "C" {
 const char *mcpelauncher_property_get(const char *name, const char *def);
 }
 
-static SCM catch_handler(const char *filename, scm::val key, scm::val xs) {
-  temp_string ex_type{ scm_to_utf8_string(scm_symbol_to_string(key.get())) };
-  auto subr         = scm_list_ref(xs, scm::val{ 0 });
-  auto message      = scm_list_ref(xs, scm::val{ 1 });
-  auto args         = scm_list_ref(xs, scm::val{ 2 });
-  auto message_args = scm_simple_format(SCM_BOOL_F, message, args);
-  SCM formatted_message;
-  if (scm_is_true(subr)) {
-    formatted_message = scm_simple_format(SCM_BOOL_F, scm_from_utf8_string("~s: ~a"), scm_list_2(subr, message_args));
-  } else {
-    formatted_message = scm_simple_format(SCM_BOOL_F, scm_from_utf8_string("~a"), scm_list_1(message_args));
-  }
-  temp_string msg{ scm_to_utf8_string(formatted_message) };
-  Log::error("guile", "Exception: %s %s", ex_type.data, msg.data);
+static void handler_message(void *handler_data, SCM tag, SCM args) {
+  SCM p, stack, frame;
+
+  p     = scm_current_error_port();
+  stack = scm_make_stack(SCM_BOOL_T, scm_list_1(scm_from_int(2)));
+  frame = scm_is_true(stack) ? scm_stack_ref(stack, SCM_INUM0) : SCM_BOOL_F;
+
+  scm_puts("Backtrace:\n", p);
+  scm_display_backtrace_with_highlights(stack, p, SCM_BOOL_F, SCM_BOOL_F, SCM_EOL);
+  scm_newline(p);
+
+  scm_print_exception(p, frame, tag, args);
+}
+
+static SCM catch_handler(void *filename, scm::val key, scm::val xs) {
+  handler_message(filename, key, xs);
   return SCM_BOOL_F;
 }
 
