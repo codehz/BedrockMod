@@ -3,6 +3,15 @@
 #include <sstream>
 #include <cstdlib>
 
+//Make vscode's C++ extension happy
+#ifdef DIAG
+
+void *operator new(unsigned long, char *) {
+    return nullptr;
+}
+
+#endif
+
 namespace std
 {
 template <typename T>

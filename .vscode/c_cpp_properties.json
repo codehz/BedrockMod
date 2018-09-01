@@ -7,7 +7,7 @@
                 "${workspaceFolder}/include/guile/2.2",
                 "${workspaceFolder}/include/gmp"
             ],
-            "defines": [],
+            "defines": ["DIAG"],
             "compilerPath": "/data/ndk/bin/i686-linux-android-g++",
             "cStandard": "c11",
             "cppStandard": "c++14",
