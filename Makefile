@@ -1,9 +1,9 @@
 CFLAGSQL = -std=c99 -Iinclude -O3 -fdiagnostics-color=always -fmax-errors=1
-CXXFLAGS = -ffast-math -std=c++14 -Iinclude -Iinclude/guile/2.2 -Iinclude/gmp -DCHAISCRIPT_NO_THREADS -Wno-invalid-offsetof -O3 -fdiagnostics-color=always -fmax-errors=1
+CXXFLAGS = -ffast-math -std=c++14 -Iinclude -Iinclude/guile/2.2 -Iinclude/gmp -Wno-invalid-offsetof -O3 -fdiagnostics-color=always -fmax-errors=1
 LDFLAGS = -L./lib -lminecraftpe
 
 LPLAYER = -Lout -lsupport
-LCHAI = -Lout -lscript
+LSCRIPT = -Lout -lscript
 
 MODS = $(shell ls src/mods)
 SCRIPT_MODS = $(shell ls src/script)
@@ -34,7 +34,7 @@ out/libscript.so: obj/fix.o obj/mods/script/main.o lib/libminecraftpe.so out/lib
 out/script_sqlite3.so: ref/bridge.so
 out/script_%.so: obj/script/%/main.o obj/hack.o out/libsupport.so lib/libminecraftpe.so out/libscript.so
 	@echo LD $@
-	@$(CXX) $(LDFLAGS) $(LPLAYER) $(LCHAI) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lref -l:,$(notdir $(filter ref/%.so,$^)))
+	@$(CXX) $(LDFLAGS) $(LPLAYER) $(LSCRIPT) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lref -l:,$(notdir $(filter ref/%.so,$^)))
 
 .PRECIOUS: dep/%.d
 dep/%.d: src/%.cpp
