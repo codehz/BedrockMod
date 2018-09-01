@@ -57,3 +57,13 @@ SCM_DECLARE_NUMERIC_TYPE(std::uint16_t, uint16);
 SCM_DECLARE_NUMERIC_TYPE(std::uint32_t, uint32);
 SCM_DECLARE_NUMERIC_TYPE(std::uint64_t, uint64);
 SCM_DECLARE_NUMERIC_TYPE(const char *,  utf8_string);
+
+namespace scm {
+    namespace detail {
+    template<>
+    struct convert<bool> {
+        static bool to_cpp(SCM v) { return scm_is_true(v); }
+        static SCM to_scm(bool v) { return v ? SCM_BOOL_T : SCM_BOOL_F; }
+    };
+    }
+}
