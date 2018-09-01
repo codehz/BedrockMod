@@ -66,23 +66,26 @@ static std::string makeString(scm::val val) { return temp_string{ scm_to_utf8_st
 
 static std::string concatString(scm::args xs) {
   std::stringstream ss;
-  static char buffer[0x1000];
   for (auto x : xs) {
     if (scm_is_string(x))
       ss << temp_string{ scm_to_utf8_string(x) }.get();
+    else
+      ss << temp_string{ scm_to_utf8_string(scm_simple_format(SCM_BOOL_F, scm::val{ "~a" }, scm_list_1(x))) }.get();
   }
   return ss.str();
 }
 
-static scm::val unwrapString(std::string str) {
-  return scm_from_utf8_string(str.c_str());
+static std::string formatString(scm::val fmt, scm::args xs) {
+  return temp_string{ scm_to_utf8_string(scm_simple_format(SCM_BOOL_F, fmt, xs)) }.get();
 }
+
+static scm::val unwrapString(std::string str) { return scm_from_utf8_string(str.c_str()); }
 
 extern "C" void mod_init() {
   scm_init_guile();
   // scm_catch_with_pre_unwind_handler()
   scm::type<std::string>("str").constructor(&makeString);
-  scm::group("str").define("concat", &concatString);
+  scm::group("str").define("concat", &concatString).define("format", &formatString);
   scm::group().define("unstr", &unwrapString);
   scm::group("log")
       .define("log", &doLog)
@@ -109,8 +112,27 @@ extern "C" {
 const char *mcpelauncher_property_get(const char *name, const char *def);
 }
 
+static SCM catch_handler(const char *filename, scm::val key, scm::val xs) {
+  temp_string ex_type{ scm_to_utf8_string(scm_symbol_to_string(key.get())) };
+  auto subr         = scm_list_ref(xs, scm::val{ 0 });
+  auto message      = scm_list_ref(xs, scm::val{ 1 });
+  auto args         = scm_list_ref(xs, scm::val{ 2 });
+  auto message_args = scm_simple_format(SCM_BOOL_F, message, args);
+  SCM formatted_message;
+  if (scm_is_true(subr)) {
+    formatted_message = scm_simple_format(SCM_BOOL_F, scm_from_utf8_string("~s: ~a"), scm_list_2(subr, message_args));
+  } else {
+    formatted_message = scm_simple_format(SCM_BOOL_F, scm_from_utf8_string("~a"), scm_list_1(message_args));
+  }
+  temp_string msg{ scm_to_utf8_string(formatted_message) };
+  Log::error("guile", "Exception: %s %s", ex_type.data, msg.data);
+  return SCM_BOOL_F;
+}
+
 extern "C" void mod_exec() {
-  if (exists("user/scm/init.scm")) scm_c_primitive_load("user/scm/init.scm");
+  if (exists("user/scm/init.scm"))
+    scm_c_catch(SCM_BOOL_T, (scm_t_catch_body)scm_c_primitive_load, (void *)"user/scm/init.scm", (scm_t_catch_handler)catch_handler,
+                (void *)"user/scm/init.scm", nullptr, nullptr);
   try {
     chai.use("init.chai");
     chai.eval_file("worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/init.chai");

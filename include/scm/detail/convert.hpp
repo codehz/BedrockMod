@@ -56,3 +56,4 @@ SCM_DECLARE_NUMERIC_TYPE(std::uint8_t,  uint8);
 SCM_DECLARE_NUMERIC_TYPE(std::uint16_t, uint16);
 SCM_DECLARE_NUMERIC_TYPE(std::uint32_t, uint32);
 SCM_DECLARE_NUMERIC_TYPE(std::uint64_t, uint64);
+SCM_DECLARE_NUMERIC_TYPE(const char *,  utf8_string);
