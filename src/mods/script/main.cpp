@@ -62,7 +62,13 @@ struct temp_string {
   ~temp_string() { free(data); }
 };
 
-static std::string makeString(scm::val val) { return temp_string{ scm_to_utf8_string(val) }.get(); }
+static std::string makeString(scm::val val) {
+  if (scm_is_string(val)) {
+    return temp_string{ scm_to_utf8_string(val) }.get();
+  } else {
+    return temp_string{ scm_to_utf8_string(scm_simple_format(SCM_BOOL_F, scm::val{ "~a" }, scm_list_1(val))) }.get();
+  }
+}
 
 static std::string concatString(scm::args xs) {
   std::stringstream ss;
@@ -83,7 +89,6 @@ static scm::val unwrapString(std::string str) { return scm_from_utf8_string(str.
 
 extern "C" void mod_init() {
   scm_init_guile();
-  // scm_catch_with_pre_unwind_handler()
   scm::type<std::string>("str").constructor(&makeString);
   scm::group("str").define("concat", &concatString).define("format", &formatString);
   scm::group().define("unstr", &unwrapString);
@@ -96,6 +101,8 @@ extern "C" void mod_init() {
       .define("warn", &Slog<LogLevel::LOG_WARN>)
       .define("error", &Slog<LogLevel::LOG_ERROR>)
       .define("fatal", &Slog<LogLevel::LOG_FATAL>);
+  scm_c_eval_string(R"((set! %load-hook (lambda (filename) (log-trace (str "loader") (str-format "Loading script ~a" filename)))))");
+  scm_c_eval_string(R"((set! %load-path '("user/scm/modules" "user/scm/scripts")))");
   chai.add(chaiscript::user_type<LogForChai>(), "LogTy");
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_TRACE>), "trace");
   chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_INFO>), "info");
@@ -132,9 +139,9 @@ static SCM catch_handler(void *filename, scm::val key, scm::val xs) {
 }
 
 extern "C" void mod_exec() {
-  if (exists("user/scm/init.scm"))
-    scm_c_catch(SCM_BOOL_T, (scm_t_catch_body)scm_c_primitive_load, (void *)"user/scm/init.scm", (scm_t_catch_handler)catch_handler,
-                (void *)"user/scm/init.scm", nullptr, nullptr);
+  if (exists("user/scm/scripts/init.scm"))
+    scm_c_catch(SCM_BOOL_T, (scm_t_catch_body)scm_c_primitive_load, (void *)"user/scm/scripts/init.scm", (scm_t_catch_handler)catch_handler,
+                (void *)"user/scm/scripts/init.scm", nullptr, nullptr);
   try {
     chai.use("init.chai");
     chai.eval_file("worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/init.chai");
