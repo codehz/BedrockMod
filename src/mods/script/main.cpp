@@ -124,11 +124,12 @@ static void handler_message(void *handler_data, SCM tag, SCM args) {
 
   p     = scm_current_error_port();
   stack = scm_make_stack(SCM_BOOL_T, scm_list_1(scm_from_int(2)));
-  frame = scm_is_true(stack) ? scm_stack_ref(stack, SCM_INUM0) : SCM_BOOL_F;
 
-  scm_puts("Backtrace:\n", p);
-  scm_display_backtrace_with_highlights(stack, p, SCM_BOOL_F, SCM_BOOL_F, SCM_EOL);
-  scm_newline(p);
+  if (scm_is_true(stack)) {
+    frame = scm_stack_ref(stack, SCM_INUM0);
+    scm_puts("Backtrace:\n", p);
+    scm_display_backtrace_with_highlights(stack, p, SCM_BOOL_F, SCM_BOOL_F, SCM_EOL);
+  }
 
   scm_print_exception(p, frame, tag, args);
 }
