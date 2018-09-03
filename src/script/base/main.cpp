@@ -82,10 +82,3 @@ static void init_guile() {
 extern "C" void mod_init() { script_preload(init_guile); }
 
 extern "C" void mod_set_server(void *v) { support_get_minecraft()->activateWhitelist(); }
-
-extern "C" void mod_exec() {
-
-  // if (scm::from_scm<bool>(scm_defined_p(scm_from_utf8_symbol(R"(%simple-hook)"), scm_current_module()))) {
-  //   scm_call_1(scm_variable_ref(scm_c_lookup(R"(%simple-hook)")), scm::to_scm(mce::UUID::fromString("107d46e0-4d59-4e51-97ab-6585fe429d94")));
-  // }
-}
