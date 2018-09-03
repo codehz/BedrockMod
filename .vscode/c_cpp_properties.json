@@ -11,7 +11,7 @@
             "compilerPath": "/data/ndk/bin/i686-linux-android-g++",
             "cStandard": "c11",
             "cppStandard": "c++14",
-            "intelliSenseMode": "clang-x64"
+            "intelliSenseMode": "gcc-x64"
         }
     ],
     "version": 4

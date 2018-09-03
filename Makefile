@@ -6,7 +6,8 @@ LPLAYER = -Lout -lsupport
 LSCRIPT = -Lout -lscript
 
 MODS = $(shell ls src/mods)
-SCRIPT_MODS = $(shell ls src/script)
+# SCRIPT_MODS = $(shell ls src/script)
+SCRIPT_MODS = base
 
 $(shell mkdir -p obj dep out ref >/dev/null)
 
@@ -28,7 +29,7 @@ ref/bridge.so: obj/sqlite.o
 out/libsupport.so: obj/fix.o obj/string.o obj/mods/support/main.o lib/libminecraftpe.so
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
-out/libscript.so: obj/fix.o obj/mods/script/main.o lib/libminecraftpe.so out/libsupport.so
+out/libscript.so: obj/fix.o obj/mods/script/main.o obj/mods/script/wrap.o lib/libminecraftpe.so out/libsupport.so
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) $(LPLAYER) -shared -fPIC -o $@ $(filter %.o,$^)
 out/script_sqlite3.so: ref/bridge.so
@@ -38,9 +39,15 @@ out/script_%.so: obj/script/%/main.o obj/hack.o out/libsupport.so lib/libminecra
 
 .PRECIOUS: dep/%.d
 dep/%.d: src/%.cpp
-	@echo DP $<
+	@echo DP $< 
 	@mkdir -p $(@D)
-	@$(CXX) $(CXXFLAGS) -MT $(patsubst dep/%.d,obj/%.o,$@) -M -o $@ $<
+	@$(CXX) $(CXXFLAGS) -MT $(patsubst dep/%.d,obj/%.o,$@) -M -MG -o $@ $<
+	@sed -i 's/ \([^/]\+\).x/ '$(subst /,\\/,$(<D))'\/\1.x/' $@
+
+.PRECIOUS: .x
+src/%.x: src/%.cpp
+	@echo SN $@
+	@guile-snarf -o $@ $< $(CXXFLAGS)
 
 .PRECIOUS: obj/%.o
 obj/%.o: src/%.cpp

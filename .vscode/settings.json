@@ -1,5 +1,8 @@
 {
   "files.associations": {
+    "*.cjson": "jsonc",
+    "*.wxss": "css",
+    "*.wxs": "javascript",
     ".clang-format": "yaml",
     "iosfwd": "cpp",
     "typeindex": "cpp",
@@ -60,6 +63,7 @@
     "forward_list": "cpp",
     "valarray": "cpp",
     "string": "cpp",
-    "new": "cpp"
+    "new": "cpp",
+    "*.x": "cpp"
   }
 }

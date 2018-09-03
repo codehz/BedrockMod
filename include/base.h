@@ -4,8 +4,6 @@
 
 #include <polyfill.h>
 
-#include <chaiscript/chaiscript.hpp>
-
 #include <minecraft/net/NetworkIdentifier.h>
 #include <minecraft/net/UUID.h>
 
