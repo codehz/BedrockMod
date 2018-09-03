@@ -5,6 +5,18 @@
 #include <log.h>
 #include <polyfill.h>
 
+struct Minecraft;
+
+extern "C" {
+void mcpelauncher_exec_command(std::string cmd, std::function<void(std::string)> callback);
+void mcpelauncher_server_thread(std::function<void()> callback);
+const char *mcpelauncher_property_get(const char *name, const char *def);
+
+Minecraft *support_get_minecraft();
+
+void script_preload(std::function<void()>);
+};
+
 struct temp_string {
   char *data;
   temp_string(char *data)
@@ -57,9 +69,7 @@ template <> struct convertible<const char *> : convertible<char *> {};
 
 template <> struct convertible<std::string> {
   static SCM to_scm(const std::string s) { return scm_from_utf8_string(s.c_str()); }
-  static std::string from_scm(SCM s) {
-    return convertible<char*>::from_scm(s);
-  }
+  static std::string from_scm(SCM s) { return convertible<char *>::from_scm(s); }
 };
 
 template <> struct convertible<bool> {
@@ -95,38 +105,55 @@ template <typename T> struct val {
   auto get() { return std::move(from_scm<T>(scm)); }
 
   operator auto() { return std::move(from_scm<T>(scm)); }
+
+  auto operator-> () { return from_scm<T>(scm); }
 };
 
 struct sym {
   SCM scm;
   sym(const char *str)
       : scm(scm_from_utf8_symbol(str)) {}
-  operator SCM() { return scm; }
+  operator SCM() const { return scm; }
+  bool defined() const { return scm_is_true(scm_defined_p(scm, scm_current_module())); }
+  operator bool() const { return defined(); }
 };
 
+SCM var(const char *name) { return scm_variable_ref(scm_c_lookup(name)); }
+
 namespace {
-template <typename R> R f_proxy(std::function<R()> &f) { return f(); }
+// clang-format off
+SCM scm_call_trait(SCM scm) { return scm_call_0(scm); }
+SCM scm_call_trait(SCM scm, SCM v1) { return scm_call_1(scm, v1); }
+SCM scm_call_trait(SCM scm, SCM v1, SCM v2) { return scm_call_2(scm, v1, v2); }
+SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3) { return scm_call_3(scm, v1, v2, v3); }
+SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3, SCM v4) { return scm_call_4(scm, v1, v2, v3, v4); }
+SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3, SCM v4, SCM v5) { return scm_call_5(scm, v1, v2, v3, v4, v5); }
+SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6) { return scm_call_6(scm, v1, v2, v3, v4, v5, v6); }
+SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6, SCM v7) { return scm_call_7(scm, v1, v2, v3, v4, v5, v6, v7); }
+SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6, SCM v7, SCM v8) { return scm_call_8(scm, v1, v2, v3, v4, v5, v6, v7, v8); }
+SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6, SCM v7, SCM v8, SCM v9) { return scm_call_9(scm, v1, v2, v3, v4, v5, v6, v7, v8, v9); }
+// clang-format on
+} // namespace
+
+template <typename... T> SCM call(const char *name, const T &... ts) { return scm_call_trait(scm::var(name), scm::to_scm(ts)...); }
+
+namespace {
 template <typename R> SCM scm_proxy(std::function<R()> &f) { return to_scm(f()); }
+template <> SCM scm_proxy<SCM>(std::function<SCM()> &f) { return f(); }
 SCM void_proxy(std::function<void()> &f) {
   f();
   return SCM_BOOL_F;
 }
 } // namespace
 
-template <typename R = void> auto run(std::function<R()> f) -> R { return (R)scm_with_guile((void *(*)(void *))f_proxy<R>, &f); }
-
-template <typename R = SCM> R safe(std::function<R()> f) {
-  return from_scm<R>(scm_c_catch(SCM_BOOL_T, (SCM(*)(void *))scm_proxy<R>, &f, catch_handler, nullptr, nullptr, nullptr));
+template <typename R = SCM, typename T = SCM> R safe(std::function<T()> f) {
+  return from_scm<R>(scm_c_catch(SCM_BOOL_T, (SCM(*)(void *))scm_proxy<T>, &f, catch_handler, nullptr, nullptr, nullptr));
 }
-template <> SCM safe<SCM>(std::function<SCM()> f) {
-  return scm_c_catch(SCM_BOOL_T, (SCM(*)(void *))f_proxy<SCM>, &f, catch_handler, nullptr, nullptr, nullptr);
+template <> SCM safe<SCM, SCM>(std::function<SCM()> f) {
+  return scm_c_catch(SCM_BOOL_T, (SCM(*)(void *))scm_proxy<SCM>, &f, catch_handler, nullptr, nullptr, nullptr);
 }
-template <> void safe<void>(std::function<void()> f) {
+template <> void safe<void, void>(std::function<void()> f) {
   scm_c_catch(SCM_BOOL_T, (SCM(*)(void *))void_proxy, &f, catch_handler, nullptr, nullptr, nullptr);
-}
-
-template <typename R = void> R run_safe(std::function<R()> f) {
-  return run<R> <<= [f] { return safe<R> <<= f; };
 }
 
 struct definer {
@@ -137,6 +164,13 @@ struct definer {
 };
 
 } // namespace scm
+
+struct Minecraft {
+  void init(bool);
+  void activateWhitelist();
+  // ServerNetworkHandler *getServerNetworkHandler();
+  // Level *getLevel() const;
+};
 
 #define STR2(x) #x
 #define STR(x) STR2(x)

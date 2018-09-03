@@ -1,0 +1,10 @@
+(define (log-trace  tag msg . args) (log-raw log-level-trace  tag (apply simple-format #f msg args)))
+(define (log-debug  tag msg . args) (log-raw log-level-debug  tag (apply simple-format #f msg args)))
+(define (log-info   tag msg . args) (log-raw log-level-info   tag (apply simple-format #f msg args)))
+(define (log-notice tag msg . args) (log-raw log-level-notice tag (apply simple-format #f msg args)))
+(define (log-warn   tag msg . args) (log-raw log-level-warn   tag (apply simple-format #f msg args)))
+(define (log-error  tag msg . args) (log-raw log-level-error  tag (apply simple-format #f msg args)))
+(define (log-fatal  tag msg . args) (log-raw log-level-fatal  tag (apply simple-format #f msg args)))
+
+(set! %load-hook (lambda (filename) (log-trace "loader" "Loading script ~a" filename)))
+(set! %load-path '("user/scm/modules"))

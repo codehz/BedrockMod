@@ -1,6 +1,5 @@
 #include <api.h>
 
-#include <chaiscript/chaiscript.hpp>
 #include <functional>
 #include <log.h>
 #include <sys/mman.h>
@@ -39,8 +38,8 @@ void JITTest(std::function<int()> fun) {
 }
 
 extern "C" void mod_init() {
-  chaiscript::ModulePtr m(new chaiscript::Module());
-  m->add(chaiscript::fun([]() { Log::info("TM", "test module invoked"); }), "test");
-  m->add(chaiscript::fun(JITTest), "jit");
-  loadModule(m);
+  // chaiscript::ModulePtr m(new chaiscript::Module());
+  // m->add(chaiscript::fun([]() { Log::info("TM", "test module invoked"); }), "test");
+  // m->add(chaiscript::fun(JITTest), "jit");
+  // loadModule(m);
 }

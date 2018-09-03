@@ -65,4 +65,15 @@ ServerPlayer *findPlayer(NetworkIdentifier const &nid, unsigned char subIndex) {
   return nullptr;
 }
 
+struct Minecraft {};
+
+static Minecraft *mc;
+
+TInstanceHook(void, _ZN9Minecraft4initEb, Minecraft, bool v) {
+  original(this, v);
+  mc = this;
+}
+
+extern "C" Minecraft *support_get_minecraft() { return mc; }
+
 extern "C" void __init() { mcpe::string::empty = static_cast<mcpe::string *>(dlsym(MinecraftHandle(), "_ZN4Util12EMPTY_STRINGE")); }
