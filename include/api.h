@@ -1,5 +1,6 @@
 #pragma once
 
+#include <base.h>
 #include <functional>
 #include <libguile.h>
 #include <log.h>
@@ -34,19 +35,6 @@ struct temp_string {
   }
 };
 
-static SCM catch_handler(void *handler_data, SCM tag, SCM args) {
-  SCM p, stack, frame;
-
-  p = scm_open_output_string();
-
-  scm_simple_format(p, scm_from_utf8_string("~s: ~a"), scm_list_2(tag, args));
-
-  temp_string err{ scm_to_utf8_string(scm_get_output_string(p)) };
-  scm_close_output_port(p);
-  Log::error("guile", "%s", err.data);
-  return SCM_BOOL_F;
-}
-
 template <typename T, typename F, typename = std::enable_if_t<std::is_convertible<T, std::function<void(F)>>::value>>
 decltype(auto) operator<<=(T t, F f) {
   return t(std::forward<F>(f));
@@ -63,6 +51,11 @@ template <> struct convertible<char *> {
     SCM_ASSERT(scm_is_string(str), str, 1, "STRING_FROM_SCM");
     return { scm_to_utf8_string(str) };
   }
+};
+
+template <> struct convertible<SCM> {
+  static SCM to_scm(SCM x) { return x; }
+  static SCM from_scm(SCM x) { return x; }
 };
 
 template <> struct convertible<const char *> : convertible<char *> {};
@@ -136,25 +129,17 @@ SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6, SCM 
 } // namespace
 
 template <typename... T> SCM call(const char *name, const T &... ts) { return scm_call_trait(scm::var(name), scm::to_scm(ts)...); }
+template <typename... T> SCM call(SCM scm, const T &... ts) { return scm_call_trait(scm, scm::to_scm(ts)...); }
 
-namespace {
-template <typename R> SCM scm_proxy(std::function<R()> &f) { return to_scm(f()); }
-template <> SCM scm_proxy<SCM>(std::function<SCM()> &f) { return f(); }
-SCM void_proxy(std::function<void()> &f) {
-  f();
-  return SCM_BOOL_F;
-}
-} // namespace
+template <typename R = void, typename... T> struct callback {
+  SCM scm;
+  R operator()(T... t) const { return scm::from_scm<R>(scm::call(scm, t...)); }
+};
 
-template <typename R = SCM, typename T = SCM> R safe(std::function<T()> f) {
-  return from_scm<R>(scm_c_catch(SCM_BOOL_T, (SCM(*)(void *))scm_proxy<T>, &f, catch_handler, nullptr, nullptr, nullptr));
-}
-template <> SCM safe<SCM, SCM>(std::function<SCM()> f) {
-  return scm_c_catch(SCM_BOOL_T, (SCM(*)(void *))scm_proxy<SCM>, &f, catch_handler, nullptr, nullptr, nullptr);
-}
-template <> void safe<void, void>(std::function<void()> f) {
-  scm_c_catch(SCM_BOOL_T, (SCM(*)(void *))void_proxy, &f, catch_handler, nullptr, nullptr, nullptr);
-}
+template <typename... T> struct callback<void, T...> {
+  SCM scm;
+  void operator()(T... t) { scm::call(scm, t...); }
+};
 
 struct definer {
   const char *name;
@@ -169,7 +154,7 @@ struct Minecraft {
   void init(bool);
   void activateWhitelist();
   // ServerNetworkHandler *getServerNetworkHandler();
-  // Level *getLevel() const;
+  Level *getLevel() const;
 };
 
 #define STR2(x) #x
@@ -192,3 +177,35 @@ struct Minecraft {
     extern const __attribute__((aligned(16))) char file_ ## name ## _start; \
     extern const char file_ ## name ## _end;
 // clang-format on
+
+extern SCM uuid_type;
+extern SCM actor_type;
+extern SCM player_type;
+
+namespace scm {
+template <> struct convertible<mce::UUID> {
+  static SCM to_scm(mce::UUID const &temp) { return scm_make_foreign_object_n(uuid_type, 4, (void **)(void *)&temp); }
+  static mce::UUID from_scm(SCM uuid) {
+    scm_assert_foreign_object_type(uuid_type, uuid);
+    void *auuid[] = { scm_foreign_object_ref(uuid, 0), scm_foreign_object_ref(uuid, 1), scm_foreign_object_ref(uuid, 2),
+                      scm_foreign_object_ref(uuid, 3) };
+    auto ruuid    = (mce::UUID *)auuid;
+    return *ruuid;
+  }
+};
+template <> struct convertible<Actor *> {
+  static SCM to_scm(Actor *temp) { return scm_make_foreign_object_1(actor_type, temp); }
+  static Actor *from_scm(SCM act) {
+    if (SCM_IS_A_P(act, player_type)) { return (Actor *)scm_foreign_object_ref(act, 0); }
+    scm_assert_foreign_object_type(actor_type, act);
+    return (Actor *)scm_foreign_object_ref(act, 0);
+  }
+};
+template <> struct convertible<ServerPlayer *> {
+  static SCM to_scm(ServerPlayer *temp) { return scm_make_foreign_object_1(player_type, temp); }
+  static ServerPlayer *from_scm(SCM act) {
+    scm_assert_foreign_object_type(player_type, act);
+    return (ServerPlayer *)scm_foreign_object_ref(act, 0);
+  }
+};
+} // namespace scm

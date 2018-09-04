@@ -1,12 +1,7 @@
+// Deps: out/script_chat.so: out/script_base.so
 #include <api.h>
 
 #include <StaticHook.h>
-#include <fix/string.h>
-#include <log.h>
-
-#include <functional>
-
-#include <base.h>
 
 struct TextPacket : Packet {
   unsigned char type; // 13
@@ -28,33 +23,28 @@ struct TextPacket : Packet {
   virtual bool disallowBatching() const;
 };
 
-std::function<void(ServerPlayer *, std::string)> chatHook;
-
 TClasslessInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK10TextPacket, NetworkIdentifier const &nid,
                        TextPacket const &packet) {
-  if (chatHook) {
+  if (scm::sym(R"(%player-chat)")) {
     auto player = findPlayer(nid, packet.playerSubIndex);
-    try {
-      chatHook(player, packet.message);
-      return;
-    } catch (std::exception const &e) { Log::error("CHATHOOK", "Error: %s", e.what()); }
+    scm::call(R"(%player-chat)", (ServerPlayer *)&player, packet.message);
+    return;
   }
   original(this, nid, packet);
 }
 
-extern "C" void mod_init() {
-  chaiscript::ModulePtr m(new chaiscript::Module());
-  m->add(chaiscript::fun([](ServerPlayer *player, std::string message, unsigned type) {
-           auto packet = TextPacket::createSystemMessage(message);
-           packet.type = type;
-           player->sendNetworkPacket(packet);
-         }),
-         "sendCustomMessage");
-  m->add(chaiscript::fun([](ServerPlayer *player, std::string message) {
-           auto packet = TextPacket::createSystemMessage(message);
-           player->sendNetworkPacket(packet);
-         }),
-         "sendMessage");
-  m->add(chaiscript::fun([](std::function<void(ServerPlayer *, std::string)> fn) { chatHook = fn; }), "setChatHook");
-  loadModule(m);
+SCM_DEFINE(c_send_message, "send-message", 2, 1, 0, (scm::val<ServerPlayer *> player, scm::val<std::string> message, scm::val<int> type),
+           "Send message to player") {
+  auto packet = TextPacket::createSystemMessage(message);
+  if (scm_is_integer(type.scm)) packet.type = type;
+  player->sendNetworkPacket(packet);
+  return SCM_UNSPECIFIED;
 }
+
+static void init_guile() {
+#ifndef DIAG
+#include "main.x"
+#endif
+}
+
+extern "C" void mod_init() { script_preload(init_guile); }

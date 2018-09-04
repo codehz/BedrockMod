@@ -7,7 +7,7 @@ LSCRIPT = -Lout -lscript
 
 MODS = $(shell ls src/mods)
 # SCRIPT_MODS = $(shell ls src/script)
-SCRIPT_MODS = base
+SCRIPT_MODS = base chat tick
 
 $(shell mkdir -p obj dep out ref >/dev/null)
 
@@ -29,13 +29,13 @@ ref/bridge.so: obj/sqlite.o
 out/libsupport.so: obj/fix.o obj/string.o obj/mods/support/main.o lib/libminecraftpe.so
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
-out/libscript.so: obj/fix.o obj/mods/script/main.o obj/mods/script/wrap.o lib/libminecraftpe.so out/libsupport.so
+out/libscript.so: obj/fix.o obj/mods/script/main.o lib/libminecraftpe.so out/libsupport.so
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) $(LPLAYER) -shared -fPIC -o $@ $(filter %.o,$^)
 out/script_sqlite3.so: ref/bridge.so
 out/script_%.so: obj/script/%/main.o obj/hack.o out/libsupport.so lib/libminecraftpe.so out/libscript.so
-	@echo LD $@
-	@$(CXX) $(LDFLAGS) $(LPLAYER) $(LSCRIPT) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lref -l:,$(notdir $(filter ref/%.so,$^)))
+	@echo LD $@ $^
+	$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lref -l:,$(notdir $(filter ref/%.so,$^))) $(addprefix -Lout -l:,$(notdir $(filter out/%.so,$^)))
 
 .PRECIOUS: dep/%.d
 dep/%.d: src/%.cpp
@@ -43,6 +43,7 @@ dep/%.d: src/%.cpp
 	@mkdir -p $(@D)
 	@$(CXX) $(CXXFLAGS) -MT $(patsubst dep/%.d,obj/%.o,$@) -M -MG -o $@ $<
 	@sed -i 's/ \([^/]\+\).x/ '$(subst /,\\/,$(<D))'\/\1.x/' $@
+	@-grep -oP '(?<=// Deps: ).+' $< >> $@
 
 .PRECIOUS: .x
 src/%.x: src/%.cpp

@@ -92,7 +92,6 @@ extern "C" void mod_set_server(void *) {
       mod_queue.front()();
       mod_queue.pop();
     }
-    scm_c_eval_string(R"((log-trace "test" "test"))");
-    if (exists("user/scm/scripts/init.scm")) scm::safe<> <<= [] { return scm_c_primitive_load("user/scm/scripts/init.scm"); };
+    if (exists("user/scm/scripts/init.scm")) scm_c_primitive_load("user/scm/scripts/init.scm");
   };
 }
