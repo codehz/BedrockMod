@@ -21,6 +21,15 @@ SCM_DEFINE(c_for_each_player, "for-each-player", 1, 0, 0, (scm::callback<bool, S
   return SCM_UNSPECIFIED;
 }
 
+SCM_DEFINE(c_player_kick, "player-kick", 1, 0, 0, (scm::val<ServerPlayer *> player), "Kick player from server") {
+  kickPlayer(player);
+  return SCM_UNSPECIFIED;
+}
+
+SCM_DEFINE(c_player_permission_level, "player-permission-level", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get player's permission level.") {
+  return scm::to_scm(player->getCommandPermissionLevel());
+}
+
 struct Whitelist {};
 
 TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::UUID &uuid, std::string const &msg) {
