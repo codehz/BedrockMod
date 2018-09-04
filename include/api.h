@@ -102,11 +102,13 @@ template <typename T> struct val {
   auto operator-> () { return from_scm<T>(scm); }
 };
 
-struct sym {
+struct as_sym {
   SCM scm;
-  sym(const char *str)
-      : scm(scm_from_utf8_symbol(str)) {}
   operator SCM() const { return scm; }
+};
+
+struct sym : as_sym {
+  sym(const char *str) { scm = scm_from_utf8_symbol(str); }
   bool defined() const { return scm_is_true(scm_defined_p(scm, scm_current_module())); }
   operator bool() const { return defined(); }
 };
@@ -125,20 +127,47 @@ SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6) { re
 SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6, SCM v7) { return scm_call_7(scm, v1, v2, v3, v4, v5, v6, v7); }
 SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6, SCM v7, SCM v8) { return scm_call_8(scm, v1, v2, v3, v4, v5, v6, v7, v8); }
 SCM scm_call_trait(SCM scm, SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6, SCM v7, SCM v8, SCM v9) { return scm_call_9(scm, v1, v2, v3, v4, v5, v6, v7, v8, v9); }
+
+SCM scm_list_trait() { return SCM_LIST0; }
+SCM scm_list_trait(SCM v1) { return SCM_LIST1(v1); }
+SCM scm_list_trait(SCM v1, SCM v2) { return SCM_LIST2(v1, v2); }
+SCM scm_list_trait(SCM v1, SCM v2, SCM v3) { return SCM_LIST3(v1, v2, v3); }
+SCM scm_list_trait(SCM v1, SCM v2, SCM v3, SCM v4) { return SCM_LIST4(v1, v2, v3, v4); }
+SCM scm_list_trait(SCM v1, SCM v2, SCM v3, SCM v4, SCM v5) { return SCM_LIST5(v1, v2, v3, v4, v5); }
+SCM scm_list_trait(SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6) { return SCM_LIST6(v1, v2, v3, v4, v5, v6); }
+SCM scm_list_trait(SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6, SCM v7) { return SCM_LIST7(v1, v2, v3, v4, v5, v6, v7); }
+SCM scm_list_trait(SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6, SCM v7, SCM v8) { return SCM_LIST8(v1, v2, v3, v4, v5, v6, v7, v8); }
+SCM scm_list_trait(SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6, SCM v7, SCM v8, SCM v9) { return SCM_LIST9(v1, v2, v3, v4, v5, v6, v7, v8, v9); }
 // clang-format on
 } // namespace
 
-template <typename... T> SCM call(const char *name, const T &... ts) { return scm_call_trait(scm::var(name), scm::to_scm(ts)...); }
-template <typename... T> SCM call(SCM scm, const T &... ts) { return scm_call_trait(scm, scm::to_scm(ts)...); }
+template <typename... T> SCM call(const char *name, const T &... ts) { return scm_call_trait(var(name), to_scm(ts)...); }
+template <typename... T> SCM call(SCM scm, const T &... ts) { return scm_call_trait(scm, to_scm(ts)...); }
 
-template <typename R = void, typename... T> struct callback {
-  SCM scm;
-  R operator()(T... t) const { return scm::from_scm<R>(scm::call(scm, t...)); }
+template <typename R = void, typename... T> struct callback : as_sym {
+  R operator()(T... t) const { return from_scm<R>(call(scm, t...)); }
 };
 
-template <typename... T> struct callback<void, T...> {
-  SCM scm;
-  void operator()(T... t) { scm::call(scm, t...); }
+template <typename... T> struct callback<void, T...> : as_sym {
+  void operator()(T... t) { call(scm, t...); }
+};
+
+struct list : as_sym {
+  template <typename... T> list(T... t) { scm = scm_list_trait(to_scm(t)...); }
+
+  auto operator[](int n) const { return scm_list_ref(scm, to_scm(n)); }
+  template <typename T> T at(int n) const { return from_scm<T>(scm_list_ref(scm, to_scm(n))); }
+};
+
+struct sym_list : as_sym {
+  template <typename... T> sym_list(T... t) { scm = scm_list_trait(scm_from_utf8_symbol(t)...); }
+};
+
+struct foreign_type : as_sym {
+  foreign_type(std::string name, sym_list const &slots, scm_t_struct_finalize finalizer) {
+    scm = scm_make_foreign_object_type(scm_from_utf8_symbol(name.c_str()), slots, finalizer);
+    scm_c_define(("<" + name + ">").c_str(), scm);
+  }
 };
 
 struct definer {
@@ -177,35 +206,3 @@ struct Minecraft {
     extern const __attribute__((aligned(16))) char file_ ## name ## _start; \
     extern const char file_ ## name ## _end;
 // clang-format on
-
-extern SCM uuid_type;
-extern SCM actor_type;
-extern SCM player_type;
-
-namespace scm {
-template <> struct convertible<mce::UUID> {
-  static SCM to_scm(mce::UUID const &temp) { return scm_make_foreign_object_n(uuid_type, 4, (void **)(void *)&temp); }
-  static mce::UUID from_scm(SCM uuid) {
-    scm_assert_foreign_object_type(uuid_type, uuid);
-    void *auuid[] = { scm_foreign_object_ref(uuid, 0), scm_foreign_object_ref(uuid, 1), scm_foreign_object_ref(uuid, 2),
-                      scm_foreign_object_ref(uuid, 3) };
-    auto ruuid    = (mce::UUID *)auuid;
-    return *ruuid;
-  }
-};
-template <> struct convertible<Actor *> {
-  static SCM to_scm(Actor *temp) { return scm_make_foreign_object_1(actor_type, temp); }
-  static Actor *from_scm(SCM act) {
-    if (SCM_IS_A_P(act, player_type)) { return (Actor *)scm_foreign_object_ref(act, 0); }
-    scm_assert_foreign_object_type(actor_type, act);
-    return (Actor *)scm_foreign_object_ref(act, 0);
-  }
-};
-template <> struct convertible<ServerPlayer *> {
-  static SCM to_scm(ServerPlayer *temp) { return scm_make_foreign_object_1(player_type, temp); }
-  static ServerPlayer *from_scm(SCM act) {
-    scm_assert_foreign_object_type(player_type, act);
-    return (ServerPlayer *)scm_foreign_object_ref(act, 0);
-  }
-};
-} // namespace scm

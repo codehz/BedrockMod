@@ -2,6 +2,8 @@
 #include <api.h>
 #include <base.h>
 
+#include "main.h"
+
 SCM uuid_type;
 SCM actor_type;
 SCM player_type;
@@ -38,16 +40,12 @@ TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::
 }
 
 static void init_guile() {
-  scm::sym sym_uuid{ "uuid" }, sym_actor{ "actor" }, sym_player{ "player" };
-  SCM uuid_slots = SCM_LIST4(scm::sym("t0"), scm::sym("t1"), scm::sym("t2"), scm::sym("t3"));
-  uuid_type      = scm_make_foreign_object_type(sym_uuid, uuid_slots, nullptr);
-  scm_c_define("<uuid>", uuid_type);
+  scm::sym_list uuid_slots = { "t0", "t1", "t2", "t3" };
+  scm::sym_list data_slots = { "ptr" };
 
-  SCM data_slot = SCM_LIST1(scm::sym("ptr"));
-  actor_type    = scm_make_foreign_object_type(sym_actor, data_slot, nullptr);
-  player_type   = scm_make_foreign_object_type(sym_player, data_slot, nullptr);
-  scm_c_define("<actor>", actor_type);
-  scm_c_define("<player>", player_type);
+  uuid_type      = scm::foreign_type("uuid", uuid_slots, nullptr);
+  actor_type     = scm::foreign_type("actor", data_slots, nullptr);
+  player_type    = scm::foreign_type("player", data_slots, nullptr);
 
   onPlayerAdded <<= [=](ServerPlayer &player) {
     if (scm::sym(R"(%player-added)")) scm::call(R"(%player-added)", &player);

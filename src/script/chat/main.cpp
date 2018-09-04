@@ -1,5 +1,6 @@
 // Deps: out/script_chat.so: out/script_base.so
 #include <api.h>
+#include "../base/main.h"
 
 #include <StaticHook.h>
 
