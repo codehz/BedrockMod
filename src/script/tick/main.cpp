@@ -57,10 +57,15 @@ SCM_DEFINE(c_set_timeout, "delay-run", 2, 0, 0, (scm::val<uint> len, scm::callba
   return SCM_UNSPECIFIED;
 }
 
+LOADFILE(preload, "src/script/tick/preload.scm");
+
 static void init_guile() {
 #ifndef DIAG
 #include "main.x"
+#include "preload.scm.z"
 #endif
+
+  scm_c_eval_string(&file_preload_start);
 }
 
 extern "C" void mod_init() { script_preload(init_guile); }

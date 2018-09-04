@@ -72,6 +72,7 @@ static void init_guile() {
 
 #ifndef DIAG
 #include "main.x"
+#include "preload.scm.z"
 #endif
 
   scm_c_eval_string(&file_preload_start);

@@ -5,7 +5,7 @@ LDFLAGS = -L./lib -lminecraftpe
 LPLAYER = -Lout -lsupport
 LSCRIPT = -Lout -lscript
 
-MODS = $(shell ls src/mods)
+MODS = $(shell ls src/mods) sqlite3
 # SCRIPT_MODS = $(shell ls src/script)
 SCRIPT_MODS = base chat tick
 
@@ -18,21 +18,19 @@ all: $(addsuffix .so,$(addprefix out/lib,$(MODS)))  $(addsuffix .so,$(addprefix 
 clean:
 	@rm -rf obj out dep ref
 
-obj/sqlite.o: src/sqlite3.c
+obj/sqlite3.o: src/sqlite3.c
 	@echo CC $@
 	@$(CC) $(CFLAGSQL) -c -o $@ $<
 
-ref/bridge.so: obj/sqlite.o
-	@echo MO $@
-	@$(CXX) -shared -fPIC -o $@ $(filter %.o,$^)
-
+out/libsqlite3.so: obj/sqlite3.o
+	@echo LD $@
+	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
 out/libsupport.so: obj/fix.o obj/string.o obj/mods/support/main.o lib/libminecraftpe.so
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
 out/libscript.so: obj/fix.o obj/mods/script/main.o lib/libminecraftpe.so out/libsupport.so
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) $(LPLAYER) -shared -fPIC -o $@ $(filter %.o,$^)
-out/script_sqlite3.so: ref/bridge.so
 out/script_%.so: obj/script/%/main.o obj/hack.o out/libsupport.so lib/libminecraftpe.so out/libscript.so
 	@echo LD $@ $^
 	$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lref -l:,$(notdir $(filter ref/%.so,$^))) $(addprefix -Lout -l:,$(notdir $(filter out/%.so,$^)))
@@ -42,13 +40,17 @@ dep/%.d: src/%.cpp
 	@echo DP $< 
 	@mkdir -p $(@D)
 	@$(CXX) $(CXXFLAGS) -MT $(patsubst dep/%.d,obj/%.o,$@) -M -MG -o $@ $<
-	@sed -i 's/ \([^/]\+\).x/ '$(subst /,\\/,$(<D))'\/\1.x/' $@
+	@sed -i 's/ \([^/ \\]\+\)\.\([xz]\)/ '$(subst /,\\/,$(<D))'\/\1.\2/g' $@
 	@-grep -oP '(?<=// Deps: ).+' $< >> $@
 
 .PRECIOUS: .x
 src/%.x: src/%.cpp
 	@echo SN $@
 	@guile-snarf -o $@ $< $(CXXFLAGS)
+.PRECIOUS: .z
+src/%.z: src/%
+	@echo PH $@
+	@touch $@
 
 .PRECIOUS: obj/%.o
 obj/%.o: src/%.cpp
