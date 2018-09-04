@@ -63,26 +63,4 @@ static void init_guile() {
 #endif
 }
 
-extern "C" void mod_init() {
-  script_preload(init_guile);
-  // chaiscript::ModulePtr m(new chaiscript::Module());
-  // m->add(chaiscript::fun([](std::function<void(void)> fn, int16_t cycle) -> std::function<void(void)> {
-  //          auto it = tickHandlers.emplace(std::make_pair(cycle, FixedFunction{ (int16_t)(count % cycle), fn }));
-  //          return [it]() { tickHandlers.erase(it); };
-  //        }),
-  //        "setInterval");
-  // m->add(chaiscript::fun([](std::function<void(void)> fn, int16_t len) {
-  //          int16_t sum = 0;
-  //          for (auto it = timeoutHandlers.begin(); it != timeoutHandlers.end(); ++it) {
-  //            sum += it->chip;
-  //            if (sum > len) {
-  //              timeoutHandlers.insert(it, FixedFunction(it->chip - sum + len, fn));
-  //              it->chip -= sum - len;
-  //              return;
-  //            }
-  //          }
-  //          timeoutHandlers.push_back(FixedFunction(len - sum, fn));
-  //        }),
-  //        "setTimeout");
-  // loadModule(m);
-}
+extern "C" void mod_init() { script_preload(init_guile); }
