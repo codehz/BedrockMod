@@ -7,7 +7,7 @@ LSCRIPT = -Lout -lscript
 
 MODS = $(shell ls src/mods) sqlite3
 # SCRIPT_MODS = $(shell ls src/script)
-SCRIPT_MODS = base chat tick
+SCRIPT_MODS = base chat tick transfer
 
 $(shell mkdir -p obj dep out ref >/dev/null)
 

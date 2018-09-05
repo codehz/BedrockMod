@@ -64,6 +64,7 @@
     "valarray": "cpp",
     "string": "cpp",
     "new": "cpp",
-    "*.x": "cpp"
+    "*.x": "cpp",
+    "*.z": "cpp"
   }
 }
