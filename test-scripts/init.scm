@@ -9,20 +9,22 @@
 (use-modules (minecraft dbus))
 
 (log-trace "test"
-  "~s - ~a" "test" 123)
+           "~s - ~a"
+           "test"
+           123)
 
 (log-debug "uuid"
-  (uuid->string (uuid "107d46e0-4d59-4e51-97ab-6585fe429d94")))
+           (uuid->string (uuid "107d46e0-4d59-4e51-97ab-6585fe429d94")))
 
 (define (%player-login uuid)
-  (log-debug "player-login" (uuid->string uuid))
-  #t)
+        (log-debug "player-login" (uuid->string uuid))
+        #t)
 
 (define (%player-joined player)
-  (log-debug "player-joined" "HIT ~a" (actor-name player))
-  (for-each-player (lambda (other)
-    (send-message other (simple-format #f "~a joined." (actor-name other)))
-    #t)))
+        (log-debug "player-joined" "HIT ~a" (actor-name player))
+        (for-each-player (lambda (other)
+                                 (send-message other (simple-format #f "~a joined." (actor-name other)))
+                                 #t)))
 
 (delay-run! 5 (log-debug "delay" "test 5"))
 (delay-run! 7 (log-debug "delay" "test 7"))
