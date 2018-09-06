@@ -29,21 +29,21 @@ out/libscript.so: obj/fix.o obj/mods/script/main.o lib/libminecraftpe.so out/lib
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) $(LPLAYER) -shared -fPIC -o $@ $(filter %.o,$^)
 out/script_%.so: obj/script/%/main.o obj/hack.o out/libsupport.so lib/libminecraftpe.so out/libscript.so
-	@echo LD $@ $^
-	$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lref -l:,$(notdir $(filter ref/%.so,$^))) $(addprefix -Lout -l:,$(notdir $(filter out/%.so,$^)))
+	@echo LD $@
+	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lref -l:,$(notdir $(filter ref/%.so,$^))) $(addprefix -Lout -l:,$(notdir $(filter out/%.so,$^)))
 
 .PRECIOUS: dep/%.d
 dep/%.d: src/%.cpp
 	@echo DP $< 
 	@mkdir -p $(@D)
-	@$(CXX) $(CXXFLAGS) -MT $(patsubst dep/%.d,obj/%.o,$@) -MT $(patsubst dep/%.d,src/%.z,$@) -M -MG -o $@ $<
+	@$(CXX) $(CXXFLAGS) -MT $(patsubst dep/%.d,obj/%.o,$@) -M -MG -o $@ $<
 	@sed -i 's/ \([^/ \\]\+\)\.\([xz]\)/ '$(subst /,\\/,$(<D))'\/\1.\2/g' $@
 	@-grep -oP '(?<=// Deps: ).+' $< >> $@ || exit 0
 
 .PRECIOUS: .x
 src/%.x: src/%.cpp
 	@echo SN $@
-	@CPP="$(CXX) -E" guile-snarf -o $@ $< $(CXXFLAGS)
+	@CPP="$(CXX) -DDIAG -E" guile-snarf -o $@ $< $(CXXFLAGS)
 .PRECIOUS: .z
 src/%.z: src/%
 	@echo PH $@
