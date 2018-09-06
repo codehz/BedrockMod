@@ -42,7 +42,7 @@ dep/%.d: src/%.cpp
 .PRECIOUS: .x
 src/%.x: src/%.cpp
 	@echo SN $@
-	@guile-snarf -o $@ $< $(CXXFLAGS)
+	@CPP="$(CXX) -E" guile-snarf -o $@ $< $(CXXFLAGS)
 .PRECIOUS: .z
 src/%.z: src/%
 	@echo PH $@
