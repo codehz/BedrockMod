@@ -9,9 +9,7 @@ jobs:
       - checkout
       - run:
           name: build
-          command:
-            make deps
-            make
+          command: make
           environment:
             CXX: /data/sdk/bin/i686-linux-android-g++
             CC : /data/sdk/bin/i686-linux-android-gcc

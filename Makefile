@@ -17,6 +17,7 @@ all: $(addsuffix .so,$(addprefix out/lib,$(MODS)))  $(addsuffix .so,$(addprefix 
 .PHONY: clean
 clean:
 	@rm -rf obj out dep ref
+	@find -name '*.[xz]' -exec rm {} \;
 
 out/libsqlite3.so: obj/sqlite3.o
 	@echo LD $@
@@ -35,9 +36,9 @@ out/script_%.so: obj/script/%/main.o obj/hack.o out/libsupport.so lib/libminecra
 dep/%.d: src/%.cpp
 	@echo DP $< 
 	@mkdir -p $(@D)
-	@$(CXX) $(CXXFLAGS) -MT $(patsubst dep/%.d,obj/%.o,$@) -M -MG -o $@ $<
+	@$(CXX) $(CXXFLAGS) -MT $(patsubst dep/%.d,obj/%.o,$@) -MT $(patsubst dep/%.d,src/%.z,$@) -M -MG -o $@ $<
 	@sed -i 's/ \([^/ \\]\+\)\.\([xz]\)/ '$(subst /,\\/,$(<D))'\/\1.\2/g' $@
-	@-grep -oP '(?<=// Deps: ).+' $< >> $@
+	@-grep -oP '(?<=// Deps: ).+' $< >> $@ || exit 0
 
 .PRECIOUS: .x
 src/%.x: src/%.cpp
@@ -59,4 +60,4 @@ SOURCES = $(shell find src -name '*.cpp')
 
 deps: $(patsubst src/%.cpp, dep/%.d, $(SOURCES))
 
-include $(patsubst src/%.cpp, dep/%.d, $(SOURCES))
+-include $(patsubst src/%.cpp, dep/%.d, $(SOURCES))
