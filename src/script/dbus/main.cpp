@@ -21,62 +21,11 @@ SCM_DEFINE(c_make_dbus_vtable, "make-dbus-vtable", 0, 0, 0, (), "Create new dbus
   return scm::to_scm<sd_bus_vtable_list>({ 16, 1, mem });
 }
 
-template <typename R, typename... PS> struct FunctionWrapper {
-  unsigned char push = 0x68;
-  std::function<R(PS...)> *func;
-  unsigned char call = 0xe8;
-  unsigned offset    = ((char *)wrapper - (char *)this - offsetof(FunctionWrapper<int>, offset) - 4);
-  unsigned addesp    = 0xc304c483;
-
-  FunctionWrapper(std::function<R(PS...)> func)
-      : func(new std::function<R(PS...)>(func)) {}
-
-  auto as_pointer() { return (R(*)(PS...))this; }
-
-  static auto wrapper(std::function<R(PS...)> &func, int s0, PS... ps) { return func(ps...); }
-} __attribute__((packed));
-
-void *alloc_executable_memory(size_t size) {
-  void *ptr = mmap(0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-  if (ptr == (void *)-1) {
-    perror("mmap");
-    return NULL;
-  }
-  return ptr;
-}
-
-char *buffer = (char *)alloc_executable_memory(200 * sizeof(FunctionWrapper<int>));
-size_t pos   = 0;
-
-template <typename R, typename... PS> auto gen_function(std::function<R(PS...)> from) {
-  return new (buffer + (sizeof(FunctionWrapper<int>) * pos++)) FunctionWrapper<R, PS...>(from);
-}
-
-static std::condition_variable cv;
-static std::mutex mtx;
-
-SCM_DEFINE_PUBLIC(c_define_dbus_method, "define-dbus-method", 6, 1, 0,
-                  (scm::val<sd_bus_vtable_list> slots, scm::val<int64_t> flags, scm::val<gc_string> name, scm::val<gc_string> signature,
-                   scm::val<gc_string> result, scm::callback<void, void *, void *, void *> handler, scm::val<int32_t> offset),
-                  "Append method to dbus vtable") {
-  int roffset = scm_is_integer(offset.scm) ? offset.get() : 0;
-  std::function<int(void *, void *, void *)> f{ [=](void *msg, void *ud, void *err) {
-    bool ready = false;
-    mcpelauncher_server_thread <<= [&] {
-      std::unique_lock<std::mutex> lck(mtx);
-
-      handler(msg, ud, err);
-
-      ready = true;
-      cv.notify_all();
-    };
-    std::unique_lock<std::mutex> lck(mtx);
-    cv.wait(lck, [&] { return ready; });
-    return 0;
-  } };
-  slots <<= [&](sd_bus_vtable_list &n) {
-    n.append<sd_bus_method>(flags, name.get(), signature.get(), result.get(), (void *)gen_function(f)->as_pointer(), roffset);
-  };
+SCM_DEFINE(c_define_dbus_method, "define-dbus-method-internal", 6, 0, 0,
+           (scm::val<sd_bus_vtable_list> vt, scm::val<int64_t> flags, scm::val<gc_string> name, scm::val<gc_string> signature,
+            scm::val<gc_string> result, scm::val<void *> handler),
+           "Append method to dbus vtable") {
+  vt <<= [&](sd_bus_vtable_list &n) { n.append<sd_bus_method>(flags, name.get(), signature.get(), result.get(), handler.get(), 0); };
   return SCM_UNSPECIFIED;
 }
 

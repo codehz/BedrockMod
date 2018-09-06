@@ -34,7 +34,13 @@
              (fn vt)
              (add-obj-vtable fpath object vt)))
 
-(export dbus-reply register-dbus-interface)
+(define (define-dbus-method vt flags name sig res handler)
+        (let ((func (procedure->pointer void
+                                        handler
+                                        (list ptr ptr ptr))))
+             (define-dbus-method-internal vt flags name sig res func)))
+
+(export dbus-reply register-dbus-interface define-dbus-method)
 
 (define ptr (quote *))
 
