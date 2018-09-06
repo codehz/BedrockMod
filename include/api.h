@@ -18,6 +18,15 @@ Minecraft *support_get_minecraft();
 void script_preload(std::function<void()>);
 };
 
+static auto init_guile_module(void (*fn)(void *), const char *name) {
+  return [=]() { scm_c_define_module(name, fn, (void *)name); };
+}
+
+#define PRELOAD_MODULE(name)                                                                                                                         \
+  static void init_module(void *);                                                                                                                   \
+  extern "C" void mod_init() { script_preload(init_guile_module(init_module, name)); }                                                               \
+  void init_module(void *)
+
 struct temp_string {
   char *data;
   temp_string(char *data)
@@ -35,7 +44,16 @@ struct temp_string {
   }
 };
 
-template <typename T, typename F, typename = std::enable_if_t<std::is_convertible<T, std::function<void(F)>>::value>>
+struct gc_string {
+  char *data;
+  gc_string(char *data) {
+    this->data = (char *)scm_gc_malloc_pointerless(strlen(data) + 1, "string");
+    strcpy(this->data, data);
+  }
+  operator char *() const { return data; }
+};
+
+template <typename T, typename F>
 decltype(auto) operator<<=(T t, F f) {
   return t(std::forward<F>(f));
 }
@@ -44,10 +62,26 @@ namespace scm {
 
 template <typename T, typename = void> struct convertible;
 
+template <> struct convertible<void *> {
+  static SCM to_scm(void *p) { return scm_from_pointer(p, nullptr); }
+
+  static void *from_scm(SCM p) {
+    SCM_ASSERT(SCM_POINTER_P(p), p, 1, "POINTER_FROM_SCM");
+    return scm_to_pointer(p);
+  }
+};
 template <> struct convertible<char *> {
   static SCM to_scm(const char *s) { return scm_from_utf8_string(s); }
 
   static temp_string from_scm(SCM str) {
+    SCM_ASSERT(scm_is_string(str), str, 1, "STRING_FROM_SCM");
+    return { scm_to_utf8_string(str) };
+  }
+};
+template <> struct convertible<gc_string> {
+  static SCM to_scm(gc_string s) { return scm_from_utf8_string(s.data); }
+
+  static gc_string from_scm(SCM str) {
     SCM_ASSERT(scm_is_string(str), str, 1, "STRING_FROM_SCM");
     return { scm_to_utf8_string(str) };
   }
@@ -78,11 +112,11 @@ template <> struct convertible<bool> {
 
 cvt(float, double);
 cvt(double, double);
-cvt(int8_t, int8);
+cvt(int8_t, char);
 cvt(int16_t, int16);
 cvt(int32_t, int32);
 cvt(int64_t, int64);
-cvt(uint8_t, uint8);
+cvt(uint8_t, uchar);
 cvt(uint16_t, uint16);
 cvt(uint32_t, uint32);
 cvt(uint64_t, uint64);
@@ -91,6 +125,7 @@ cvt(uint64_t, uint64);
 
 template <typename T> auto to_scm(T s) { return convertible<std::remove_const_t<T>>::to_scm(s); }
 template <typename T> auto from_scm(const SCM &s) { return convertible<std::remove_const_t<T>>::from_scm(s); }
+template <typename T> void set_scm(const SCM &s, T v) { return convertible<std::remove_const_t<T>>::set_scm(s, v); }
 
 template <typename T> struct val {
   SCM scm;
@@ -100,6 +135,15 @@ template <typename T> struct val {
   operator auto() { return std::move(from_scm<T>(scm)); }
 
   auto operator-> () { return from_scm<T>(scm); }
+
+  void operator=(T t) { set_scm(scm, t); }
+
+  void operator()(std::function<T(T)> access_fn) { set_scm(access_fn(from_scm<T>(scm))); }
+  void operator()(std::function<void(T &)> modify_fn) {
+    T temp = from_scm<T>(scm);
+    modify_fn(temp);
+    set_scm(scm, temp);
+  }
 };
 
 struct as_sym {
@@ -149,7 +193,7 @@ template <typename R = void, typename... T> struct callback : as_sym {
 };
 
 template <typename... T> struct callback<void, T...> : as_sym {
-  void operator()(T... t) { call(scm, t...); }
+  void operator()(T... t) const { call(scm, t...); }
 };
 
 struct list : as_sym {
@@ -166,7 +210,7 @@ struct sym_list : as_sym {
 struct foreign_type : as_sym {
   foreign_type(std::string name, sym_list const &slots, scm_t_struct_finalize finalizer) {
     scm = scm_make_foreign_object_type(scm_from_utf8_symbol(name.c_str()), slots, finalizer);
-    scm_c_define(("<" + name + ">").c_str(), scm);
+    scm_c_module_define(scm_current_module(), ("<" + name + ">").c_str(), scm);
   }
 };
 
@@ -174,7 +218,9 @@ struct definer {
   const char *name;
   definer(const char *name)
       : name(name) {}
-  template <typename T, typename = decltype(convertible<T>::to_scm(T{}))> void operator=(const T &v) { scm_c_define(name, to_scm(v)); }
+  template <typename T, typename = decltype(convertible<T>::to_scm(T{}))> void operator=(const T &v) {
+    scm_c_module_define(scm_current_module(), name, to_scm(v));
+  }
 };
 
 } // namespace scm

@@ -5,9 +5,9 @@ LDFLAGS = -L./lib -lminecraftpe
 LPLAYER = -Lout -lsupport
 LSCRIPT = -Lout -lscript
 
-MODS = $(shell ls src/mods) sqlite3
+MODS = $(shell ls src/mods)
 # SCRIPT_MODS = $(shell ls src/script)
-SCRIPT_MODS = base chat tick transfer
+SCRIPT_MODS = base tick chat transfer dbus
 
 $(shell mkdir -p obj dep out ref >/dev/null)
 
@@ -17,10 +17,6 @@ all: $(addsuffix .so,$(addprefix out/lib,$(MODS)))  $(addsuffix .so,$(addprefix 
 .PHONY: clean
 clean:
 	@rm -rf obj out dep ref
-
-obj/sqlite3.o: src/sqlite3.c
-	@echo CC $@
-	@$(CC) $(CFLAGSQL) -c -o $@ $<
 
 out/libsqlite3.so: obj/sqlite3.o
 	@echo LD $@

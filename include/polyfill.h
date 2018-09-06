@@ -6,7 +6,8 @@
 //Make vscode's C++ extension happy
 #ifdef DIAG
 
-void *operator new(unsigned long, char *) {
+template <typename T>
+void *operator new(unsigned long, T *) {
     return nullptr;
 }
 

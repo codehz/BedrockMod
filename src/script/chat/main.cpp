@@ -34,7 +34,7 @@ TClasslessInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentif
   original(this, nid, packet);
 }
 
-SCM_DEFINE(c_send_message, "send-message", 2, 1, 0, (scm::val<ServerPlayer *> player, scm::val<std::string> message, scm::val<int> type),
+SCM_DEFINE_PUBLIC(c_send_message, "send-message", 2, 1, 0, (scm::val<ServerPlayer *> player, scm::val<std::string> message, scm::val<int> type),
            "Send message to player") {
   auto packet = TextPacket::createSystemMessage(message);
   if (scm_is_integer(type.scm)) packet.type = type;
@@ -42,10 +42,8 @@ SCM_DEFINE(c_send_message, "send-message", 2, 1, 0, (scm::val<ServerPlayer *> pl
   return SCM_UNSPECIFIED;
 }
 
-static void init_guile() {
+PRELOAD_MODULE("minecraft chat") {
 #ifndef DIAG
 #include "main.x"
 #endif
 }
-
-extern "C" void mod_init() { script_preload(init_guile); }

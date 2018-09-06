@@ -38,12 +38,12 @@ TInstanceHook(void, _ZN5Level4tickEv, Level) {
   original(this);
 }
 
-SCM_DEFINE(c_set_interval, "interval-run", 2, 0, 0, (scm::val<uint> cycle, scm::callback<> fn), "setInterval") {
+SCM_DEFINE_PUBLIC(c_set_interval, "interval-run", 2, 0, 0, (scm::val<uint> cycle, scm::callback<> fn), "setInterval") {
   auto it = tickHandlers.emplace(std::make_pair(cycle, FixedFunction{ (int16_t)(count % cycle), fn }));
   return SCM_UNSPECIFIED;
 }
 
-SCM_DEFINE(c_set_timeout, "delay-run", 2, 0, 0, (scm::val<uint> len, scm::callback<> fn), "setTimeout") {
+SCM_DEFINE_PUBLIC(c_set_timeout, "delay-run", 2, 0, 0, (scm::val<uint> len, scm::callback<> fn), "setTimeout") {
   int16_t sum = 0;
   for (auto it = timeoutHandlers.begin(); it != timeoutHandlers.end(); ++it) {
     sum += it->chip;
@@ -59,7 +59,7 @@ SCM_DEFINE(c_set_timeout, "delay-run", 2, 0, 0, (scm::val<uint> len, scm::callba
 
 LOADFILE(preload, "src/script/tick/preload.scm");
 
-static void init_guile() {
+PRELOAD_MODULE("minecraft tick") {
 #ifndef DIAG
 #include "main.x"
 #include "preload.scm.z"
@@ -67,5 +67,3 @@ static void init_guile() {
 
   scm_c_eval_string(&file_preload_start);
 }
-
-extern "C" void mod_init() { script_preload(init_guile); }

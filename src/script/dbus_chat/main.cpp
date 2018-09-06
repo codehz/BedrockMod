@@ -3,8 +3,6 @@
 
 #include <systemd/sd-bus.h>
 
-using namespace chaiscript;
-
 extern "C" extern "C" sd_bus* mcpelauncher_get_dbus();
 
 static sd_bus *bus = mcpelauncher_get_dbus();
@@ -42,8 +40,9 @@ void start_chat_bus(std::function<void (std::string)> _callback) {
 }
 
 extern "C" void mod_init() {
-  ModulePtr m(new Module());
-  m->add(fun(start_chat_bus), "dbus_chat_start");
-  m->add(fun(dbus_log), "dbus_chat_log");
-  loadModule(m);
+  Log::info("test", "size: %d", chat_vtable[0].x.start.element_size);
+  // ModulePtr m(new Module());
+  // m->add(fun(start_chat_bus), "dbus_chat_start");
+  // m->add(fun(dbus_log), "dbus_chat_log");
+  // loadModule(m);
 }

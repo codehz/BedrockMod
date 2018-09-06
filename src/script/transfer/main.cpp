@@ -21,17 +21,17 @@ struct TransferPacket : Packet {
   virtual bool disallowBatching() const;
 };
 
-SCM_DEFINE(c_transfer_world, "player-transfer", 2, 1, 0, (scm::val<ServerPlayer *> player, scm::val<std::string> address, scm::val<unsigned short> port), "Transfer player to another server") {
+SCM_DEFINE_PUBLIC(c_transfer_world, "player-transfer", 2, 1, 0,
+                  (scm::val<ServerPlayer *> player, scm::val<std::string> address, scm::val<unsigned short> port),
+                  "Transfer player to another server") {
   unsigned short rport = scm_is_integer(port.scm) ? port.get() : 19132;
   TransferPacket packet{ address, rport };
   player->sendNetworkPacket(packet);
   return SCM_UNSPECIFIED;
 }
 
-static void init_guile() {
+PRELOAD_MODULE("minecraft transfer") {
 #ifndef DIAG
 #include "main.x"
 #endif
 }
-
-extern "C" void mod_init() { script_preload(init_guile); }

@@ -48,20 +48,14 @@ inline bool exists(const std::string &name) {
 
 void log(int level, const char *tag, const char *content) { Log::log((LogLevel)level, tag, "%s", content); }
 
-static SCM s_log(scm::val<int> level, scm::val<char *> tag, scm::val<char *> content);
-SCM_DEFINE(s_log, "log-raw", 3, 0, 0, (scm::val<int> level, scm::val<char *> tag, scm::val<char *> content), "Log function")
-#define FUNC_NAME "s_log"
-{
+SCM_DEFINE_PUBLIC(s_log, "log-raw", 3, 0, 0, (scm::val<int> level, scm::val<char *> tag, scm::val<char *> content), "Log function") {
   log(level, (temp_string)tag, (temp_string)content);
   return SCM_UNSPECIFIED;
 }
-#undef FUNC_NAME
 
 LOADFILE(preload, "src/mods/script/preload.scm");
 
-static void init_guile() {
-  scm_init_guile();
-
+PRELOAD_MODULE("minecraft") {
   scm::definer("log-level-trace")  = (int)LogLevel::LOG_TRACE;
   scm::definer("log-level-debug")  = (int)LogLevel::LOG_DEBUG;
   scm::definer("log-level-info")   = (int)LogLevel::LOG_INFO;
@@ -78,17 +72,9 @@ static void init_guile() {
   scm_c_eval_string(&file_preload_start);
 }
 
-extern "C" void mod_init() { script_preload(init_guile); }
-
-void *test(void *) {
-  scm_c_eval_string(R"((log-trace "test" "test"))");
-
-  Log::trace("thread", "!!");
-  return nullptr;
-}
-
 extern "C" void mod_set_server(void *) {
   mcpelauncher_server_thread <<= [] {
+    scm_init_guile();
     while (!mod_queue.empty()) {
       mod_queue.front()();
       mod_queue.pop();
