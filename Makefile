@@ -57,4 +57,6 @@ obj/%.o: src/%.cpp dep/%.d
 
 SOURCES = $(shell find src -name '*.cpp')
 
+deps: $(patsubst src/%.cpp, dep/%.d, $(SOURCES))
+
 include $(patsubst src/%.cpp, dep/%.d, $(SOURCES))
