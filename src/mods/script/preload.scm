@@ -6,5 +6,4 @@
 (define-public (log-error  tag msg . args) (log-raw log-level-error  tag (apply format #f msg args)))
 (define-public (log-fatal  tag msg . args) (log-raw log-level-fatal  tag (apply format #f msg args)))
 
-(set! %load-hook (lambda (filename) (log-trace "loader" "Loading script ~a" filename)))
 (set! %load-path '("user/scm/scripts"))
