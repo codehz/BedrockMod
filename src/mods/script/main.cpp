@@ -72,6 +72,23 @@ PRELOAD_MODULE("minecraft") {
   scm_c_eval_string(&file_preload_start);
 }
 
+struct strport {
+  SCM stream;
+  int pos, len;
+};
+
+static void handler_message(char *&errstr, SCM tag, SCM args) {
+  SCM p, stack, frame;
+
+  p     = scm_open_output_string();
+  stack = scm_make_stack(SCM_BOOL_T, scm_list_1(scm_from_int(2)));
+  frame = scm_is_true(stack) ? scm_stack_ref(stack, SCM_INUM0) : SCM_BOOL_F;
+
+  scm_print_exception(p, frame, tag, args);
+  errstr = scm_to_utf8_string(scm_get_output_string(p));
+  scm_close_output_port(p);
+}
+
 extern "C" void mod_set_server(void *) {
   mcpelauncher_server_thread <<= [] {
     setenv("GUILE_SYSTEM_PATH", "user/scm/modules", 1);
@@ -82,6 +99,15 @@ extern "C" void mod_set_server(void *) {
       mod_queue.front()();
       mod_queue.pop();
     }
-    if (exists("user/scm/scripts/init.scm")) scm_c_primitive_load("user/scm/scripts/init.scm");
+    if (exists("user/scm/scripts/init.scm")) {
+      char *errstr = nullptr;
+      scm_c_catch(SCM_BOOL_T, (scm_t_catch_body)scm_c_primitive_load, (void *)"user/scm/scripts/init.scm", (scm_t_catch_handler)handler_message,
+                  &errstr, nullptr, nullptr);
+      if (errstr) {
+        errstr[strlen(errstr) - 1] = 0;
+        Log::error("guile", "%s", errstr);
+        free(errstr);
+      }
+    }
   };
 }
