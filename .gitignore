@@ -4,6 +4,7 @@
 /dep
 /obj
 /ref
+/guile
 *.bak
 *.x
 *.z

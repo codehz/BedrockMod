@@ -21,6 +21,8 @@ jobs:
             tar cvf mods.tar.xz *.so
       - store_artifacts:
           path: /data/projects/out/mods.tar.xz
+      - store_artifacts:
+          path: /data/projects/guile.zip
 
 workflows:
   version: 2

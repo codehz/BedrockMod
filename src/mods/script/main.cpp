@@ -74,6 +74,9 @@ PRELOAD_MODULE("minecraft") {
 
 extern "C" void mod_set_server(void *) {
   mcpelauncher_server_thread <<= [] {
+    setenv("GUILE_SYSTEM_PATH", "user/scm/modules", 1);
+    setenv("GUILE_SYSTEM_COMPILED_PATH", "user/scm/ccache", 1);
+    setenv("GUILE_SYSTEM_EXTENSIONS_PATH", "user/scm/extensions", 1);
     scm_init_guile();
     while (!mod_queue.empty()) {
       mod_queue.front()();

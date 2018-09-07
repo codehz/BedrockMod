@@ -221,6 +221,10 @@ struct definer {
   template <typename T, typename = decltype(convertible<T>::to_scm(T{}))> void operator=(const T &v) {
     scm_c_module_define(scm_current_module(), name, to_scm(v));
   }
+
+  void operator=(const as_sym &v) {
+    scm_c_module_define(scm_current_module(), name, v);
+  }
 };
 
 } // namespace scm
