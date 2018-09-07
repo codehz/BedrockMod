@@ -7,7 +7,7 @@ LSCRIPT = -Lout -lscript
 
 MODS = $(shell ls src/mods)
 # SCRIPT_MODS = $(shell ls src/script)
-SCRIPT_MODS = base tick chat transfer dbus
+SCRIPT_MODS = base tick chat transfer dbus prop
 
 $(shell mkdir -p obj dep out ref >/dev/null)
 
