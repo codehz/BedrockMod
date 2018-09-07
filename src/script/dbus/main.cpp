@@ -86,8 +86,7 @@ SCM_DEFINE(c_sd_bus_add_object_vtable, "add-obj-vtable", 3, 0, 0,
   auto vlist        = vtable.get();
   vlist.append<sd_bus_end>();
   auto r = sd_bus_add_object_vtable(mcpelauncher_get_dbus(), &slot, path.get(), name.get(), vlist.list, nullptr);
-  Log::debug("err", "%d %s", ((sd_bus_start &)vlist.list[0]).element_size, strerror(-r));
-  return SCM_UNSPECIFIED;
+  return scm::to_scm(r);
 }
 
 LOADFILE(preload, "src/script/dbus/preload.scm");
