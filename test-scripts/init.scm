@@ -7,6 +7,7 @@
 (use-modules (minecraft base))
 (use-modules (minecraft tick))
 (use-modules (minecraft dbus))
+(use-modules (minecraft chat))
 
 (log-trace "test"
            "~s - ~a"
