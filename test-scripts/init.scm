@@ -11,7 +11,7 @@
 
 (log-trace "test"
            "~s - ~a"
-           "test"
+           "测试"
            123)
 
 (log-debug "uuid"
@@ -26,6 +26,12 @@
         (for-each-player (lambda (other)
                                  (send-message other (simple-format #f "~a joined." (actor-name other)))
                                  #t)))
+
+(define (%player-chat player message)
+        (for-each-player (lambda (other)
+                                 (send-message other (simple-format #f "~a: ~a" (actor-name other) message))
+                                 #t))
+        (log-info "chat" "~a: ~a" (actor-name player) message))
 
 (delay-run! 5 (log-debug "delay" "test 5"))
 (delay-run! 7 (log-debug "delay" "test 7"))

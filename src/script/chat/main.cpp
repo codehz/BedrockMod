@@ -28,7 +28,7 @@ TClasslessInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentif
                        TextPacket const &packet) {
   if (scm::sym(R"(%player-chat)")) {
     auto player = findPlayer(nid, packet.playerSubIndex);
-    scm::call(R"(%player-chat)", (ServerPlayer *)&player, packet.message);
+    scm::call(R"(%player-chat)", (ServerPlayer *)player, packet.message);
     return;
   }
   original(this, nid, packet);
