@@ -53,10 +53,7 @@ struct gc_string {
   operator char *() const { return data; }
 };
 
-template <typename T, typename F>
-decltype(auto) operator<<=(T t, F f) {
-  return t(std::forward<F>(f));
-}
+template <typename T, typename F> decltype(auto) operator<<=(T t, F f) { return t(std::forward<F>(f)); }
 
 namespace scm {
 
@@ -190,10 +187,12 @@ template <typename... T> SCM call(SCM scm, const T &... ts) { return scm_call_tr
 
 template <typename R = void, typename... T> struct callback : as_sym {
   R operator()(T... t) const { return from_scm<R>(call(scm, t...)); }
+  void setInvalid() { scm = SCM_BOOL_F; }
 };
 
 template <typename... T> struct callback<void, T...> : as_sym {
   void operator()(T... t) const { call(scm, t...); }
+  void setInvalid() { scm = SCM_BOOL_F; }
 };
 
 struct list : as_sym {
@@ -222,9 +221,7 @@ struct definer {
     scm_c_module_define(scm_current_module(), name, to_scm(v));
   }
 
-  void operator=(const as_sym &v) {
-    scm_c_module_define(scm_current_module(), name, v);
-  }
+  void operator=(const as_sym &v) { scm_c_module_define(scm_current_module(), name, v); }
 };
 
 } // namespace scm

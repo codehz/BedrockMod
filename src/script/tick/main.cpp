@@ -8,12 +8,22 @@
 
 struct FixedFunction {
   int16_t chip;
-  std::function<void(void)> fun;
-  FixedFunction(int16_t chip, std::function<void(void)> fun)
+  scm::callback<> fun;
+  FixedFunction(int16_t chip, scm::callback<> fun)
       : chip(chip)
-      , fun(fun) {}
+      , fun(fun) {
+    scm_gc_protect_object(fun);
+  }
+  FixedFunction(FixedFunction &&rhs)
+      : chip(rhs.chip)
+      , fun(rhs.fun) {
+    rhs.fun.setInvalid();
+  }
   operator int16_t() { return chip; }
   void operator()() { fun(); }
+  ~FixedFunction() {
+    if (scm_is_true(fun)) scm_gc_unprotect_object(fun);
+  }
 };
 
 std::unordered_multimap<int16_t, FixedFunction> tickHandlers;
@@ -21,7 +31,7 @@ std::list<FixedFunction> timeoutHandlers;
 int16_t count = 0;
 
 TInstanceHook(void, _ZN5Level4tickEv, Level) {
-  for (auto it : tickHandlers)
+  for (auto &it : tickHandlers)
     if (count % it.first == it.second) it.second();
   if (!timeoutHandlers.empty()) {
     auto &to = timeoutHandlers.front();
