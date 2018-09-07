@@ -8,6 +8,7 @@
 (use-modules (minecraft tick))
 (use-modules (minecraft dbus))
 (use-modules (minecraft chat))
+(use-modules (system repl server))
 
 (log-trace "test"
            "~s - ~a"
@@ -44,3 +45,5 @@
                                                     (λ (m u e)
                                                        (let ((data (dbus-read m #\s)))
                                                             (dbus-reply m "s" data))))))
+
+(spawn-server)
