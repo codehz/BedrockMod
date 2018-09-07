@@ -23,14 +23,14 @@
 
 (define (%player-joined player)
         (log-debug "player-joined" "HIT ~a" (actor-name player))
-        (for-each-player (lambda (other)
-                                 (send-message other (simple-format #f "~a joined." (actor-name other)))
-                                 #t)))
+        (for-each-player (λ (other)
+                            (send-message other (simple-format #f "~a joined." (actor-name other)))
+                            #t)))
 
 (define (%player-chat player message)
-        (for-each-player (lambda (other)
-                                 (send-message other (simple-format #f "~a: ~a" (actor-name other) message))
-                                 #t))
+        (for-each-player (λ (other)
+                            (send-message other (simple-format #f "~a: ~a" (actor-name other) message))
+                            #t))
         (log-info "chat" "~a: ~a" (actor-name player) message))
 
 (delay-run! 5 (log-debug "delay" "test 5"))
@@ -38,9 +38,9 @@
 
 (register-dbus-interface ""
                          "one.codehz.bedrockserver.test"
-                         (lambda (vt) #f
-                                 (define-dbus-signal vt 0 "test_signal" "s")
-                                 (define-dbus-method vt 0 "test_method" "s" "s"
-                                                     (lambda (m u e)
-                                                             (let ((data (dbus-read m #\s)))
-                                                                  (dbus-reply m "s" data))))))
+                         (λ (vt) #f
+                                (define-dbus-signal vt 0 "test_signal" "s")
+                                (define-dbus-method vt 0 "test_method" "s" "s"
+                                                    (λ (m u e)
+                                                       (let ((data (dbus-read m #\s)))
+                                                            (dbus-reply m "s" data))))))
