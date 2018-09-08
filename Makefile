@@ -18,7 +18,7 @@ clean:
 	@rm -rf obj out dep ref
 	@find -name '*.[xz]' -exec rm {} \;
 
-out/libsqlite3.so: obj/sqlite3.o
+out/lib%.so: obj/mods/%/main.o
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
 out/libsupport.so: obj/string.o obj/mods/support/main.o lib/libminecraftpe.so
