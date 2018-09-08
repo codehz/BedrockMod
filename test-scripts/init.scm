@@ -25,14 +25,23 @@
 (define (%player-joined player)
         (log-debug "player-joined" "HIT ~a" (actor-name player))
         (for-each-player (λ (other)
-                            (send-message other (simple-format #f "~a joined." (actor-name other)))
+                            (send-message other (format #f "~a joined." (actor-name other)))
                             #t)))
 
 (define (%player-chat player message)
         (for-each-player (λ (other)
-                            (send-message other (simple-format #f "~a: ~a" (actor-name other) message))
+                            (send-message other (format #f "~a: ~a" (actor-name other) message))
                             #t))
         (log-info "chat" "~a: ~a" (actor-name player) message))
+
+(define (%server-exec message)
+        (if (string-prefix? "/" message)
+            ""
+            (begin (for-each-player (λ (other)
+                                       (send-message other (format #f "server: ~a" message))
+                                       #t))
+                   (log-info "chat" "server: ~a" message)
+                   "sent.")))
 
 (delay-run! 5 (log-debug "delay" "test 5"))
 (delay-run! 7 (log-debug "delay" "test 7"))

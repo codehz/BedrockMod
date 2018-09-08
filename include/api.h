@@ -185,6 +185,9 @@ SCM scm_list_trait(SCM v1, SCM v2, SCM v3, SCM v4, SCM v5, SCM v6, SCM v7, SCM v
 template <typename... T> SCM call(const char *name, const T &... ts) { return scm_call_trait(var(name), to_scm(ts)...); }
 template <typename... T> SCM call(SCM scm, const T &... ts) { return scm_call_trait(scm, to_scm(ts)...); }
 
+template <typename R, typename... T> auto call_as(const char *name, const T &... ts) { return from_scm<R>(scm_call_trait(var(name), to_scm(ts)...)); }
+template <typename R, typename... T> auto call_as(SCM scm, const T &... ts) { return from_scm<R>(scm_call_trait(scm, to_scm(ts)...)); }
+
 template <typename R = void, typename... T> struct callback : as_sym {
   R operator()(T... t) const { return from_scm<R>(call(scm, t...)); }
   void setInvalid() { scm = SCM_BOOL_F; }
