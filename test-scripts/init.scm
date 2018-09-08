@@ -36,12 +36,12 @@
 
 (define (%server-exec message)
         (if (string-prefix? "/" message)
-            ""
+            #f
             (begin (for-each-player (λ (other)
                                        (send-message other (format #f "server: ~a" message))
                                        #t))
                    (log-info "chat" "server: ~a" message)
-                   "sent.")))
+                   "")))
 
 (delay-run! 5 (log-debug "delay" "test 5"))
 (delay-run! 7 (log-debug "delay" "test 7"))

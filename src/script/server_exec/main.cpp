@@ -4,9 +4,9 @@
 
 const char *onLauncherExec(const char *command) {
   if (scm::sym(R"(%server-exec)")) {
-    auto str = scm::call_as<gc_string>(R"(%server-exec)", command);
-    if (str.data[0] == 0) return nullptr;
-    return str;
+    auto str = scm::call(R"(%server-exec)", command);
+    if (scm_is_false(str)) return nullptr;
+    return scm::from_scm<gc_string>(str);
   }
   return nullptr;
 }
