@@ -43,12 +43,3 @@
 (export dbus-reply register-dbus-interface define-dbus-method)
 
 (define ptr (quote *))
-
-; (define (handler->pointer handler)
-;         (procedure->pointer int handler (list ptr ptr ptr)))
-
-; (define* (define-dbus-method vt flags name signature result handler #:optional offset)
-;          (let ((handler-pointer (handler->pointer handler)))
-;               (define-dbus-method-internal vt flags name signature result handler-pointer offset)))
-
-; (export define-dbus-method)
