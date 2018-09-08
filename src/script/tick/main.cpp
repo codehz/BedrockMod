@@ -1,4 +1,3 @@
-// Deps: out/script_chat.so: out/script_base.so
 #include <api.h>
 
 #include <StaticHook.h>
