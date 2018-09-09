@@ -39,6 +39,8 @@ TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::
   return true;
 }
 
+LOADFILE(preload, "src/script/base/preload.scm");
+
 PRELOAD_MODULE("minecraft base") {
   scm::sym_list uuid_slots = { "t0", "t1", "t2", "t3" };
   scm::sym_list data_slots = { "ptr" };
@@ -61,7 +63,10 @@ PRELOAD_MODULE("minecraft base") {
 
 #ifndef DIAG
 #include "main.x"
+#include "preload.scm.z"
 #endif
+
+  scm_c_eval_string(&file_preload_start);
 }
 
 extern "C" void mod_set_server(void *v) { support_get_minecraft()->activateWhitelist(); }

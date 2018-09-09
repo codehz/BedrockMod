@@ -7,6 +7,7 @@
 (use-modules (minecraft form))
 (use-modules (system repl coop-server))
 (use-modules (json))
+(use-modules (megacut))
 
 (log-trace "test"
            "~s - ~a"
@@ -21,10 +22,9 @@
         #t)
 
 (define (%player-joined player)
-        (log-debug "player-joined" "HIT ~a" (actor-name player))
-        (for-each-player (λ (other)
-                            (send-message other (format #f "~a joined." (actor-name other)))
-                            #t)))
+        (let ((pname (actor-name player)))
+             (log-debug "player-joined" "HIT ~a" pname)
+             (for-each-player! other (send-message other (format #f "~a joined." pname)))))
 
 (define (handle-custom-command player command)
         (cond ((and player (string=? command "test"))
@@ -34,37 +34,32 @@
                                                                (content . "test")
                                                                (button1 . "ok")
                                                                (button2 . "cancel")))
-                                           (λ (res)
-                                              (log-debug "result" "form: ~a" (json-string->scm res))))))))
+                                           #%(log-debug "result" "form: ~a" (json-string->scm %)))))))
 
 (define (%player-chat player message)
         (if (string-prefix? "." message)
             (handle-custom-command player (string-drop message 1))
-            (begin (for-each-player (λ (other)
-                                       (send-message other (format #f "~a: ~a" (actor-name other) message))
-                                       #t))
-                   (log-info "chat" "~a: ~a" (actor-name player) message))))
+            (let ((pname (actor-name player)))
+                 (for-each-player! other (send-message other (format #f "~a: ~a" pname message)))
+                 (log-info "chat" "~a: ~a" pname message))))
 
 (define (%server-exec message)
-        (if (string-prefix? "/" message)
-            #f
-            (begin (for-each-player (λ (other)
-                                       (send-message other (format #f "server: ~a" message))
-                                       #t))
-                   (log-info "chat" "server: ~a" message)
-                   "")))
+        (cond ((string-prefix? "/" message) #f)
+              ((string-prefix? "." message) (handle-custom-command #f (string-drop message 1)))
+              (else (for-each-player! player (send-message player (format #f "server: ~a" message)))
+                           (log-info "chat" "server: ~a" message)
+                           "")))
 
 (delay-run! 5 (log-debug "delay" "test 5"))
 (delay-run! 7 (log-debug "delay" "test 7"))
 
 (register-dbus-interface ""
                          "one.codehz.bedrockserver.test"
-                         (λ (vt) #f
-                                (define-dbus-signal vt 0 "test_signal" "s")
-                                (define-dbus-method vt 0 "test_method" "s" "s"
-                                                    (λ (m u e)
-                                                       (let ((data (dbus-read m #\s)))
-                                                            (dbus-reply m "s" data))))))
+                         (megacut (define-dbus-signal % 0 "test_signal" "s")
+                                  (define-dbus-method % 0 "test_method" "s" "s"
+                                                      (λ (m u e)
+                                                         (let ((data (dbus-read m #\s)))
+                                                              (dbus-reply m "s" data))))))
 
 (let ((server (spawn-coop-repl-server)))
      (interval-run! 1 (poll-coop-repl-server server)))
