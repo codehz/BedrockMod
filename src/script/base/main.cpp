@@ -12,9 +12,13 @@ SCM player_type;
 static_assert(sizeof(void *) == 4, "Only works in 32bit");
 #endif
 
-SCM_DEFINE_PUBLIC(c_make_uuid, "uuid", 1, 0, 0, (scm::val<char *> name), "Create UUID") { return scm::to_scm(mce::UUID::fromString((temp_string)name)); }
+SCM_DEFINE_PUBLIC(c_make_uuid, "uuid", 1, 0, 0, (scm::val<char *> name), "Create UUID") {
+  return scm::to_scm(mce::UUID::fromString((temp_string)name));
+}
 
-SCM_DEFINE_PUBLIC(c_uuid_to_string, "uuid->string", 1, 0, 0, (scm::val<mce::UUID> uuid), "UUID to string") { return scm::to_scm(uuid.get().asString()); }
+SCM_DEFINE_PUBLIC(c_uuid_to_string, "uuid->string", 1, 0, 0, (scm::val<mce::UUID> uuid), "UUID to string") {
+  return scm::to_scm(uuid.get().asString());
+}
 
 SCM_DEFINE_PUBLIC(c_actor_name, "actor-name", 1, 0, 0, (scm::val<Actor *> act), "Return Actor's name") { return scm::to_scm(act->getNameTag()); }
 
@@ -28,7 +32,12 @@ SCM_DEFINE_PUBLIC(c_player_kick, "player-kick", 1, 0, 0, (scm::val<ServerPlayer 
   return SCM_UNSPECIFIED;
 }
 
-SCM_DEFINE_PUBLIC(c_player_permission_level, "player-permission-level", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get player's permission level.") {
+SCM_DEFINE_PUBLIC(c_player_connection, "player-connection-info", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get player connection info") {
+  return scm::to_scm(player->getClientId().toString());
+}
+
+SCM_DEFINE_PUBLIC(c_player_permission_level, "player-permission-level", 1, 0, 0, (scm::val<ServerPlayer *> player),
+                  "Get player's permission level.") {
   return scm::to_scm(player->getCommandPermissionLevel());
 }
 
@@ -45,9 +54,9 @@ PRELOAD_MODULE("minecraft base") {
   scm::sym_list uuid_slots = { "t0", "t1", "t2", "t3" };
   scm::sym_list data_slots = { "ptr" };
 
-  uuid_type      = scm::foreign_type("uuid", uuid_slots, nullptr);
-  actor_type     = scm::foreign_type("actor", data_slots, nullptr);
-  player_type    = scm::foreign_type("player", data_slots, nullptr);
+  uuid_type   = scm::foreign_type("uuid", uuid_slots, nullptr);
+  actor_type  = scm::foreign_type("actor", data_slots, nullptr);
+  player_type = scm::foreign_type("player", data_slots, nullptr);
 
   onPlayerAdded <<= [=](ServerPlayer &player) {
     if (scm::sym(R"(%player-added)")) scm::call(R"(%player-added)", &player);

@@ -23,7 +23,7 @@
 
 (define (%player-joined player)
         (let ((pname (actor-name player)))
-             (log-debug "player-joined" "HIT ~a" pname)
+             (log-debug "player-joined" "HIT ~a ~a" pname (player-connection-info player))
              (for-each-player! other (send-message other (format #f "~a joined." pname)))))
 
 (define (handle-custom-command player command)
