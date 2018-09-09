@@ -13,6 +13,7 @@ const char *mcpelauncher_property_get_group(const char *group, const char *name,
 
 static bool experimental = asBool(mcpelauncher_property_get("experimental", "false"));
 static bool education    = asBool(mcpelauncher_property_get("education", "false"));
+static bool chemistry    = asBool(mcpelauncher_property_get("chemistry", "false"));
 
 TClasslessInstanceHook(bool, _ZNK9LevelData23isEducationEditionLevelEv) { return education; }
 
@@ -41,6 +42,8 @@ TClasslessInstanceHook(bool, _ZNK9LevelData32achievementsWillBeDisabledOnLoadEv)
 TClasslessInstanceHook(bool, _ZNK9LevelData23hasAchievementsDisabledEv) { return false; }
 
 TClasslessInstanceHook(void, _ZN9LevelData19disableAchievementsEv) {}
+
+TClasslessInstanceHook(bool, _ZN16ChemistryOptions18isChemistryEnabledEv) { return chemistry; }
 
 struct Item {
   static bool mAllowExperimental;
