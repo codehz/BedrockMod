@@ -1,14 +1,12 @@
-(use-modules (language ecmascript parse))
-(use-modules ((system base compile) #:select (compile)))
-(use-modules (system foreign))
-(use-modules (oop goops))
 (use-modules (sqlite3))
 (use-modules (minecraft))
 (use-modules (minecraft base))
 (use-modules (minecraft tick))
 (use-modules (minecraft dbus))
 (use-modules (minecraft chat))
+(use-modules (minecraft form))
 (use-modules (system repl coop-server))
+(use-modules (json))
 
 (log-trace "test"
            "~s - ~a"
@@ -28,11 +26,24 @@
                             (send-message other (format #f "~a joined." (actor-name other)))
                             #t)))
 
+(define (handle-custom-command player command)
+        (cond ((and player (string=? command "test"))
+                 (delay-run! 50 (send-form player
+                                           (scm->json-string '((title   . "test")
+                                                               (type    . "modal")
+                                                               (content . "test")
+                                                               (button1 . "ok")
+                                                               (button2 . "cancel")))
+                                           (λ (res)
+                                              (log-debug "result" "form: ~a" (json-string->scm res))))))))
+
 (define (%player-chat player message)
-        (for-each-player (λ (other)
-                            (send-message other (format #f "~a: ~a" (actor-name other) message))
-                            #t))
-        (log-info "chat" "~a: ~a" (actor-name player) message))
+        (if (string-prefix? "." message)
+            (handle-custom-command player (string-drop message 1))
+            (begin (for-each-player (λ (other)
+                                       (send-message other (format #f "~a: ~a" (actor-name other) message))
+                                       #t))
+                   (log-info "chat" "~a: ~a" (actor-name player) message))))
 
 (define (%server-exec message)
         (if (string-prefix? "/" message)
