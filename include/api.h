@@ -189,7 +189,7 @@ template <typename R, typename... T> auto call_as(const char *name, const T &...
 template <typename R, typename... T> auto call_as(SCM scm, const T &... ts) { return from_scm<R>(scm_call_trait(scm, to_scm(ts)...)); }
 
 template <typename R = void, typename... T> struct callback : as_sym {
-  R operator()(T... t) const { return from_scm<R>(call(scm, t...)); }
+  auto operator()(T... t) const { return from_scm<R>(call(scm, t...)); }
   void setInvalid() { scm = SCM_BOOL_F; }
 };
 
