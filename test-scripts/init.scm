@@ -7,6 +7,7 @@
 (use-modules (system repl coop-server))
 (use-modules (json))
 (use-modules (megacut))
+(use-modules (sqlite3))
 
 (log-trace "test"
            "~s - ~a"
