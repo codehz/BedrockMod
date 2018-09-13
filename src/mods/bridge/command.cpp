@@ -1,7 +1,7 @@
-#include <string>
-#include <memory>
 #include <functional>
+#include <memory>
 #include <sstream>
+#include <string>
 
 #include <StaticHook.h>
 
@@ -18,8 +18,23 @@ struct CommandOrigin {
   virtual ~CommandOrigin();
 };
 
+struct AutoCompleteOption {
+  std::string s1, s2, s3;
+  char filler[120 - 3 * sizeof(std::string)];
+};
+
+struct AutoCompleteInformation {
+  void *filler;
+  std::vector<AutoCompleteOption> list;
+};
+
+struct CommandRegistry {
+  std::unique_ptr<AutoCompleteInformation> getAutoCompleteOptions(CommandOrigin const &, std::string const &, unsigned int) const;
+};
+
 struct MinecraftCommands {
   MCRESULT requestCommandExecution(std::unique_ptr<CommandOrigin> o, std::string const &s, int i, bool b) const;
+  CommandRegistry &getRegistry();
 };
 
 struct Minecraft {
@@ -47,12 +62,12 @@ struct CommandOutput {
 
 extern "C" void _ZNK20CommandOutputMessage14getUserMessageB5cxx11Ev(std::string &out, CommandOutputMessage const *);
 
-ServerInstance *si __attribute__ ((visibility ("hidden")));
+ServerInstance *si __attribute__((visibility("hidden")));
 
 static bool state = false;
 static std::stringstream ss;
 
-__attribute__ ((visibility ("hidden"))) std::string execCommand(std::string line) {
+__attribute__((visibility("hidden"))) std::string execCommand(std::string line) {
   if (line.size() == 0) return "";
   state = true;
   ss.str("");
@@ -75,4 +90,12 @@ TClasslessInstanceHook(void, _ZN19CommandOutputSender4sendERK13CommandOriginRK13
   } else {
     original(this, orig, outp);
   }
+}
+
+std::vector<std::string> doComplete(std::string input, unsigned pos) {
+  std::unique_ptr<DedicatedServerCommandOrigin> commandOrigin(new DedicatedServerCommandOrigin("Server", *si->getMinecraft()));
+  auto info = si->getMinecraft()->getCommands()->getRegistry().getAutoCompleteOptions(*commandOrigin, input, pos);
+  std::vector<std::string> ret;
+  for (auto &item : info->list) ret.push_back(item.s1);
+  return ret;
 }

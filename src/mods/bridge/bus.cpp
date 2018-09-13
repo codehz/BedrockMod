@@ -33,10 +33,28 @@ static int method_stop(sd_bus_message *m, void *userdata, sd_bus_error *ret_erro
   return sd_bus_reply_method_return(m, "");
 }
 
+std::vector<std::string> doComplete(std::string input, unsigned pos);
+
+static int method_complete(sd_bus_message *call, void *userdata, sd_bus_error *ret_error) {
+  char *dat;
+  unsigned int pos;
+  sd_bus_message_read(call, "su", &dat, pos);
+  auto list = doComplete(dat, pos);
+  sd_bus_message *m;
+  sd_bus_message_new_method_return(call, &m);
+  sd_bus_message_open_container(m, 'a', "s");
+  for (auto const &item : list) { sd_bus_message_append(m, "s", item.c_str()); }
+  sd_bus_message_close_container(m);
+  auto ret = sd_bus_send(bus, m, nullptr);
+  sd_bus_message_unrefp(&m);
+  return ret;
+}
+
 static const sd_bus_vtable core_vtable[] = { SD_BUS_VTABLE_START(0),
                                              SD_BUS_METHOD("ping", "", "s", method_pong, SD_BUS_VTABLE_UNPRIVILEGED),
                                              SD_BUS_METHOD("exec", "s", "s", method_exec, SD_BUS_VTABLE_UNPRIVILEGED),
                                              SD_BUS_METHOD("stop", "", "", method_stop, SD_BUS_VTABLE_UNPRIVILEGED),
+                                             SD_BUS_METHOD("complete", "su", "as", method_complete, SD_BUS_VTABLE_UNPRIVILEGED),
                                              SD_BUS_SIGNAL("log", "yss", 0),
                                              SD_BUS_VTABLE_END };
 
