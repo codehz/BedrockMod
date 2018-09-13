@@ -9,7 +9,7 @@ jobs:
       - checkout
       - run:
           name: prepare git
-          command: pacman -Sy git cmake clang guile --noconfirm --needed
+          command: pacman -Sy git cmake clang boost --noconfirm --needed
       - run:
           name: build
           command: make
