@@ -67,10 +67,32 @@ extern "C" void mod_set_server(ServerInstance *instance) {
   si          = instance;
   dbus_thread = new std::thread(dbus_loop);
 }
+
+__always_inline static std::string getProfile() {
+  auto p = std::getenv("profile");
+  return p ? std::string(p) : "";
+}
+
+const static std::string profile = getProfile();
+
 extern "C" void mod_init() {
-  dbus_init("one.codehz.bedrockserver.default");
+  dbus_init(("one.codehz.bedrockserver." + profile).c_str());
   signal(SIGINT, handleInt);
 }
+
+TClasslessInstanceHook(void, _ZN18PropertiesSettingsC2ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE, std::string const &name) {
+  original(this, "profiles/" + profile + "/" + name);
+}
+
+TClasslessInstanceHook(void, _ZN13WhitelistFileC2ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE, std::string const &name) {
+  original(this, "profiles/" + profile + "/" + name);
+}
+
+TClasslessInstanceHook(void, _ZN15PermissionsFileC2ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE, std::string const &name) {
+  original(this, "profiles/" + profile + "/" + name);
+}
+
+TClasslessInstanceHook(std::string, _ZNK15FilePathManager13getWorldsPathB5cxx11Ev) { return "profiles/" + profile + "/worlds/"; }
 
 // Disable console input
 TClasslessInstanceHook(void, _ZN18ConsoleInputReaderC2Ev) {}
@@ -80,6 +102,4 @@ TClasslessInstanceHook(bool, _ZN18ConsoleInputReader7getLineERNSt7__cxx1112basic
 }
 
 // Modify version
-THook(std::string, _ZN6Common22getServerVersionStringB5cxx11Ev) {
-  return original() + " modded";
-}
+THook(std::string, _ZN6Common22getServerVersionStringB5cxx11Ev) { return original() + " modded"; }
