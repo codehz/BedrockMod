@@ -3,21 +3,21 @@ version: 2
 jobs:
   build:
     docker:
-      - image: codehz/mcpe-sdk:mod
+      - image: base/devel
     working_directory: /data/projects
     steps:
       - checkout
       - run:
+          name: prepare git
+          command: pacman -Sy git cmake clang guile --noconfirm --needed
+      - run:
           name: build
           command: make
-          environment:
-            CXX: /data/sdk/bin/i686-linux-android-g++
-            CC : /data/sdk/bin/i686-linux-android-gcc
       - run:
           name: package
-          command:
-            cd /data/projects/out &&
-            strip * &&
+          command: |
+            cd /data/projects/out
+            strip *
             tar cvf mods.tar.xz *.so
       - store_artifacts:
           path: /data/projects/out/mods.tar.xz
