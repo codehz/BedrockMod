@@ -39,9 +39,9 @@
     {
       "label": "test",
       "type": "shell",
-      "command": "make",
+      "command": "./run.sh",
       "options": {
-        "cwd": "./test64"
+        "cwd": "./test"
       },
       "dependsOn": [
         "build"

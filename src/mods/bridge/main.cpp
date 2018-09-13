@@ -61,7 +61,7 @@ static std::thread *dbus_thread;
 
 std::string execCommand(std::string line);
 
-static void handleInt(int sig) { si->server->stop(); }
+__attribute__((visibility("hidden"))) void handleStop(int sig) { si->server->stop(); }
 
 extern "C" void mod_set_server(ServerInstance *instance) {
   si          = instance;
@@ -77,7 +77,7 @@ const static std::string profile = getProfile();
 
 extern "C" void mod_init() {
   dbus_init(("one.codehz.bedrockserver." + profile).c_str());
-  signal(SIGINT, handleInt);
+  signal(SIGINT, handleStop);
 }
 
 TClasslessInstanceHook(void, _ZN18PropertiesSettingsC2ERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE, std::string const &name) {

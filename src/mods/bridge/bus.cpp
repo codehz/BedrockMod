@@ -10,7 +10,7 @@
 extern "C" const char *bridge_version();
 std::string execCommand(std::string line);
 extern "C" void mcpelauncher_server_thread(std::function<void()>);
-static bool killed = false;
+extern void handleStop(int sig);
 static sd_bus *bus = nullptr;
 
 extern "C" sd_bus *mcpelauncher_get_dbus() { return bus; }
@@ -29,7 +29,7 @@ static int method_exec(sd_bus_message *m, void *userdata, sd_bus_error *ret_erro
 }
 
 static int method_stop(sd_bus_message *m, void *userdata, sd_bus_error *ret_error) {
-  killed = true;
+  handleStop(0);
   return sd_bus_reply_method_return(m, "");
 }
 
@@ -57,6 +57,13 @@ finish:
 
 sd_bus_slot *slot = NULL;
 
+void dbus_stop() {
+  Log::info("DBUS", "Stoping...");
+  bus = NULL;
+  sd_bus_slot_unref(slot);
+  sd_bus_unref(bus);
+}
+
 void dbus_init(char const *name) {
   int r = 0;
   r     = sd_bus_open_system(&bus);
@@ -66,6 +73,7 @@ void dbus_init(char const *name) {
   if (r < 0) goto finish;
   r = sd_bus_add_object_vtable(bus, &slot, "/one/codehz/bedrockserver", "one.codehz.bedrockserver.core", core_vtable, NULL);
   if (r < 0) goto finish;
+  atexit(dbus_stop);
   return;
 finish:
   Log::info("DBUS", "Stoping...");
@@ -101,11 +109,4 @@ void dbus_loop() {
     if (r < 0) break;
   }
   if (r < 0) { Log::error("DBUS", "%s", strerror(-r)); }
-}
-
-void dbus_stop() {
-  Log::info("DBUS", "Stoping...");
-  bus = NULL;
-  sd_bus_slot_unref(slot);
-  sd_bus_unref(bus);
 }
