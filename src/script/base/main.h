@@ -6,11 +6,10 @@ extern SCM player_type;
 
 namespace scm {
 template <> struct convertible<mce::UUID> {
-  static SCM to_scm(mce::UUID const &temp) { return scm_make_foreign_object_n(uuid_type, 4, (void **)(void *)&temp); }
+  static SCM to_scm(mce::UUID const &temp) { return scm_make_foreign_object_n(uuid_type, 2, (void **)(void *)&temp); }
   static mce::UUID from_scm(SCM uuid) {
     scm_assert_foreign_object_type(uuid_type, uuid);
-    void *auuid[] = { scm_foreign_object_ref(uuid, 0), scm_foreign_object_ref(uuid, 1), scm_foreign_object_ref(uuid, 2),
-                      scm_foreign_object_ref(uuid, 3) };
+    void *auuid[] = { scm_foreign_object_ref(uuid, 0), scm_foreign_object_ref(uuid, 1) };
     auto ruuid    = (mce::UUID *)auuid;
     return *ruuid;
   }

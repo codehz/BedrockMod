@@ -1,4 +1,3 @@
-(use-modules (sqlite3))
 (use-modules (minecraft))
 (use-modules (minecraft base))
 (use-modules (minecraft tick))

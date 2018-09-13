@@ -10,7 +10,7 @@ SCM sd_bus_vtable_type;
 struct sd_bus;
 struct sd_bus_slot {};
 
-extern "C" extern "C" sd_bus *mcpelauncher_get_dbus();
+extern "C" sd_bus *mcpelauncher_get_dbus();
 
 SCM_DEFINE(c_get_dbus, "dbus-handle", 0, 0, 0, (), "Get dbus instance") { return scm_from_pointer(mcpelauncher_get_dbus(), nullptr); }
 

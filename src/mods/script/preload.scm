@@ -6,4 +6,4 @@
 (define-public (log-error  tag msg . args) (log-raw log-level-error  tag (apply format #f msg args)))
 (define-public (log-fatal  tag msg . args) (log-raw log-level-fatal  tag (apply format #f msg args)))
 
-(set! %load-path '("user/scm/scripts"))
+(set! %load-path '("scm/scripts"))

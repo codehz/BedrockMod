@@ -9,11 +9,12 @@ SCM actor_type;
 SCM player_type;
 
 #ifndef DIAG
-static_assert(sizeof(void *) == 4, "Only works in 32bit");
+static_assert(sizeof(void *) == 8, "Only works in 64bit");
 #endif
 
-SCM_DEFINE_PUBLIC(c_make_uuid, "uuid", 1, 0, 0, (scm::val<char *> name), "Create UUID") {
-  return scm::to_scm(mce::UUID::fromString((temp_string)name));
+SCM_DEFINE_PUBLIC(c_make_uuid, "uuid", 1, 0, 0, (scm::val<std::string> name), "Create UUID") {
+  std::string temp = name;
+  return scm::to_scm(mce::UUID::fromStringFix(temp));
 }
 
 SCM_DEFINE_PUBLIC(c_uuid_to_string, "uuid->string", 1, 0, 0, (scm::val<mce::UUID> uuid), "UUID to string") {
@@ -43,7 +44,8 @@ SCM_DEFINE_PUBLIC(c_player_permission_level, "player-permission-level", 1, 0, 0,
 
 struct Whitelist {};
 
-TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::UUID &uuid, std::string const &msg) {
+TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE, Whitelist, mce::UUID &uuid,
+              std::string const &msg) {
   if (scm::sym(R"(%player-login)")) return scm::from_scm<bool>(scm::call(R"(%player-login)", uuid));
   return true;
 }
@@ -51,22 +53,18 @@ TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKSs, Whitelist, mce::
 LOADFILE(preload, "src/script/base/preload.scm");
 
 PRELOAD_MODULE("minecraft base") {
-  scm::sym_list uuid_slots = { "t0", "t1", "t2", "t3" };
+  scm::sym_list uuid_slots = { "t0", "t1" };
   scm::sym_list data_slots = { "ptr" };
 
   uuid_type   = scm::foreign_type("uuid", uuid_slots, nullptr);
   actor_type  = scm::foreign_type("actor", data_slots, nullptr);
   player_type = scm::foreign_type("player", data_slots, nullptr);
 
-  onPlayerAdded <<= [=](ServerPlayer &player) {
-    if (scm::sym(R"(%player-added)")) scm::call(R"(%player-added)", &player);
-  };
-
-  onPlayerJoined <<= [=](ServerPlayer &player) {
+  onPlayerJoined <<= [](ServerPlayer &player) {
     if (scm::sym(R"(%player-joined)")) scm::call(R"(%player-joined)", &player);
   };
 
-  onPlayerLeft <<= [=](ServerPlayer &player) {
+  onPlayerLeft <<= [](ServerPlayer &player) {
     if (scm::sym(R"(%player-left)")) scm::call(R"(%player-left)", &player);
   };
 

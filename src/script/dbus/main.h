@@ -15,7 +15,7 @@ struct sd_bus_start : sd_bus_vtable {
   size_t element_size;
   sd_bus_start(uint64_t flags)
       : sd_bus_vtable('<', flags)
-      , element_size(28) {}
+      , element_size(56) {}
 };
 
 struct sd_bus_end : sd_bus_vtable {
@@ -64,12 +64,12 @@ struct sd_bus_property : sd_bus_vtable {
 };
 
 struct sd_bus_fill : sd_bus_vtable {
-  char filler[20];
+  char filler[56 - sizeof(sd_bus_vtable)];
 };
 
 struct sd_bus_vtable_list {
-  uint32_t cap;
-  uint32_t size;
+  uint64_t cap;
+  uint64_t size;
   sd_bus_fill *list;
 
   template <typename T, typename... P> void append(P... ps) {
@@ -86,7 +86,7 @@ template <> struct convertible<sd_bus_vtable_list> {
   static SCM to_scm(sd_bus_vtable_list const &temp) { return scm_make_foreign_object_n(sd_bus_vtable_type, 3, (void **)(void *)&temp); }
   static sd_bus_vtable_list from_scm(SCM scm) {
     scm_assert_foreign_object_type(sd_bus_vtable_type, scm);
-    return { (uint32_t)scm_foreign_object_ref(scm, 0), (uint32_t)scm_foreign_object_ref(scm, 1), (sd_bus_fill *)scm_foreign_object_ref(scm, 2) };
+    return { (uint64_t)scm_foreign_object_ref(scm, 0), (uint64_t)scm_foreign_object_ref(scm, 1), (sd_bus_fill *)scm_foreign_object_ref(scm, 2) };
   }
   static void set_scm(SCM scm, sd_bus_vtable_list const &temp) {
     auto buffer = (void **)(void *)&temp;

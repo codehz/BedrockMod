@@ -15,16 +15,12 @@ const char *mcpelauncher_property_get(const char *name, const char *def);
 
 Minecraft *support_get_minecraft();
 
-void script_preload(std::function<void()>);
+void script_preload(void (*fn)(void *), const char *name);
 };
 
-static auto init_guile_module(void (*fn)(void *), const char *name) {
-  return [=]() { scm_c_define_module(name, fn, (void *)name); };
-}
-
 #define PRELOAD_MODULE(name)                                                                                                                         \
-  static void init_module(void *);                                                                                                                   \
-  extern "C" void mod_init() { script_preload(init_guile_module(init_module, name)); }                                                               \
+  void init_module(void *);                                                                                                                          \
+  extern "C" void mod_init() { script_preload(init_module, name); }                                                                                  \
   void init_module(void *)
 
 struct temp_string {

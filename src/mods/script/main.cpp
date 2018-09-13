@@ -9,9 +9,17 @@
 #include <unistd.h>
 #include <vector>
 
-static std::queue<std::function<void()>> mod_queue;
+struct GuildMod {
+  void (*fn)(void *);
+  const char *name;
+  GuildMod(void (*fn)(void *), const char *name)
+      : fn(fn)
+      , name(name) {}
+};
 
-void script_preload(std::function<void()> f) { mod_queue.push(f); }
+static std::queue<GuildMod> mod_queue;
+
+void script_preload(void (*fn)(void *), const char *name) { mod_queue.emplace(fn, name); }
 
 std::string GetCwd() {
   char cwd[1024];
@@ -56,13 +64,13 @@ SCM_DEFINE_PUBLIC(s_log, "log-raw", 3, 0, 0, (scm::val<int> level, scm::val<char
 LOADFILE(preload, "src/mods/script/preload.scm");
 
 PRELOAD_MODULE("minecraft") {
-  scm::definer("log-level-trace")  = (int)LogLevel::LOG_TRACE;
-  scm::definer("log-level-debug")  = (int)LogLevel::LOG_DEBUG;
-  scm::definer("log-level-info")   = (int)LogLevel::LOG_INFO;
-  scm::definer("log-level-notice") = (int)LogLevel::LOG_NOTICE;
-  scm::definer("log-level-warn")   = (int)LogLevel::LOG_WARN;
-  scm::definer("log-level-error")  = (int)LogLevel::LOG_ERROR;
-  scm::definer("log-level-fatal")  = (int)LogLevel::LOG_FATAL;
+  scm::definer("log-level-trace")  = (int)LogLevel::LOG_LEVEL_TRACE;
+  scm::definer("log-level-debug")  = (int)LogLevel::LOG_LEVEL_DEBUG;
+  scm::definer("log-level-info")   = (int)LogLevel::LOG_LEVEL_INFO;
+  scm::definer("log-level-notice") = (int)LogLevel::LOG_LEVEL_NOTICE;
+  scm::definer("log-level-warn")   = (int)LogLevel::LOG_LEVEL_WARN;
+  scm::definer("log-level-error")  = (int)LogLevel::LOG_LEVEL_ERROR;
+  scm::definer("log-level-fatal")  = (int)LogLevel::LOG_LEVEL_FATAL;
 
 #ifndef DIAG
 #include "main.x"
@@ -89,25 +97,29 @@ static void handler_message(char *&errstr, SCM tag, SCM args) {
   scm_close_output_port(p);
 }
 
+static void init_thread() {
+  scm_init_guile();
+  while (!mod_queue.empty()) {
+    auto mod = mod_queue.front();
+    Log::debug("reg", "%s", mod.name);
+    scm_c_define_module(mod.name, mod.fn, (void *)mod.name);
+    mod_queue.pop();
+  }
+  if (exists("scm/scripts/init.scm")) {
+    char *errstr = nullptr;
+    scm_c_catch(SCM_BOOL_T, (scm_t_catch_body)scm_c_primitive_load, (void *)"scm/scripts/init.scm", (scm_t_catch_handler)handler_message, &errstr,
+                nullptr, nullptr);
+    if (errstr) {
+      errstr[strlen(errstr) - 1] = 0;
+      Log::error("guile", "%s", errstr);
+      free(errstr);
+    }
+  }
+}
+
 extern "C" void mod_set_server(void *) {
-  mcpelauncher_server_thread <<= [] {
-    setenv("GUILE_SYSTEM_PATH", "user/scm/modules", 1);
-    setenv("GUILE_SYSTEM_COMPILED_PATH", "user/scm/ccache", 1);
-    setenv("GUILE_SYSTEM_EXTENSIONS_PATH", "user/scm/extensions", 1);
-    scm_init_guile();
-    while (!mod_queue.empty()) {
-      mod_queue.front()();
-      mod_queue.pop();
-    }
-    if (exists("user/scm/scripts/init.scm")) {
-      char *errstr = nullptr;
-      scm_c_catch(SCM_BOOL_T, (scm_t_catch_body)scm_c_primitive_load, (void *)"user/scm/scripts/init.scm", (scm_t_catch_handler)handler_message,
-                  &errstr, nullptr, nullptr);
-      if (errstr) {
-        errstr[strlen(errstr) - 1] = 0;
-        Log::error("guile", "%s", errstr);
-        free(errstr);
-      }
-    }
-  };
+  setenv("GUILE_SYSTEM_PATH", "scm/modules", 1);
+  setenv("GUILE_SYSTEM_COMPILED_PATH", "scm/ccache", 1);
+  setenv("GUILE_SYSTEM_EXTENSIONS_PATH", "scm/extensions", 1);
+  mcpelauncher_server_thread(init_thread);
 }

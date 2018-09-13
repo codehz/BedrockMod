@@ -1,6 +1,9 @@
-CFLAGSQL = -std=c99 -Iinclude -O3 -fdiagnostics-color=always -fmax-errors=1
-CXXFLAGS = -ffast-math -std=c++14 -Iinclude -Iinclude/guile/2.2 -Iinclude/gmp -Wno-invalid-offsetof -O3 -fdiagnostics-color=always -fmax-errors=1
-LDFLAGS = -L./lib -lminecraftpe
+CXX = clang++
+CC = clang
+
+CFLAGSQL = -fPIC -std=c99 -Iinclude -O3 -fdiagnostics-color=always
+CXXFLAGS = -fPIC -ffast-math -std=c++2a -Iinclude -Iinclude/guile/2.2 -Iinclude/gmp -Wno-invalid-offsetof -O3 -fdiagnostics-color=always
+LDFLAGS = -fPIC
 
 LPLAYER = -Lout -lsupport
 LSCRIPT = -Lout -lscript
@@ -21,13 +24,16 @@ clean:
 out/lib%.so: obj/mods/%/main.o
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
-out/libsupport.so: obj/string.o obj/mods/support/main.o lib/libminecraftpe.so
+out/libbridge.so: obj/mods/bridge/main.o obj/mods/bridge/bus.o obj/mods/bridge/command.o
+	@echo LD $@
+	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^) -lsystemd
+out/libsupport.so: obj/mods/support/main.o
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
-out/libscript.so: obj/mods/script/main.o lib/libminecraftpe.so out/libsupport.so
+out/libscript.so: obj/mods/script/main.o out/libsupport.so out/libbridge.so
 	@echo LD $@
-	@$(CXX) $(LDFLAGS) $(LPLAYER) -shared -fPIC -o $@ $(filter %.o,$^)
-out/script_%.so: obj/script/%/main.o out/libsupport.so lib/libminecraftpe.so out/libscript.so
+	@$(CXX) $(LDFLAGS) $(LPLAYER) -shared -fPIC -o $@ $(filter %.o,$^) -lguile-2.2 -lgc -lbridge
+out/script_%.so: obj/script/%/main.o obj/uuid.o out/libsupport.so out/libscript.so
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lref -l:,$(notdir $(filter ref/%.so,$^))) $(addprefix -Lout -l:,$(notdir $(filter out/%.so,$^)))
 

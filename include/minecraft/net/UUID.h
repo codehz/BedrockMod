@@ -10,7 +10,7 @@ struct UUID {
     least = oth.least;
   }
   const std::string asString() const;
-  static mce::UUID fromString(std::string const &);
+  static UUID fromStringFix(std::string const & str);
   bool operator==(UUID const &another) const { return most == another.most && least == another.least; }
   bool operator!=(UUID const &another) const { return most != another.most || least != another.least; }
 };

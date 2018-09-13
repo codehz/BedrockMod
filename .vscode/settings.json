@@ -3,6 +3,7 @@
     "*.cjson": "jsonc",
     "*.wxss": "css",
     "*.wxs": "javascript",
+    "*.scm": "scheme",
     ".clang-format": "yaml",
     "iosfwd": "cpp",
     "typeindex": "cpp",
@@ -65,6 +66,9 @@
     "string": "cpp",
     "new": "cpp",
     "*.x": "cpp",
-    "*.z": "cpp"
+    "*.z": "cpp",
+    "*.ipp": "cpp",
+    "csignal": "cpp",
+    "strstream": "cpp"
   }
 }
