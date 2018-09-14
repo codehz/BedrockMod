@@ -45,7 +45,7 @@ TStaticHook(void, _ZN10BedrockLog7_log_vaEjjPKciS1_P13__va_list_tag, BedrockLog,
   printf("M [%s] %s", s0, buffer);
 }
 
-extern "C" const char *bridge_version() { return "0.2.0"; }
+extern "C" const char *bridge_version() { return "0.2.1"; }
 
 struct DedicatedServer {
   void stop();
@@ -75,6 +75,8 @@ __always_inline static std::string getProfile() {
 
 const static std::string profile = getProfile();
 
+extern "C" const char *mcpelauncher_get_profile() { return profile.c_str(); }
+
 extern "C" void mod_init() {
   dbus_init(("one.codehz.bedrockserver." + profile).c_str());
   signal(SIGINT, handleStop);
@@ -102,4 +104,4 @@ TClasslessInstanceHook(bool, _ZN18ConsoleInputReader7getLineERNSt7__cxx1112basic
 }
 
 // Modify version
-THook(std::string, _ZN6Common22getServerVersionStringB5cxx11Ev) { return original() + " modded"; }
+THook(std::string, _ZN6Common22getServerVersionStringB5cxx11Ev) { return original() + " modded " + bridge_version(); }
