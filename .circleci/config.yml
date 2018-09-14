@@ -19,6 +19,11 @@ jobs:
             cd /data/projects/out
             strip *
             tar cvf mods.tar.xz *.so
+      - run:
+          name: upload to bintray
+          command: |
+            curl -T /data/projects/out/mods.tar.xz "-ucodehz:$bintray" https://api.bintray.com/content/codehz/Minecraft/BedrockMod/Testing/mods.tar.xz
+            curl -T /data/projects/guile.zip "-ucodehz:$bintray" https://api.bintray.com/content/codehz/Minecraft/BedrockMod/Testing/guile.zip
       - store_artifacts:
           path: /data/projects/out/mods.tar.xz
       - store_artifacts:
