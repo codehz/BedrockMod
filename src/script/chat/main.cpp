@@ -1,16 +1,14 @@
 // Deps: out/script_chat.so: out/script_base.so
-#include <api.h>
 #include "../base/main.h"
+#include <api.h>
 
 #include <StaticHook.h>
 
 struct TextPacket : Packet {
-  unsigned char type; // 13
-  int primaryName;
-  int thirdPartyName;
-  int platform;
-  std::string message; // 28
-  unsigned char filler[30];
+  unsigned char type; // 17
+  unsigned char filler[96 - 18];
+  std::string message; // 96
+  unsigned char filler2[150];
   static TextPacket createSystemMessage(std::string const &);
 
   TextPacket(unsigned char playerSubIndex)
@@ -35,7 +33,7 @@ TClasslessInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentif
 }
 
 SCM_DEFINE_PUBLIC(c_send_message, "send-message", 2, 1, 0, (scm::val<ServerPlayer *> player, scm::val<std::string> message, scm::val<int> type),
-           "Send message to player") {
+                  "Send message to player") {
   auto packet = TextPacket::createSystemMessage(message);
   if (scm_is_integer(type.scm)) packet.type = type;
   player->sendNetworkPacket(packet);
