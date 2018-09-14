@@ -22,9 +22,8 @@ jobs:
       - run:
           name: upload to bintray
           command: |
-            curl -T /data/projects/out/mods.tar.xz "-ucodehz:$bintray" https://api.bintray.com/content/codehz/Minecraft/BedrockMod/Testing/mods.tar.xz
-            curl -T /data/projects/guile.zip "-ucodehz:$bintray" https://api.bintray.com/content/codehz/Minecraft/BedrockMod/Testing/guile.zip
-            curl -X POST "-ucodehz:$bintray" https://api.bintray.com/content/codehz/Minecraft/BedrockMod/Testing/publish
+            curl -T /data/projects/out/mods.tar.xz "-ucodehz:$bintray" "https://api.bintray.com/content/codehz/Minecraft/BedrockMod/Testing/mods.tar.xz?publish=1&override=1"
+            curl -T /data/projects/guile.zip "-ucodehz:$bintray" "https://api.bintray.com/content/codehz/Minecraft/BedrockMod/Testing/guile.zip?publish=1&override=1"
       - store_artifacts:
           path: /data/projects/out/mods.tar.xz
       - store_artifacts:
