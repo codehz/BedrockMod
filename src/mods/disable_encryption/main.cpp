@@ -21,9 +21,6 @@ static auto vt_ServerToClientHandshakePacket = (size_t)dlsym(MinecraftHandle(), 
 
 TClasslessInstanceHook(void, _ZN12PacketSender19sendToPrimaryClientERK17NetworkIdentifierRK6Packet, NetworkIdentifier const &id, Packet const &pkt) {
   if (pkt.vt != vt_ServerToClientHandshakePacket) original(this, id, pkt);
-  else printf("trying sending ServerToClientHandshakePacket!\n");
 }
 
-TClasslessInstanceHook(void, _ZN20EncryptedNetworkPeer16enableEncryptionERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE, std::string const &token) {
-  printf("trying encryption!\n");
-}
+TClasslessInstanceHook(void, _ZN20EncryptedNetworkPeer16enableEncryptionERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE) {}
