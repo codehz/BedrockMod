@@ -49,7 +49,7 @@ struct gc_string {
   operator char *() const { return data; }
 };
 
-template <typename T, typename F> decltype(auto) operator<<=(T t, F f) { return t(std::forward<F>(f)); }
+template <typename T, typename F> auto operator<<=(T t, F f) -> decltype(t(f)) { return t(std::forward<F>(f)); }
 
 namespace scm {
 
