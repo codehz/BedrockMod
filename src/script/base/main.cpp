@@ -33,13 +33,17 @@ SCM_DEFINE_PUBLIC(c_player_kick, "player-kick", 1, 0, 0, (scm::val<ServerPlayer 
   return SCM_UNSPECIFIED;
 }
 
-SCM_DEFINE_PUBLIC(c_player_connection, "player-connection-info", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get player connection info") {
-  return scm::to_scm(player->getClientId().toString());
-}
-
 SCM_DEFINE_PUBLIC(c_player_permission_level, "player-permission-level", 1, 0, 0, (scm::val<ServerPlayer *> player),
                   "Get player's permission level.") {
   return scm::to_scm(player->getCommandPermissionLevel());
+}
+
+SCM_DEFINE_PUBLIC(c_player_uuid, "player-uuid", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get Player's UUID") {
+  return scm::to_scm(player->getUUID());
+}
+
+SCM_DEFINE_PUBLIC(c_player_xuid, "player-xuid", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get Player's XUID") {
+  return scm::to_scm(player->getXUID());
 }
 
 struct Whitelist {};
