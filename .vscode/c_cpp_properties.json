@@ -4,8 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/include",
-                "${workspaceFolder}/include/guile/2.2",
-                "${workspaceFolder}/include/gmp",
+                "/usr/include/guile/2.2",
                 "/usr/include"
             ],
             "defines": ["DIAG"],
