@@ -51,8 +51,6 @@ ServerPlayer *findPlayer(NetworkIdentifier const &nid, unsigned char subIndex) {
   return nullptr;
 }
 
-struct Minecraft {};
-
 static Minecraft *mc;
 
 TInstanceHook(void, _ZN9Minecraft4initEb, Minecraft, bool v) {

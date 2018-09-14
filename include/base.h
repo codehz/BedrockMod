@@ -119,8 +119,17 @@ struct Mob : Actor {
   float getYHeadRot() const;
 };
 
+struct Certificate {};
+
+struct ExtendedCertificate {
+  static std::string getXuid(Certificate const &);
+};
+
 struct Player : Mob {
   void remove();
+  Certificate &getCertificate() const;
+  mce::UUID &getUUID() const; // requires bridge
+  std::string getXUID() const; // requires bridge
   NetworkIdentifier const &getClientId() const;
   unsigned char getClientSubId() const;
   BlockPos getSpawnPosition();
@@ -137,7 +146,7 @@ struct PacketSender {
 };
 
 struct LevelStorage {
-  void save(Actor&);
+  void save(Actor &);
 };
 
 struct Level {
@@ -150,6 +159,22 @@ struct Level {
   void forEachPlayer(std::function<bool(Player &)>);
   BlockPos const &getDefaultSpawn() const;
   void setDefaultSpawn(BlockPos const &);
+};
+
+struct DedicatedServer {
+  void stop();
+};
+
+struct Minecraft {
+  void init(bool);
+  void activateWhitelist();
+  Level &getLevel() const;
+};
+
+struct ServerInstance {
+  void *vt, *filler;
+  DedicatedServer *server;
+  Minecraft &getMinecraft();
 };
 
 enum struct InputMode { UNK };

@@ -5,7 +5,12 @@
 #include <systemd/sd-journal.h>
 #include <unistd.h>
 
+#include <base.h>
 #include <log.h>
+
+#include <StaticHook.h>
+
+extern ServerInstance *si __attribute__((visibility("hidden")));
 
 extern "C" const char *bridge_version();
 std::string execCommand(std::string line);
@@ -50,11 +55,26 @@ static int method_complete(sd_bus_message *call, void *userdata, sd_bus_error *r
   return ret;
 }
 
+static int method_list(sd_bus_message *call, void *userdata, sd_bus_error *ret_error) {
+  sd_bus_message *m;
+  sd_bus_message_new_method_return(call, &m);
+  sd_bus_message_open_container(m, 'a', "(sss)");
+  si->getMinecraft().getLevel().forEachPlayer([&](Player &p) -> bool {
+    sd_bus_message_append(m, "(sss)", p.getNameTag().c_str(), p.getUUID().asString().c_str(), p.getXUID().c_str());
+    return true;
+  });
+  sd_bus_message_close_container(m);
+  auto ret = sd_bus_send(bus, m, nullptr);
+  sd_bus_message_unrefp(&m);
+  return ret;
+}
+
 static const sd_bus_vtable core_vtable[] = { SD_BUS_VTABLE_START(0),
                                              SD_BUS_METHOD("ping", "", "s", method_pong, SD_BUS_VTABLE_UNPRIVILEGED),
                                              SD_BUS_METHOD("exec", "s", "s", method_exec, SD_BUS_VTABLE_UNPRIVILEGED),
                                              SD_BUS_METHOD("stop", "", "", method_stop, SD_BUS_VTABLE_UNPRIVILEGED),
                                              SD_BUS_METHOD("complete", "su", "as", method_complete, SD_BUS_VTABLE_UNPRIVILEGED),
+                                             SD_BUS_METHOD("list", "", "a(sss)", method_list, SD_BUS_VTABLE_UNPRIVILEGED),
                                              SD_BUS_SIGNAL("log", "yss", 0),
                                              SD_BUS_VTABLE_END };
 

@@ -2,7 +2,7 @@ CXX = clang++
 CC = clang
 
 CFLAGSQL = -fPIC -std=c99 -Iinclude -O3 -fdiagnostics-color=always
-CXXFLAGS = -fPIC -ffast-math -std=c++2a -Iinclude -Iinclude/guile/2.2 -Iinclude/gmp -Wno-invalid-offsetof -O3 -fdiagnostics-color=always
+CXXFLAGS = -fPIC -ffast-math -std=c++2a -Iinclude -I/usr/include/guile/2.2 -Wno-invalid-offsetof -O3 -fdiagnostics-color=always
 LDFLAGS = -fPIC
 
 LPLAYER = -Lout -lsupport
@@ -24,7 +24,7 @@ clean:
 out/lib%.so: obj/mods/%/main.o
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
-out/libbridge.so: obj/mods/bridge/main.o obj/mods/bridge/bus.o obj/mods/bridge/command.o
+out/libbridge.so: obj/mods/bridge/main.o obj/mods/bridge/bus.o obj/mods/bridge/command.o obj/mods/bridge/player_ext.o
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^) -lsystemd
 out/libsupport.so: obj/mods/support/main.o

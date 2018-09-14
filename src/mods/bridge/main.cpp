@@ -6,6 +6,8 @@
 #include <thread>
 #include <unistd.h>
 
+#include <base.h>
+
 #include <StaticHook.h>
 
 #include <systemd/sd-bus.h>
@@ -46,15 +48,6 @@ TStaticHook(void, _ZN10BedrockLog7_log_vaEjjPKciS1_P13__va_list_tag, BedrockLog,
 }
 
 extern "C" const char *bridge_version() { return "0.2.1"; }
-
-struct DedicatedServer {
-  void stop();
-};
-
-struct ServerInstance {
-  void *vt, *filler;
-  DedicatedServer *server;
-};
 
 extern ServerInstance *si __attribute__((visibility("hidden")));
 static std::thread *dbus_thread;

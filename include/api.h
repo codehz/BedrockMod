@@ -225,13 +225,6 @@ struct definer {
 
 } // namespace scm
 
-struct Minecraft {
-  void init(bool);
-  void activateWhitelist();
-  // ServerNetworkHandler *getServerNetworkHandler();
-  Level *getLevel() const;
-};
-
 #define STR2(x) #x
 #define STR(x) STR2(x)
 // clang-format off
