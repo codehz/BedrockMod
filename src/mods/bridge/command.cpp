@@ -85,7 +85,7 @@ TClasslessInstanceHook(void, _ZN19CommandOutputSender4sendERK13CommandOriginRK13
     for (auto &item : outp->data) {
       std::string data;
       _ZNK20CommandOutputMessage14getUserMessageB5cxx11Ev(data, &item);
-      ss << data;
+      ss << data << std::endl;
     }
   } else {
     original(this, orig, outp);
