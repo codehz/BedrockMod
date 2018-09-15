@@ -31,7 +31,18 @@ char lvc[] = { 'T', 'D', 'I', 'N', 'W', 'E', 'F' };
 
 THook(void, mcpelauncher_log, int level, char const *tag, char const *content) {
   dbus_log(level, tag, content);
-  printf("%c [%s] %s\n", level[lvc], tag, content);
+  if (getenv("disable_stdout") == nullptr) printf("%c [%s] %s\n", level[lvc], tag, content);
+}
+
+__always_inline int getProirity(int lvl) {
+  switch(lvl) {
+    case -1: return 3;
+    case 1: return 0;
+    case 2: return 1;
+    case 4: return 4;
+    case 8: return 5;
+  }
+  return 2;
 }
 
 TStaticHook(void, _ZN10BedrockLog7_log_vaEjjPKciS1_P13__va_list_tag, BedrockLog, unsigned int a0, unsigned int a1, char const *s0, int i0,
@@ -43,8 +54,8 @@ TStaticHook(void, _ZN10BedrockLog7_log_vaEjjPKciS1_P13__va_list_tag, BedrockLog,
     buffer[len]     = '\n';
     buffer[len + 1] = 0;
   }
-  dbus_log(a1 > 6 ? 6 : a1, s0, buffer);
-  printf("M [%s] %s", s0, buffer);
+  dbus_log(getProirity(a1), s0, buffer);
+  if (getenv("disable_stdout") == nullptr) printf("%c [%s] %s", getProirity(a1)[lvc], s0, buffer);
 }
 
 extern "C" const char *bridge_version() { return "0.2.1"; }
