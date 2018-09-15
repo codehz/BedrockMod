@@ -104,7 +104,7 @@ void dbus_stop() {
 
 void dbus_init(char const *name) {
   int r = 0;
-  r     = sd_bus_open_system(&bus);
+  r     = getenv("user_dbus") == nullptr ? sd_bus_open_system(&bus) : sd_bus_open_user(&bus);
   if (r < 0) goto dump;
   Log::info("DBUS", "Starting...");
   r = sd_bus_request_name(bus, name, 0);
