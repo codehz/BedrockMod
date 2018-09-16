@@ -55,6 +55,35 @@ namespace scm {
 
 template <typename T, typename = void> struct convertible;
 
+template <typename T>
+struct foreign_type_convertible {
+  static SCM &type() {
+    static SCM type;
+    return type;
+  }
+};
+
+template <typename T> struct foreign_object_is_convertible : foreign_type_convertible<T> {
+  using ft = foreign_type_convertible<T>;
+  static SCM to_scm(T const &t) { return scm_make_foreign_object_n(ft::type(), sizeof(T) / sizeof(void *), (void **)(void *)&t); }
+  static T from_scm(SCM scm) {
+    scm_assert_foreign_object_type(ft::type(), scm);
+    return *(T *)SCM_STRUCT_DATA(scm);
+  }
+  static void set_scm(SCM scm, T const &temp) {
+    *(T *)SCM_STRUCT_DATA(scm) = temp;
+  }
+};
+
+template <typename T> struct foreign_object_is_convertible<T *> : foreign_type_convertible<T *> {
+  using ft = foreign_type_convertible<T *>;
+  static SCM to_scm(T *t) { return scm_make_foreign_object_1(ft::type(), t); }
+  static T *from_scm(SCM scm) {
+    scm_assert_foreign_object_type(ft::type(), scm);
+    return (T *)scm_foreign_object_ref(scm, 0);
+  }
+};
+
 template <> struct convertible<void *> {
   static SCM to_scm(void *p) { return scm_from_pointer(p, nullptr); }
 
@@ -205,10 +234,12 @@ struct sym_list : as_sym {
   template <typename... T> sym_list(T... t) { scm = scm_list_trait(scm_from_utf8_symbol(t)...); }
 };
 
+template<typename T>
 struct foreign_type : as_sym {
   foreign_type(std::string name, sym_list const &slots, scm_t_struct_finalize finalizer) {
     scm = scm_make_foreign_object_type(scm_from_utf8_symbol(name.c_str()), slots, finalizer);
     scm_c_module_define(scm_current_module(), ("<" + name + ">").c_str(), scm);
+    scm::convertible<T>::type() = scm;
   }
 };
 

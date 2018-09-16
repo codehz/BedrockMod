@@ -2,8 +2,6 @@
 
 #include "main.h"
 
-SCM config_type;
-
 SCM_DEFINE_PUBLIC(c_open_config, "open-config", 1, 0, 0, (scm::val<std::string> name), "Open config file") {
   auto ret = new INIReader(name);
   if (ret->ParseError() < 0) {
@@ -41,7 +39,7 @@ SCM_DEFINE_PUBLIC(c_config_get, "config-get", 3, 1, 0,
 
 PRELOAD_MODULE("minecraft config") {
   scm::sym_list data_slots = { "ptr" };
-  config_type              = scm::foreign_type("config", data_slots, [](SCM s) { delete (INIReader *)scm_foreign_object_ref(s, 0); });
+  scm::foreign_type<INIReader *>("config", data_slots, [](SCM s) { delete (INIReader *)scm_foreign_object_ref(s, 0); });
 #ifndef DIAG
 #include "main.x"
 #endif

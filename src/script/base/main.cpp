@@ -4,10 +4,6 @@
 
 #include "main.h"
 
-SCM uuid_type;
-SCM actor_type;
-SCM player_type;
-
 #ifndef DIAG
 static_assert(sizeof(void *) == 8, "Only works in 64bit");
 #endif
@@ -65,9 +61,9 @@ PRELOAD_MODULE("minecraft base") {
   scm::sym_list uuid_slots = { "t0", "t1" };
   scm::sym_list data_slots = { "ptr" };
 
-  uuid_type   = scm::foreign_type("uuid", uuid_slots, nullptr);
-  actor_type  = scm::foreign_type("actor", data_slots, nullptr);
-  player_type = scm::foreign_type("player", data_slots, nullptr);
+  scm::foreign_type<mce::UUID>("uuid", uuid_slots, nullptr);
+  scm::foreign_type<Actor *>("actor", data_slots, nullptr);
+  scm::foreign_type<ServerPlayer *>("player", data_slots, nullptr);
 
   onPlayerJoined <<= [](ServerPlayer &player) {
     if (scm::sym(R"(%player-joined)")) scm::call(R"(%player-joined)", &player);

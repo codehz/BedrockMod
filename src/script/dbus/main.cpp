@@ -5,8 +5,6 @@
 #include <condition_variable>
 #include <sys/mman.h>
 
-SCM sd_bus_vtable_type;
-
 struct sd_bus;
 struct sd_bus_slot {};
 
@@ -92,7 +90,7 @@ SCM_DEFINE(c_sd_bus_add_object_vtable, "add-obj-vtable", 3, 0, 0,
 LOADFILE(preload, "src/script/dbus/preload.scm");
 
 PRELOAD_MODULE("minecraft dbus") {
-  sd_bus_vtable_type = scm::foreign_type("dbus-vtable-list", { "cap", "size", "list" }, nullptr);
+  scm::foreign_type<sd_bus_vtable_list>("dbus-vtable-list", { "cap", "size", "list" }, nullptr);
 #ifndef DIAG
 #include "main.x"
 #include "preload.scm.z"

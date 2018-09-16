@@ -1,5 +1,4 @@
 #include <api.h>
-extern SCM sd_bus_vtable_type;
 
 struct sd_bus_vtable {
   uint8_t type : 8;
@@ -82,17 +81,6 @@ struct sd_bus_vtable_list {
 };
 
 namespace scm {
-template <> struct convertible<sd_bus_vtable_list> {
-  static SCM to_scm(sd_bus_vtable_list const &temp) { return scm_make_foreign_object_n(sd_bus_vtable_type, 3, (void **)(void *)&temp); }
-  static sd_bus_vtable_list from_scm(SCM scm) {
-    scm_assert_foreign_object_type(sd_bus_vtable_type, scm);
-    return { (uint64_t)scm_foreign_object_ref(scm, 0), (uint64_t)scm_foreign_object_ref(scm, 1), (sd_bus_fill *)scm_foreign_object_ref(scm, 2) };
-  }
-  static void set_scm(SCM scm, sd_bus_vtable_list const &temp) {
-    auto buffer = (void **)(void *)&temp;
-    scm_foreign_object_set_x(scm, 0, buffer[0]);
-    scm_foreign_object_set_x(scm, 1, buffer[1]);
-    scm_foreign_object_set_x(scm, 2, buffer[2]);
-  }
+template <> struct convertible<sd_bus_vtable_list> : foreign_object_is_convertible<sd_bus_vtable_list> {
 };
 } // namespace scm
