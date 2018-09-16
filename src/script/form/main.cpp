@@ -4,8 +4,6 @@
 #include <StaticHook.h>
 #include <api.h>
 
-struct ServerNetworkHandler {};
-
 struct ModalFormRequestPacket : Packet {
   int id;
   std::string data;

@@ -8,7 +8,6 @@
 std::unordered_map<NetworkIdentifier, std::vector<ServerPlayer *>> playermap;
 std::vector<std::function<void(ServerPlayer &)>> joinedHandles, leftsHandles;
 
-struct ServerNetworkHandler {};
 struct ConnectionRequest {};
 
 TInstanceHook(void, _ZN20ServerNetworkHandler24onReady_ClientGenerationER6PlayerRK17NetworkIdentifier, ServerNetworkHandler, ServerPlayer &player,

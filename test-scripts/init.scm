@@ -34,7 +34,9 @@
                                                                (content . "test")
                                                                (button1 . "ok")
                                                                (button2 . "cancel")))
-                                           #%(log-debug "result" "form: ~a" (json-string->scm %)))))))
+                                           #%(log-debug "result" "form: ~a" (json-string->scm %)))))
+              ((and player (string=? command "ping"))
+                 (send-message player (format #f "~a" (player-stats player))))))
 
 (define (%player-chat player message)
         (if (string-prefix? "." message)

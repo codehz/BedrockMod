@@ -43,7 +43,6 @@ struct Minecraft {
 
 struct ServerInstance {
   void queueForServerThread(std::function<void()> p1);
-  Minecraft *getMinecraft();
 };
 
 struct DedicatedServerCommandOrigin : public CommandOrigin {
@@ -60,6 +59,10 @@ struct CommandOutput {
   std::vector<CommandOutputMessage> data;
 };
 
+struct ServerCommand {
+  static Minecraft* mGame;
+};
+
 extern "C" void _ZNK20CommandOutputMessage14getUserMessageB5cxx11Ev(std::string &out, CommandOutputMessage const *);
 
 ServerInstance *si __attribute__((visibility("hidden")));
@@ -71,8 +74,8 @@ __attribute__((visibility("hidden"))) std::string execCommand(std::string line) 
   if (line.size() == 0) return "";
   state = true;
   ss.str("");
-  std::unique_ptr<DedicatedServerCommandOrigin> commandOrigin(new DedicatedServerCommandOrigin("Server", *si->getMinecraft()));
-  si->getMinecraft()->getCommands()->requestCommandExecution(std::move(commandOrigin), line, 4, true);
+  std::unique_ptr<DedicatedServerCommandOrigin> commandOrigin(new DedicatedServerCommandOrigin("Server", *ServerCommand::mGame));
+  ServerCommand::mGame->getCommands()->requestCommandExecution(std::move(commandOrigin), line, 4, true);
   state = false;
   return ss.str();
 }
@@ -93,8 +96,8 @@ TClasslessInstanceHook(void, _ZN19CommandOutputSender4sendERK13CommandOriginRK13
 }
 
 std::vector<std::string> doComplete(std::string input, unsigned pos) {
-  std::unique_ptr<DedicatedServerCommandOrigin> commandOrigin(new DedicatedServerCommandOrigin("Server", *si->getMinecraft()));
-  auto info = si->getMinecraft()->getCommands()->getRegistry().getAutoCompleteOptions(*commandOrigin, input, pos);
+  std::unique_ptr<DedicatedServerCommandOrigin> commandOrigin(new DedicatedServerCommandOrigin("Server", *ServerCommand::mGame));
+  auto info = ServerCommand::mGame->getCommands()->getRegistry().getAutoCompleteOptions(*commandOrigin, input, pos);
   std::vector<std::string> ret;
   for (auto &item : info->list) ret.push_back(item.s1);
   return ret;

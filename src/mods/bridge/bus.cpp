@@ -59,7 +59,7 @@ static int method_list(sd_bus_message *call, void *userdata, sd_bus_error *ret_e
   sd_bus_message *m;
   sd_bus_message_new_method_return(call, &m);
   sd_bus_message_open_container(m, 'a', "(sss)");
-  si->getMinecraft().getLevel().forEachPlayer([&](Player &p) -> bool {
+  ServerCommand::mGame->getLevel().forEachPlayer([&](Player &p) -> bool {
     sd_bus_message_append(m, "(sss)", p.getNameTag().c_str(), p.getUUID().asString().c_str(), p.getXUID().c_str());
     return true;
   });

@@ -128,7 +128,7 @@ struct ExtendedCertificate {
 struct Player : Mob {
   void remove();
   Certificate &getCertificate() const;
-  mce::UUID &getUUID() const; // requires bridge
+  mce::UUID &getUUID() const;  // requires bridge
   std::string getXUID() const; // requires bridge
   NetworkIdentifier const &getClientId() const;
   unsigned char getClientSubId() const;
@@ -165,16 +165,40 @@ struct DedicatedServer {
   void stop();
 };
 
+struct NetworkStats {
+  int32_t filler, ping, avgping, maxbps;
+  float packetloss, avgpacketloss;
+};
+
+struct NetworkPeer {
+  virtual ~NetworkPeer();
+  virtual void sendPacket();
+  virtual void receivePacket();
+  virtual NetworkStats getNetworkStatus(void);
+};
+
+struct NetworkHandler {
+  NetworkPeer &getPeerForUser(NetworkIdentifier const&);
+};
+
+struct ServerNetworkHandler : NetworkHandler {
+};
+
 struct Minecraft {
   void init(bool);
   void activateWhitelist();
   Level &getLevel() const;
+  ServerNetworkHandler &getNetworkHandler();
+};
+
+struct ServerCommand {
+  static Minecraft *mGame;
 };
 
 struct ServerInstance {
   void *vt, *filler;
   DedicatedServer *server;
-  Minecraft &getMinecraft();
+  void queueForServerThread(std::function<void()> p1);
 };
 
 enum struct InputMode { UNK };

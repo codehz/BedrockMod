@@ -46,6 +46,11 @@ SCM_DEFINE_PUBLIC(c_player_xuid, "player-xuid", 1, 0, 0, (scm::val<ServerPlayer 
   return scm::to_scm(player->getXUID());
 }
 
+SCM_DEFINE_PUBLIC(c_player_stats, "player-stats", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get Player's stats info") {
+  auto status = ServerCommand::mGame->getNetworkHandler().getPeerForUser(player->getClientId()).getNetworkStatus();
+  return scm::list(status.ping, status.avgping, status.packetloss, status.avgpacketloss);
+}
+
 struct Whitelist {};
 
 TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE, Whitelist, mce::UUID &uuid,
