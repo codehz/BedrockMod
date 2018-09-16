@@ -6,7 +6,7 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "make -j8",
+      "command": "make",
       "options": {},
       "group": {
         "kind": "build",
