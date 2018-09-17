@@ -69,6 +69,7 @@
     "*.z": "cpp",
     "*.ipp": "cpp",
     "csignal": "cpp",
-    "strstream": "cpp"
+    "strstream": "cpp",
+    "*.h++": "cpp"
   }
 }

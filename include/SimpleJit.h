@@ -25,7 +25,7 @@ template <typename R, typename... PS> struct FunctionWrapper<R(PS...)> {
 } __attribute__((packed));
 
 void *alloc_executable_memory(size_t size) {
-  void *ptr = mmap(0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  void *ptr = mmap(0, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
   if (ptr == (void *)-1) {
     perror("mmap");
     return NULL;
@@ -33,9 +33,9 @@ void *alloc_executable_memory(size_t size) {
   return ptr;
 }
 
-static char *buffer = (char *)alloc_executable_memory(200 * sizeof(FunctionWrapper<int()>));
+static char *buffer = (char *)alloc_executable_memory(2048 * sizeof(FunctionWrapper<int()>));
 static size_t pos   = 0;
 
 template <typename T> auto gen_function(T from) {
-  return new (buffer + (sizeof(FunctionWrapper<int()>) * pos++)) FunctionWrapper<boost::callable_traits::function_type_t<T>>(from);
+  return (new (buffer + (sizeof(FunctionWrapper<int()>) * pos++)) FunctionWrapper<boost::callable_traits::function_type_t<T>>(from))->as_pointer();
 }

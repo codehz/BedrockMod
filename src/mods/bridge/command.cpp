@@ -60,7 +60,7 @@ struct CommandOutput {
 };
 
 struct ServerCommand {
-  static Minecraft* mGame;
+  static Minecraft *mGame;
 };
 
 extern "C" void _ZNK20CommandOutputMessage14getUserMessageB5cxx11Ev(std::string &out, CommandOutputMessage const *);

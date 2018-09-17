@@ -4,6 +4,7 @@
 (use-modules (minecraft dbus))
 (use-modules (minecraft chat))
 (use-modules (minecraft form))
+(use-modules (minecraft command))
 (use-modules (system repl coop-server))
 (use-modules (json))
 (use-modules (megacut))
@@ -26,28 +27,13 @@
              (log-debug "player-joined" "HIT ~a ~a ~a" pname (uuid->string (player-uuid player)) (player-xuid player))
              (for-each-player! other (send-message other (format #f "~a joined." pname)))))
 
-(define (handle-custom-command player command)
-        (cond ((and player (string=? command "test"))
-                 (delay-run! 50 (send-form player
-                                           (scm->json-string '((title   . "test")
-                                                               (type    . "modal")
-                                                               (content . "test")
-                                                               (button1 . "ok")
-                                                               (button2 . "cancel")))
-                                           #%(log-debug "result" "form: ~a" (json-string->scm %)))))
-              ((and player (string=? command "ping"))
-                 (send-message player (format #f "~a" (player-stats player))))))
-
 (define (%player-chat player message)
-        (if (string-prefix? "." message)
-            (handle-custom-command player (string-drop message 1))
-            (let ((pname (actor-name player)))
-                 (for-each-player! other (send-message other (format #f "~a: ~a" pname message)))
-                 (log-info "chat" "~a: ~a" pname message))))
+        (let ((pname (actor-name player)))
+             (for-each-player! other (send-message other (format #f "~a: ~a" pname message)))
+             (log-info "chat" "~a: ~a" pname message)))
 
 (define (%server-exec message)
         (cond ((string-prefix? "/" message) #f)
-              ((string-prefix? "." message) (handle-custom-command #f (string-drop message 1)))
               (else (for-each-player! player (send-message player (format #f "server: ~a" message)))
                            (log-info "chat" "server: ~a" message)
                            "")))
@@ -62,6 +48,34 @@
                                                       (λ (m u e)
                                                          (let ((data (dbus-read m #\s)))
                                                               (dbus-reply m "s" data))))))
+
+(reg-simple-command "script"
+                    "Custom command from script"
+                    0
+                    #%(outp-success %3 "Hello guile!"))
+
+(reg-simple-command "test"
+                    "Test form"
+                    0
+                    #%(let [(player (orig-player %2))]
+                            (if (not player)
+                                (outp-error %3 "Only available for player")
+                                (begin (send-form player
+                                                  (scm->json-string '((title   . "test")
+                                                                      (type    . "modal")
+                                                                      (content . "test")
+                                                                      (button1 . "ok")
+                                                                      (button2 . "cancel")))
+                                                  #%(log-debug "result" "form: ~a" (json-string->scm %)))
+                                       (outp-success %3)))))
+
+(reg-simple-command "ping"
+                    "Get network stats"
+                    0
+                    #%(let [(player (orig-player %2))]
+                            (if (not player)
+                                (outp-error %3 "Only available for player")
+                                (outp-success %3 (format #f "~a" (player-stats player))))))
 
 (let ((server (spawn-coop-repl-server)))
      (interval-run! 1 (poll-coop-repl-server server)))

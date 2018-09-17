@@ -1,4 +1,7 @@
 #include <api.h>
+#include "INIReader.h"
+
+MAKE_FOREIGN_TYPE(INIReader *, "config", [](SCM s) { delete (INIReader *)scm_foreign_object_ref(s, 0); });
 
 #include "main.h"
 
@@ -38,8 +41,6 @@ SCM_DEFINE_PUBLIC(c_config_get, "config-get", 3, 1, 0,
 }
 
 PRELOAD_MODULE("minecraft config") {
-  scm::sym_list data_slots = { "ptr" };
-  scm::foreign_type<INIReader *>("config", data_slots, [](SCM s) { delete (INIReader *)scm_foreign_object_ref(s, 0); });
 #ifndef DIAG
 #include "main.x"
 #endif

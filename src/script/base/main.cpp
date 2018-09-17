@@ -2,6 +2,10 @@
 #include <api.h>
 #include <base.h>
 
+MAKE_FOREIGN_TYPE(mce::UUID, "uuid", { "t0", "t1" });
+MAKE_FOREIGN_TYPE(Actor *, "actor");
+MAKE_FOREIGN_TYPE(ServerPlayer *, "player");
+
 #include "main.h"
 
 #ifndef DIAG
@@ -58,13 +62,6 @@ TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKNSt7__cxx1112basic_s
 LOADFILE(preload, "src/script/base/preload.scm");
 
 PRELOAD_MODULE("minecraft base") {
-  scm::sym_list uuid_slots = { "t0", "t1" };
-  scm::sym_list data_slots = { "ptr" };
-
-  scm::foreign_type<mce::UUID>("uuid", uuid_slots, nullptr);
-  scm::foreign_type<Actor *>("actor", data_slots, nullptr);
-  scm::foreign_type<ServerPlayer *>("player", data_slots, nullptr);
-
   onPlayerJoined <<= [](ServerPlayer &player) {
     if (scm::sym(R"(%player-joined)")) scm::call(R"(%player-joined)", &player);
   };

@@ -184,11 +184,14 @@ struct NetworkHandler {
 struct ServerNetworkHandler : NetworkHandler {
 };
 
+struct MinecraftCommands;
+
 struct Minecraft {
   void init(bool);
   void activateWhitelist();
   Level &getLevel() const;
   ServerNetworkHandler &getNetworkHandler();
+  MinecraftCommands &getCommands();
 };
 
 struct ServerCommand {

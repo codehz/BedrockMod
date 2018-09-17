@@ -7,8 +7,8 @@
 class Command;
 class CommandParameterData;
 class CommandOrigin;
-enum class CommandPermissionLevel;
-enum class CommandFlag;
+enum CommandPermissionLevel : int {};
+enum CommandFlag : int {};
 
 class CommandRegistry {
 
@@ -24,7 +24,7 @@ public:
                                                                                     allocator(allocator) {}
     };
     struct Signature {
-        char filler[0x8];
+        char filler[64];
         std::vector<CommandRegistry::Overload> overloads;
     };
 
