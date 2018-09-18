@@ -8,7 +8,7 @@ class CommandOutput;
 class Command {
 
 private:
-    char filler[24];
+    char filler[64];
 
 public:
     Command();

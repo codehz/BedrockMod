@@ -41,9 +41,10 @@ static int method_stop(sd_bus_message *m, void *userdata, sd_bus_error *ret_erro
 std::vector<std::string> doComplete(std::string input, unsigned pos);
 
 static int method_complete(sd_bus_message *call, void *userdata, sd_bus_error *ret_error) {
-  char *dat;
+  char const *dat;
   unsigned int pos;
-  sd_bus_message_read(call, "su", &dat, pos);
+  sd_bus_message_read(call, "s", &dat);
+  sd_bus_message_read(call, "u", pos);
   auto list = doComplete(dat, pos);
   sd_bus_message *m;
   sd_bus_message_new_method_return(call, &m);

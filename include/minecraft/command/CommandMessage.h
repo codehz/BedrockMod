@@ -9,7 +9,7 @@ class CommandOrigin;
 class CommandMessage {
 
 private:
-    char filler[0x20];
+    char filler[40];
 
 public:
     // NOTE: Even though this function is not part of this class in MCPE, I am adding it there because it's much nicer

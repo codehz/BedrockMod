@@ -23,14 +23,14 @@
         #t)
 
 (define (%player-joined player)
-        (let ((pname (actor-name player)))
-             (log-debug "player-joined" "HIT ~a ~a ~a" pname (uuid->string (player-uuid player)) (player-xuid player))
-             (for-each-player! other (send-message other (format #f "~a joined." pname)))))
+        (let [(pname (actor-name player))]
+              (log-debug "player-joined" "HIT ~a ~a ~a" pname (uuid->string (player-uuid player)) (player-xuid player))
+              (for-each-player! other (send-message other (format #f "~a joined." pname)))))
 
 (define (%player-chat player message)
-        (let ((pname (actor-name player)))
-             (for-each-player! other (send-message other (format #f "~a: ~a" pname message)))
-             (log-info "chat" "~a: ~a" pname message)))
+        (let [(pname (actor-name player))]
+              (for-each-player! other (send-message other (format #f "~a: ~a" pname message)))
+              (log-info "chat" "~a: ~a" pname message)))
 
 (define (%server-exec message)
         (cond ((string-prefix? "/" message) #f)
@@ -46,13 +46,18 @@
                          (megacut (define-dbus-signal % 0 "test_signal" "s")
                                   (define-dbus-method % 0 "test_method" "s" "s"
                                                       (λ (m u e)
-                                                         (let ((data (dbus-read m #\s)))
+                                                         (let [(data (dbus-read m #\s))]
                                                               (dbus-reply m "s" data))))))
 
 (reg-simple-command "script"
                     "Custom command from script"
                     0
                     #%(outp-success %3 "Hello guile!"))
+
+(reg-command "script2"
+             "Custom command from script2"
+             0
+             (list (command-vtable (list (parameter-message "test")) #%(outp-success %3 (format #f "You typed ~a" (command-args %1 %2))))))
 
 (reg-simple-command "test"
                     "Test form"
@@ -77,5 +82,5 @@
                                 (outp-error %3 "Only available for player")
                                 (outp-success %3 (format #f "~a" (player-stats player))))))
 
-(let ((server (spawn-coop-repl-server)))
-     (interval-run! 1 (poll-coop-repl-server server)))
+(let [(server (spawn-coop-repl-server))]
+      (interval-run! 1 (poll-coop-repl-server server)))

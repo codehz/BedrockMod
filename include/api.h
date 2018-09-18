@@ -53,7 +53,14 @@ template <typename T, typename F> auto operator<<=(T t, F f) -> decltype(t(f)) {
 
 namespace scm {
 
-template <typename T, typename = void> struct convertible;
+template <typename T, typename = void> struct convertible {
+  static SCM to_scm(T t) { return t.scm; } // namespace scm
+  static T from_scm(SCM scm) {
+    T t;
+    t.scm = scm;
+    return t;
+  }
+};
 
 template <typename T> struct foreign_type_convertible { static SCM &type(); };
 
@@ -167,15 +174,17 @@ template <typename T> struct val {
   }
 };
 
-struct as_sym {
+struct as_scm {
   SCM scm;
   operator SCM() const { return scm; }
 };
 
-struct sym : as_sym {
+struct sym : as_scm {
+  sym() = default;
   sym(const char *str) { scm = scm_from_utf8_symbol(str); }
   bool defined() const { return scm_is_true(scm_defined_p(scm, scm_current_module())); }
   operator bool() const { return defined(); }
+  operator temp_string() const { return from_scm<char *>(scm_symbol_to_string(scm)); }
 };
 
 SCM var(const char *name) { return scm_variable_ref(scm_c_lookup(name)); }
@@ -212,28 +221,60 @@ template <typename... T> SCM call(SCM scm, const T &... ts) { return scm_call_tr
 template <typename R, typename... T> auto call_as(const char *name, const T &... ts) { return from_scm<R>(scm_call_trait(var(name), to_scm(ts)...)); }
 template <typename R, typename... T> auto call_as(SCM scm, const T &... ts) { return from_scm<R>(scm_call_trait(scm, to_scm(ts)...)); }
 
-template <typename R = void, typename... T> struct callback : as_sym {
+template <typename R = void, typename... T> struct callback : as_scm {
   auto operator()(T... t) const { return from_scm<R>(call(scm, t...)); }
   void setInvalid() { scm = SCM_BOOL_F; }
 };
 
-template <typename... T> struct callback<void, T...> : as_sym {
+template <typename... T> struct callback<void, T...> : as_scm {
   void operator()(T... t) const { call(scm, t...); }
   void setInvalid() { scm = SCM_BOOL_F; }
 };
 
-struct list : as_sym {
+template <typename X, typename Y> struct pair : as_scm {
+  template <size_t I> auto get() {
+    if constexpr (I == 0) {
+      return from_scm<X>(scm_car(scm));
+    } else if constexpr (I == 1) {
+      return from_scm<Y>(scm_cdr(scm));
+    }
+  }
+};
+
+struct list : as_scm {
   template <typename... T> list(T... t) { scm = scm_list_trait(to_scm(t)...); }
 
   auto operator[](int n) const { return scm_list_ref(scm, to_scm(n)); }
   template <typename T> T at(int n) const { return from_scm<T>(scm_list_ref(scm, to_scm(n))); }
+
+  struct iterator : as_scm {
+    iterator(SCM scm) { this->scm = scm; }
+    bool operator!=(iterator const &rhs) { return !SCM_NILP(scm); }
+    void operator++() { scm = scm_cdr(scm); }
+    SCM operator*() { return scm_car(scm); }
+  };
+
+  auto begin() { return iterator(scm); }
+  auto end() { return iterator(SCM_EOL); }
 };
 
-struct sym_list : as_sym {
+template <typename T> struct slist : as_scm {
+  struct iterator : as_scm {
+    iterator(SCM scm) { this->scm = scm; }
+    bool operator!=(iterator const &rhs) { return !scm_is_null_or_nil(scm); }
+    void operator++() { scm = scm_cdr(scm); }
+    T operator*() { return from_scm<T>(scm_car(scm)); }
+  };
+
+  auto begin() { return iterator(scm); }
+  auto end() { return iterator(SCM_EOL); }
+};
+
+struct sym_list : as_scm {
   template <typename... T> sym_list(T... t) { scm = scm_list_trait(scm_from_utf8_symbol(t)...); }
 };
 
-template <typename T> struct foreign_type : as_sym {
+template <typename T> struct foreign_type : as_scm {
   foreign_type(std::string name, sym_list const &slots, scm_t_struct_finalize finalizer = nullptr) {
     scm = scm_make_foreign_object_type(scm_from_utf8_symbol(name.c_str()), slots, finalizer);
     scm_c_module_define(scm_current_module(), ("<" + name + ">").c_str(), scm);
@@ -241,7 +282,7 @@ template <typename T> struct foreign_type : as_sym {
   }
 };
 
-template <typename T> struct foreign_type<T *> : as_sym {
+template <typename T> struct foreign_type<T *> : as_scm {
   foreign_type(std::string name, scm_t_struct_finalize finalizer = nullptr) {
     scm = scm_make_foreign_object_type(scm_from_utf8_symbol(name.c_str()), sym_list{ "ptr" }, finalizer);
     scm_c_module_define(scm_current_module(), ("<" + name + "-ptr>").c_str(), scm);
@@ -257,10 +298,16 @@ struct definer {
     scm_c_module_define(scm_current_module(), name, to_scm(v));
   }
 
-  void operator=(const as_sym &v) { scm_c_module_define(scm_current_module(), name, v); }
+  void operator=(const as_scm &v) { scm_c_module_define(scm_current_module(), name, v); }
 };
 
 } // namespace scm
+
+namespace std {
+template <typename A, typename B> struct tuple_size<scm::pair<A, B>> : std::integral_constant<size_t, 2> {};
+template <typename A, typename B> struct tuple_element<0, scm::pair<A, B>> { using type = A; };
+template <typename A, typename B> struct tuple_element<1, scm::pair<A, B>> { using type = B; };
+} // namespace std
 
 #define STR2(x) #x
 #define STR(x) STR2(x)
