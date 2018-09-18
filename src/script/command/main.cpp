@@ -135,7 +135,7 @@ static void handleCommandApply(CommandRegistryApply &apply) {
     registry->registerCustomOverload(apply.name.c_str(), CommandVersion(0, INT32_MAX),
                                      gen_function([=]() -> std::unique_ptr<Command> { return std::unique_ptr<Command>(TestCommand::create(vt)); }),
                                      [&](CommandRegistry::Overload &overload) {
-                                       size_t offset   = sizeof(TestCommand);
+                                       size_t offset = sizeof(TestCommand);
                                        for (auto p : vt->defs) {
                                          overload.params.emplace_back(CommandParameterData(p->type, p->parser, p->name.c_str(),
                                                                                            (CommandParameterDataType)0, nullptr, offset, false, -1));
