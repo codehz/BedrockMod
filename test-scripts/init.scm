@@ -41,6 +41,8 @@
 (delay-run! 5 (log-debug "delay" "test 5"))
 (delay-run! 7 (log-debug "delay" "test 7"))
 
+(interval-run! 20 (for-each-player! player (send-message player (apply format #f "ping: ~ams(avg ~ams) loss: ~a(avg ~a)" (player-stats player)) 5)))
+
 (register-dbus-interface ""
                          "one.codehz.bedrockserver.test"
                          (megacut (define-dbus-signal % 0 "test_signal" "s")
