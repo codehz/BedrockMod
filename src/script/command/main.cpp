@@ -112,6 +112,67 @@ SCM_DEFINE_PUBLIC(parameter_message, "parameter-message", 1, 0, 0, (scm::val<cha
   return scm::to_scm(messageParameter(name));
 }
 
+struct CommandSelectorBase {
+  int filler[0x90];
+  CommandSelectorBase(bool isPlayer);
+
+  std::shared_ptr<std::vector<Actor *>> newResults(CommandOrigin const &) const;
+
+  static auto fetch(TestCommand *cmd, CommandOrigin *orig, int pos) {
+    auto selector = ((CommandSelectorBase *)((size_t)cmd + sizeof(TestCommand) + pos));
+    auto result   = selector->newResults(*orig);
+    SCM list      = SCM_EOL;
+    for (auto actor : *result) {
+      auto player = dynamic_cast<ServerPlayer *>(actor);
+      if (player)
+        list = scm_cons(scm::to_scm(player), list);
+      else
+        list = scm_cons(scm::to_scm(actor), list);
+    }
+    return list;
+  }
+};
+
+template <typename T> struct CommandSelector;
+
+template <> struct CommandSelector<Actor> : CommandSelectorBase {
+  CommandSelector();
+
+  static auto type_id() {
+    static typeid_t<CommandRegistry> ret =
+        type_id_minecraft_symbol<CommandRegistry>("_ZZ7type_idI15CommandRegistry15CommandSelectorI5ActorEE8typeid_tIT_EvE2id");
+    return ret;
+  }
+};
+
+template <> struct CommandSelector<Player> : CommandSelectorBase {
+  CommandSelector();
+
+  static auto type_id() {
+    static typeid_t<CommandRegistry> ret =
+        type_id_minecraft_symbol<CommandRegistry>("_ZZ7type_idI15CommandRegistry15CommandSelectorI6PlayerEE8typeid_tIT_EvE2id");
+    return ret;
+  }
+};
+
+static ParameterDef *selectorParameter(temp_string const &name, bool playerOnly) {
+  auto tid    = playerOnly ? CommandSelector<Player>::type_id() : CommandSelector<Actor>::type_id();
+  auto parser = playerOnly ? &CommandRegistry::parse<CommandSelector<Player>> : &CommandRegistry::parse<CommandSelector<Actor>>;
+  return new ParameterDef{
+    .size   = sizeof(CommandSelectorBase),
+    .name   = name,
+    .type   = tid,
+    .parser = parser,
+    .init   = (void (*)(void *))dlsym(MinecraftHandle(), playerOnly ? "_ZN15CommandSelectorI6PlayerEC2Ev" : "_ZN15CommandSelectorI5ActorEC2Ev"),
+    .deinit = (void (*)(void *))dlsym(MinecraftHandle(), playerOnly ? "_ZN15CommandSelectorI6PlayerED2Ev" : "_ZN15CommandSelectorI5ActorED2Ev"),
+    .fetch  = &CommandSelectorBase::fetch
+  };
+}
+
+SCM_DEFINE_PUBLIC(parameter_selector, "parameter-selector", 1, 1, 0, (scm::val<char *> name, scm::val<bool> playerOnly), "Selector parameter") {
+  return scm::to_scm(selectorParameter(name, playerOnly));
+}
+
 struct MinecraftCommands {
   CommandRegistry &getRegistry();
 };

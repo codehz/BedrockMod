@@ -113,6 +113,8 @@ struct Actor {
   int getDimensionId() const;
   void getDebugText(std::vector<std::string> &);
   BlockSource &getRegion() const;
+
+  virtual ~Actor();
 };
 
 struct Mob : Actor {

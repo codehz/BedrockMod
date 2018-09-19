@@ -60,6 +60,11 @@
              0
              (list (command-vtable (list (parameter-message "test")) #%(outp-success %3 (format #f "You typed ~a" (command-args %1 %2))))))
 
+(reg-command "select"
+             "Custom command for testing selector"
+             0
+             (list (command-vtable (list (parameter-selector "sth")) #%(outp-success %3 (format #f "Selected ~a" (command-args %1 %2))))))
+
 (reg-simple-command "test"
                     "Test form"
                     0
