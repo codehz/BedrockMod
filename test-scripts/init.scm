@@ -70,6 +70,16 @@
              0
              (list (command-vtable (list (parameter-string "test")) #%(outp-success %3 (format #f "String ~a" (command-args %1 %2))))))
 
+(reg-command "int"
+             "Custom command for testing int"
+             0
+             (list (command-vtable (list (parameter-int "test")) #%(outp-success %3 (format #f "Integer ~a" (command-args %1 %2))))))
+
+(reg-command "float"
+             "Custom command for testing float"
+             0
+             (list (command-vtable (list (parameter-float "test")) #%(outp-success %3 (format #f "Float ~a" (command-args %1 %2))))))
+
 (reg-simple-command "test"
                     "Test form"
                     0

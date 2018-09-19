@@ -68,7 +68,15 @@ struct TestCommand : Command {
     this->vt      = vt;
     size_t offset = 0;
     for (auto def : vt->defs) {
-      def->init((void *)((size_t)this + sizeof(TestCommand) + offset));
+      if (def->init) def->init((void *)((size_t)this + sizeof(TestCommand) + offset));
+      offset += def->size;
+    }
+  }
+
+  ~TestCommand() {
+    size_t offset = 0;
+    for (auto def : vt->defs) {
+      if (def->deinit) def->deinit((void *)((size_t)this + sizeof(TestCommand) + offset));
       offset += def->size;
     }
   }
@@ -134,9 +142,7 @@ struct CommandSelectorBase {
 template <typename T> struct CommandSelector {
   CommandSelector();
 
-  static auto type() {
-    return type_id<CommandRegistry, CommandSelector<T>>();
-  }
+  static auto type() { return type_id<CommandRegistry, CommandSelector<T>>(); }
 };
 
 static ParameterDef *selectorParameter(temp_string const &name, bool playerOnly) {
@@ -173,6 +179,26 @@ static ParameterDef *stringParameter(temp_string const &name) {
 
 SCM_DEFINE_PUBLIC(parameter_string, "parameter-string", 1, 0, 0, (scm::val<char *> name), "String parameter") {
   return scm::to_scm(stringParameter(name));
+}
+
+template <typename T> static SCM simpleFetch(void *v, CommandOrigin *orig) { return scm::to_scm(*(T *)v); }
+
+template <typename T> static ParameterDef *simpleParameter(temp_string const &name) {
+  return new ParameterDef{ .size   = sizeof(T),
+                           .name   = name,
+                           .type   = type_id<CommandRegistry, T>(),
+                           .parser = &CommandRegistry::parse<T>,
+                           .init   = nullptr,
+                           .deinit = nullptr,
+                           .fetch  = simpleFetch<T> };
+}
+
+SCM_DEFINE_PUBLIC(parameter_int, "parameter-int", 1, 0, 0, (scm::val<char *> name), "Integer parameter") {
+  return scm::to_scm(simpleParameter<int>(name));
+}
+
+SCM_DEFINE_PUBLIC(parameter_float, "parameter-float", 1, 0, 0, (scm::val<char *> name), "Float parameter") {
+  return scm::to_scm(simpleParameter<float>(name));
 }
 
 struct MinecraftCommands {
