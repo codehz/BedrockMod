@@ -29,7 +29,8 @@
 (add-hook! player-chat
            #%(let [(pname (actor-name %1))]
                    (for-each-player! other (send-message other (format #f "~a: ~a" pname %2)))
-                   (log-info "chat" "~a: ~a" pname %2)))
+                   (log-info "chat" "~a: ~a" pname %2)
+                   (cancel-chat #t)))
 
 (add-hook! server-exec
            #%(cond ((string-prefix? "/" %) (exec-result #f))
@@ -40,7 +41,7 @@
 (delay-run! 5 (log-debug "delay" "test 5"))
 (delay-run! 7 (log-debug "delay" "test 7"))
 
-(interval-run! 20 (for-each-player! player (send-message player (apply format #f "ping: ~ams(avg ~ams) loss: ~a(avg ~a)" (player-stats player)) 5)))
+(interval-run! 20 (for-each-player! player (send-message player (apply format #f "ping: ~ams(avg ~ams) loss: ~1,2f(avg ~1,2f)" (player-stats player)) 5)))
 
 (register-dbus-interface ""
                          "one.codehz.bedrockserver.test"
