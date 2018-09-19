@@ -131,30 +131,16 @@ struct CommandSelectorBase {
   }
 };
 
-template <typename T> struct CommandSelector;
-
-template <> struct CommandSelector<Actor> : CommandSelectorBase {
+template <typename T> struct CommandSelector {
   CommandSelector();
 
-  static auto type_id() {
-    static typeid_t<CommandRegistry> ret =
-        type_id_minecraft_symbol<CommandRegistry>("_ZZ7type_idI15CommandRegistry15CommandSelectorI5ActorEE8typeid_tIT_EvE2id");
-    return ret;
-  }
-};
-
-template <> struct CommandSelector<Player> : CommandSelectorBase {
-  CommandSelector();
-
-  static auto type_id() {
-    static typeid_t<CommandRegistry> ret =
-        type_id_minecraft_symbol<CommandRegistry>("_ZZ7type_idI15CommandRegistry15CommandSelectorI6PlayerEE8typeid_tIT_EvE2id");
-    return ret;
+  static auto type() {
+    return type_id<CommandRegistry, CommandSelector<T>>();
   }
 };
 
 static ParameterDef *selectorParameter(temp_string const &name, bool playerOnly) {
-  auto tid    = playerOnly ? CommandSelector<Player>::type_id() : CommandSelector<Actor>::type_id();
+  auto tid    = playerOnly ? CommandSelector<Player>::type() : CommandSelector<Actor>::type();
   auto parser = playerOnly ? &CommandRegistry::parse<CommandSelector<Player>> : &CommandRegistry::parse<CommandSelector<Actor>>;
   return new ParameterDef{
     .size   = sizeof(CommandSelectorBase),
@@ -176,11 +162,9 @@ static void initString(void *str) { new (str) std::string(); }
 static SCM fetchString(void *self, CommandOrigin *orig) { return scm::to_scm(*(std::string *)self); }
 
 static ParameterDef *stringParameter(temp_string const &name) {
-  static typeid_t<CommandRegistry> tid = type_id_minecraft_symbol<CommandRegistry>(
-      "_ZZ7type_idI15CommandRegistryNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEE8typeid_tIT_EvE2id");
   return new ParameterDef{ .size   = sizeof(std::string),
                            .name   = name,
-                           .type   = tid,
+                           .type   = type_id<CommandRegistry, std::string>(),
                            .parser = &CommandRegistry::parse<std::string>,
                            .init   = (void (*)(void *))initString,
                            .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev"),
