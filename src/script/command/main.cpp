@@ -163,7 +163,7 @@ SCM_DEFINE_PUBLIC(parameter_selector, "parameter-selector", 1, 1, 0, (scm::val<c
   return scm::to_scm(selectorParameter(name, playerOnly));
 }
 
-static void initString(void *str) { new (str) std::string(); }
+template <typename T> static void geninit(void *str) { new (str) T(); }
 
 static SCM fetchString(void *self, CommandOrigin *orig) { return scm::to_scm(*(std::string *)self); }
 
@@ -172,7 +172,7 @@ static ParameterDef *stringParameter(temp_string const &name) {
                            .name   = name,
                            .type   = type_id<CommandRegistry, std::string>(),
                            .parser = &CommandRegistry::parse<std::string>,
-                           .init   = (void (*)(void *))initString,
+                           .init   = (void (*)(void *))geninit<std::string>,
                            .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev"),
                            .fetch  = &fetchString };
 }
@@ -210,13 +210,33 @@ static ParameterDef *textParameter(temp_string const &name) {
                            .name   = name,
                            .type   = type_id<CommandRegistry, CommandRawText>(),
                            .parser = &CommandRegistry::parse<CommandRawText>,
-                           .init   = (void (*)(void *))initString,
+                           .init   = (void (*)(void *))geninit<std::string>,
                            .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev"),
                            .fetch  = &fetchString };
 }
 
-SCM_DEFINE_PUBLIC(parameter_text, "parameter-text", 1, 0, 0, (scm::val<char *> name), "String parameter") {
-  return scm::to_scm(textParameter(name));
+SCM_DEFINE_PUBLIC(parameter_text, "parameter-text", 1, 0, 0, (scm::val<char *> name), "String parameter") { return scm::to_scm(textParameter(name)); }
+
+struct CommandPosition {
+  char filler[16];
+  Vec3 getPosition(CommandOrigin const &) const;
+  static SCM fetch(void *self, CommandOrigin *orig) { return scm::to_scm(((CommandPosition *)self)->getPosition(*orig)); }
+};
+
+static auto positionParameter(temp_string const &name) {
+  return new ParameterDef{
+    .size   = sizeof(CommandPosition),
+    .name   = name,
+    .type   = type_id<CommandRegistry, CommandPosition>(),
+    .parser = &CommandRegistry::parse<CommandPosition>,
+    .init   = geninit<CommandPosition>,
+    .deinit = nullptr,
+    .fetch  = &CommandPosition::fetch,
+  };
+}
+
+SCM_DEFINE_PUBLIC(parameter_position, "parameter-position", 1, 0, 0, (scm::val<char *> name), "Position parameter") {
+  return scm::to_scm(positionParameter(name));
 }
 
 struct MinecraftCommands {

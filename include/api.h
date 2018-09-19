@@ -363,6 +363,69 @@ template <typename T = SCM> struct fluid : as_scm {
   })                                                                                                                                                 \
   SCM_SNARF_INIT(scm_c_define(sname, call("fluid->parameter", name())); scm_c_export(sname);)
 
+template <typename T> struct vector;
+
+#define IMPVEC(ctype, stype)                                                                                                                         \
+  template <> struct vector<ctype> : as_scm {                                                                                                        \
+    vector(size_t length) { scm = scm_make_##stype##vector(scm_from_size_t(length), to_scm(0)); }                                                    \
+    vector(SCM scm) { scm = scm; }                                                                                                                   \
+    size_t size() { return scm_to_size_t(scm_##stype##vector_length(scm)); }                                                                         \
+    template <typename F> auto operator()(F f) {                                                                                                     \
+      scm_t_array_handle h;                                                                                                                          \
+      size_t len;                                                                                                                                    \
+      ssize_t inc;                                                                                                                                   \
+      ctype *vl = scm_##stype##vector_writable_elements(scm, &h, nullptr, nullptr);                                                                  \
+      if constexpr (!std::is_same_v<void, decltype(f(vl, len))>) {                                                                                   \
+        auto ret = f(vl, len);                                                                                                                       \
+        scm_array_handle_release(&h);                                                                                                                \
+        return ret;                                                                                                                                  \
+      } else {                                                                                                                                       \
+        f(vl, len);                                                                                                                                  \
+        scm_array_handle_release(&h);                                                                                                                \
+      }                                                                                                                                              \
+    }                                                                                                                                                \
+  }
+
+// scm_make_f32vector
+
+IMPVEC(int8_t, s8);
+IMPVEC(uint8_t, u8);
+IMPVEC(int16_t, s16);
+IMPVEC(uint16_t, u16);
+IMPVEC(int32_t, s32);
+IMPVEC(uint32_t, u32);
+IMPVEC(int64_t, s64);
+IMPVEC(uint64_t, u64);
+IMPVEC(float, f32);
+IMPVEC(double, f64);
+
+#undef IMPVEC
+
+template <> struct convertible<Vec3> {
+  static SCM to_scm(Vec3 v) {
+    auto vec = vector<float>(3);
+    vec([&](float *el, size_t l) { *((Vec3 *)el) = v; });
+    return vec;
+  }
+  static Vec3 from_scm(SCM vec) {
+    SCM_ASSERT_TYPE(scm_is_true(scm_f32vector_p(vec)) && scm_to_int(scm_f32vector_length(vec)) == 3, vec, 0, "c:f32vector->vec3",
+                    "Cannot convert to vec3");
+    return vector<float>(vec)([](float const *el, size_t l) { return *((Vec3 *)el); });
+  }
+};
+
+template <> struct convertible<BlockPos> {
+  static SCM to_scm(BlockPos v) {
+    auto vec = vector<int>(3);
+    vec([&](int *el, size_t l) { *((BlockPos *)el) = v; });
+    return vec;
+  }
+  static BlockPos from_scm(SCM vec) {
+    SCM_ASSERT_TYPE(scm_is_true(scm_f32vector_p(vec)) && scm_to_int(scm_f32vector_length(vec)) == 3, vec, 0, "c:f32vector->vec3",
+                    "Cannot convert to vec3");
+    return vector<int>(vec)([](int const *el, size_t l) { return *((BlockPos *)el); });
+  }
+};
 } // namespace scm
 
 namespace std {
