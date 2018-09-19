@@ -65,6 +65,11 @@
              0
              (list (command-vtable (list (parameter-selector "sth")) #%(outp-success %3 (format #f "Selected ~a" (command-args %1 %2))))))
 
+(reg-command "string"
+             "Custom command for testing string"
+             0
+             (list (command-vtable (list (parameter-string "test")) #%(outp-success %3 (format #f "String ~a" (command-args %1 %2))))))
+
 (reg-simple-command "test"
                     "Test form"
                     0

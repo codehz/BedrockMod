@@ -45,7 +45,7 @@ struct ParameterDef {
                                   std::vector<std::string> &) const;
   void (*init)(void *);
   void (*deinit)(void *);
-  SCM (*fetch)(TestCommand *, CommandOrigin *, int pos);
+  SCM (*fetch)(void *, CommandOrigin *);
 };
 
 struct MyCommandVTable {
@@ -83,9 +83,9 @@ struct TestCommand : Command {
 
 SCM_DEFINE_PUBLIC(command_fetch, "command-args", 2, 0, 0, (scm::val<TestCommand *> cmd, scm::val<CommandOrigin *> orig), "Get command arguments") {
   std::stack<SCM> st;
-  size_t pos = 0;
+  size_t pos = (size_t)cmd.get() + sizeof(TestCommand);
   for (auto &def : cmd->vt->defs) {
-    st.push(def->fetch(cmd, orig, pos));
+    st.push(def->fetch((void *)pos, orig));
     pos += def->size;
   }
   SCM list = SCM_EOL;
@@ -103,9 +103,7 @@ static ParameterDef *messageParameter(temp_string const &name) {
                            .parser = &CommandRegistry::parse<CommandMessage>,
                            .init   = (void (*)(void *))dlsym(MinecraftHandle(), "_ZN14CommandMessageC2Ev"),
                            .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZN14CommandMessageD2Ev"),
-                           .fetch  = [](TestCommand *cmd, CommandOrigin *orig, int pos) {
-                             return scm::to_scm(((CommandMessage *)((size_t)cmd + sizeof(TestCommand) + pos))->getMessage(*orig));
-                           } };
+                           .fetch  = [](void *self, CommandOrigin *orig) { return scm::to_scm(((CommandMessage *)self)->getMessage(*orig)); } };
 }
 
 SCM_DEFINE_PUBLIC(parameter_message, "parameter-message", 1, 0, 0, (scm::val<char *> name), "Message parameter") {
@@ -118,8 +116,8 @@ struct CommandSelectorBase {
 
   std::shared_ptr<std::vector<Actor *>> newResults(CommandOrigin const &) const;
 
-  static auto fetch(TestCommand *cmd, CommandOrigin *orig, int pos) {
-    auto selector = ((CommandSelectorBase *)((size_t)cmd + sizeof(TestCommand) + pos));
+  static auto fetch(void *self, CommandOrigin *orig) {
+    auto selector = ((CommandSelectorBase *)self);
     auto result   = selector->newResults(*orig);
     SCM list      = SCM_EOL;
     for (auto actor : *result) {
@@ -171,6 +169,26 @@ static ParameterDef *selectorParameter(temp_string const &name, bool playerOnly)
 
 SCM_DEFINE_PUBLIC(parameter_selector, "parameter-selector", 1, 1, 0, (scm::val<char *> name, scm::val<bool> playerOnly), "Selector parameter") {
   return scm::to_scm(selectorParameter(name, playerOnly));
+}
+
+static void initString(void *str) { new (str) std::string(); }
+
+static SCM fetchString(void *self, CommandOrigin *orig) { return scm::to_scm(*(std::string *)self); }
+
+static ParameterDef *stringParameter(temp_string const &name) {
+  static typeid_t<CommandRegistry> tid = type_id_minecraft_symbol<CommandRegistry>(
+      "_ZZ7type_idI15CommandRegistryNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEE8typeid_tIT_EvE2id");
+  return new ParameterDef{ .size   = sizeof(std::string),
+                           .name   = name,
+                           .type   = tid,
+                           .parser = &CommandRegistry::parse<std::string>,
+                           .init   = (void (*)(void *))initString,
+                           .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev"),
+                           .fetch  = &fetchString };
+}
+
+SCM_DEFINE_PUBLIC(parameter_string, "parameter-string", 1, 0, 0, (scm::val<char *> name), "String parameter") {
+  return scm::to_scm(stringParameter(name));
 }
 
 struct MinecraftCommands {
