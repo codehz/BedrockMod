@@ -85,6 +85,10 @@
              0
              (list (command-vtable (list (parameter-float "test")) #%(outp-success %3 (format #f "Float ~a" (command-args %1 %2))))))
 
+(reg-command "bool"
+             "Custom command for testing boolean"
+             0
+             (list (command-vtable (list (parameter-bool "test")) #%(outp-success %3 (format #f "Boolean ~a" (command-args %1 %2))))))
 
 (reg-command "position"
              "Custom command for testing position"

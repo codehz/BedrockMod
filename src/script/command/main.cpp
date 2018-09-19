@@ -201,6 +201,10 @@ SCM_DEFINE_PUBLIC(parameter_float, "parameter-float", 1, 0, 0, (scm::val<char *>
   return scm::to_scm(simpleParameter<float>(name));
 }
 
+SCM_DEFINE_PUBLIC(parameter_bool, "parameter-bool", 1, 0, 0, (scm::val<char *> name), "Float parameter") {
+  return scm::to_scm(simpleParameter<bool>(name));
+}
+
 struct CommandRawText {
   std::string value;
 };
