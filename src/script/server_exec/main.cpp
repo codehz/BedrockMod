@@ -2,16 +2,21 @@
 
 #include <StaticHook.h>
 
+MAKE_HOOK(server_exec, "server-exec", char const *)
+MAKE_FLUID(gc_string, exec_result, "exec-result")
+
 const char *onLauncherExec(const char *command) {
-  if (scm::sym(R"(%server-exec)")) {
-    auto str = scm::call(R"(%server-exec)", command);
-    if (scm_is_false(str)) return nullptr;
-    return scm::from_scm<gc_string>(str);
-  }
-  return nullptr;
+  auto ret = exec_result()[nullptr] <<= [=] { server_exec(command); };
+  return ret;
 }
 
 extern "C" {
 extern const char *(*mcpelauncher_exec_hook)(const char *);
-void mod_exec() { mcpelauncher_exec_hook = &onLauncherExec; }
+}
+
+PRELOAD_MODULE("minecraft chat") {
+  mcpelauncher_exec_hook = onLauncherExec;
+#ifndef DIAG
+#include "main.x"
+#endif
 }

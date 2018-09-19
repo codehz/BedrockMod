@@ -42,7 +42,13 @@ struct temp_string {
 
 struct gc_string {
   char *data;
+  gc_string()
+      : data(nullptr) {}
   gc_string(char *data) {
+    if (data == nullptr) {
+      this->data = nullptr;
+      return;
+    }
     this->data = (char *)scm_gc_malloc_pointerless(strlen(data) + 1, "string");
     strcpy(this->data, data);
   }
@@ -90,6 +96,11 @@ template <typename T> struct foreign_object_is_convertible<T *> : foreign_type_c
   }
 };
 
+template <typename T> struct convertible<T &> {
+  static SCM to_scm(T &p) { return convertible<T *>::to_scm(&p); }
+  static auto to_scm(SCM p) { return *convertible<T *>::from_scm(p); }
+};
+
 template <> struct convertible<void *> {
   static SCM to_scm(void *p) { return scm_from_pointer(p, nullptr); }
 
@@ -107,9 +118,13 @@ template <> struct convertible<char *> {
   }
 };
 template <> struct convertible<gc_string> {
-  static SCM to_scm(gc_string s) { return scm_from_utf8_string(s.data); }
+  static SCM to_scm(gc_string s) {
+    if (s.data == nullptr) return SCM_BOOL_F;
+    return scm_from_utf8_string(s.data);
+  }
 
   static gc_string from_scm(SCM str) {
+    if (scm_is_false(str)) return { nullptr };
     SCM_ASSERT(scm_is_string(str), str, 1, "STRING_FROM_SCM");
     return { scm_to_utf8_string(str) };
   }
@@ -300,6 +315,53 @@ struct definer {
 
   void operator=(const as_scm &v) { scm_c_module_define(scm_current_module(), name, v); }
 };
+
+template <typename... T> std::function<void(T...)> make_hook(const char *name) {
+  auto hook = scm_make_hook(to_scm(sizeof...(T)));
+  scm_c_module_define(scm_current_module(), name, hook);
+  scm_c_export(name);
+  return [=](T... ts) { scm_c_run_hook(hook, list(to_scm<T>(ts)...)); };
+}
+
+#define MAKE_HOOK(name, sname, ...)                                                                                                                  \
+  SCM_SNARF_HERE(static std::function<void(__VA_ARGS__)> name;)                                                                                      \
+  SCM_SNARF_INIT(name = (::scm::make_hook<__VA_ARGS__>(sname));)
+
+template <typename T = SCM> struct fluid : as_scm {
+  fluid() { scm = scm_make_fluid(); }
+  fluid(T t) { scm = scm_make_fluid(scm::to_scm(t)); }
+
+  struct accessor : as_scm {
+    fluid<T> self;
+    operator T() { return from_scm<T>(scm); }
+    void operator=(T t) { scm_fluid_set_x(scm, to_scm(t)); }
+  };
+  accessor operator*() { return { scm_fluid_ref(scm), *this }; }
+  auto operator*() const { return from_scm<T>(scm_fluid_ref(scm)); }
+  auto operator-> () const { return from_scm<T>(scm_fluid_ref(scm)); }
+
+  struct proxy : as_scm {
+    fluid<T> self;
+    template <typename F> T operator()(F f) {
+      auto tp = std::make_tuple(f, self);
+      return from_scm<T>(scm_c_with_fluid(self, scm, (SCM(*)(void *))handler<F>, &tp));
+    }
+
+    template <typename F> static SCM handler(std::tuple<F, fluid<T>> *tp) {
+      auto [f, self] = *tp;
+      f();
+      return to_scm(*self);
+    }
+  };
+  proxy operator[](T def) { return { to_scm(def), *this }; }
+};
+
+#define MAKE_FLUID(type, name, sname)                                                                                                                \
+  SCM_SNARF_HERE(scm::fluid<type> &name() {                                                                                                          \
+    static scm::fluid<type> value;                                                                                                                   \
+    return value;                                                                                                                                    \
+  })                                                                                                                                                 \
+  SCM_SNARF_INIT(scm_c_define(sname, call("fluid->parameter", name())); scm_c_export(sname);)
 
 } // namespace scm
 

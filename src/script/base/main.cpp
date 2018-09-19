@@ -51,24 +51,21 @@ SCM_DEFINE_PUBLIC(c_player_stats, "player-stats", 1, 0, 0, (scm::val<ServerPlaye
   return scm::list(status.ping, status.avgping, status.packetloss, status.avgpacketloss);
 }
 
+MAKE_HOOK(player_login, "player-login", mce::UUID);
+MAKE_FLUID(bool, login_result, "login-result");
+
 struct Whitelist {};
 
 TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE, Whitelist, mce::UUID &uuid,
               std::string const &msg) {
-  if (scm::sym(R"(%player-login)")) return scm::from_scm<bool>(scm::call(R"(%player-login)", uuid));
-  return true;
+  return login_result()[true] <<= [=] { player_login(uuid); };
 }
 
 LOADFILE(preload, "src/script/base/preload.scm");
 
 PRELOAD_MODULE("minecraft base") {
-  onPlayerJoined <<= [](ServerPlayer &player) {
-    if (scm::sym(R"(%player-joined)")) scm::call(R"(%player-joined)", &player);
-  };
-
-  onPlayerLeft <<= [](ServerPlayer &player) {
-    if (scm::sym(R"(%player-left)")) scm::call(R"(%player-left)", &player);
-  };
+  onPlayerJoined <<= scm::make_hook<ServerPlayer &>("player-joined");
+  onPlayerLeft <<= scm::make_hook<ServerPlayer &>("player-left");
 
 #ifndef DIAG
 #include "main.x"

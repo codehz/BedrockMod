@@ -22,14 +22,16 @@ struct TextPacket : Packet {
   virtual bool disallowBatching() const;
 };
 
+MAKE_HOOK(player_chat, "player-chat", ServerPlayer *, std::string);
+MAKE_FLUID(bool, cancel_chat, "cancel-chat");
+
 TClasslessInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK10TextPacket, NetworkIdentifier const &nid,
                        TextPacket const &packet) {
-  if (scm::sym(R"(%player-chat)")) {
+  auto canceled = cancel_chat()[false] <<= [=] {
     auto player = findPlayer(nid, packet.playerSubIndex);
-    scm::call(R"(%player-chat)", (ServerPlayer *)player, packet.message);
-    return;
-  }
-  original(this, nid, packet);
+    player_chat((ServerPlayer *)player, packet.message);
+  };
+  if (!canceled) original(this, nid, packet);
 }
 
 SCM_DEFINE_PUBLIC(c_send_message, "send-message", 2, 1, 0, (scm::val<ServerPlayer *> player, scm::val<std::string> message, scm::val<int> type),

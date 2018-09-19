@@ -18,25 +18,24 @@
 (log-debug "uuid"
            (uuid->string (uuid "107d46e0-4d59-4e51-97ab-6585fe429d94")))
 
-(define (%player-login uuid)
-        (log-debug "player-login" (uuid->string uuid))
-        #t)
+(add-hook! player-joined
+           #%(let [(pname (actor-name %))]
+                   (log-debug "player-joined" "HIT ~a ~a ~a" pname (uuid->string (player-uuid %)) (player-xuid %))
+                   (for-each-player! other (send-message other (format #f "~a joined." pname)))))
 
-(define (%player-joined player)
-        (let [(pname (actor-name player))]
-              (log-debug "player-joined" "HIT ~a ~a ~a" pname (uuid->string (player-uuid player)) (player-xuid player))
-              (for-each-player! other (send-message other (format #f "~a joined." pname)))))
+(add-hook! player-login
+           #%(log-debug "player-login" (uuid->string %)))
 
-(define (%player-chat player message)
-        (let [(pname (actor-name player))]
-              (for-each-player! other (send-message other (format #f "~a: ~a" pname message)))
-              (log-info "chat" "~a: ~a" pname message)))
+(add-hook! player-chat
+           #%(let [(pname (actor-name %1))]
+                   (for-each-player! other (send-message other (format #f "~a: ~a" pname %2)))
+                   (log-info "chat" "~a: ~a" pname %2)))
 
-(define (%server-exec message)
-        (cond ((string-prefix? "/" message) #f)
-              (else (for-each-player! player (send-message player (format #f "server: ~a" message)))
-                           (log-info "chat" "server: ~a" message)
-                           "")))
+(add-hook! server-exec
+           #%(cond ((string-prefix? "/" %) (exec-result #f))
+                   (else (for-each-player! player (send-message player (format #f "server: ~a" %)))
+                         (log-info "chat" "server: ~a" %)
+                         (exec-result ""))))
 
 (delay-run! 5 (log-debug "delay" "test 5"))
 (delay-run! 7 (log-debug "delay" "test 7"))
