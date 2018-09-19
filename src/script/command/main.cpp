@@ -201,6 +201,24 @@ SCM_DEFINE_PUBLIC(parameter_float, "parameter-float", 1, 0, 0, (scm::val<char *>
   return scm::to_scm(simpleParameter<float>(name));
 }
 
+struct CommandRawText {
+  std::string value;
+};
+
+static ParameterDef *textParameter(temp_string const &name) {
+  return new ParameterDef{ .size   = sizeof(std::string),
+                           .name   = name,
+                           .type   = type_id<CommandRegistry, CommandRawText>(),
+                           .parser = &CommandRegistry::parse<CommandRawText>,
+                           .init   = (void (*)(void *))initString,
+                           .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev"),
+                           .fetch  = &fetchString };
+}
+
+SCM_DEFINE_PUBLIC(parameter_text, "parameter-text", 1, 0, 0, (scm::val<char *> name), "String parameter") {
+  return scm::to_scm(textParameter(name));
+}
+
 struct MinecraftCommands {
   CommandRegistry &getRegistry();
 };

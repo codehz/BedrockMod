@@ -70,6 +70,11 @@
              0
              (list (command-vtable (list (parameter-string "test")) #%(outp-success %3 (format #f "String ~a" (command-args %1 %2))))))
 
+(reg-command "text"
+             "Custom command for testing text"
+             0
+             (list (command-vtable (list (parameter-text "test")) #%(outp-success %3 (format #f "Text ~a" (command-args %1 %2))))))
+
 (reg-command "int"
              "Custom command for testing int"
              0
