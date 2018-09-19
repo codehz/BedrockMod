@@ -55,8 +55,8 @@
                     0
                     #%(outp-success %3 "Hello guile!"))
 
-(reg-command "script2"
-             "Custom command from script2"
+(reg-command "message"
+             "Custom command for testing message"
              0
              (list (command-vtable (list (parameter-message "test")) #%(outp-success %3 (format #f "You typed ~a" (command-args %1 %2))))))
 
