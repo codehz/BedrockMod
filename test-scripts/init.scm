@@ -20,7 +20,12 @@
 
 (add-hook! player-joined
            #%(let [(pname (actor-name %))]
-                   (log-debug "player-joined" "HIT ~a ~a ~a" pname (uuid->string (player-uuid %)) (player-xuid %))
+                   (log-debug "player-joined" "~a ~a ~a" pname (uuid->string (player-uuid %)) (player-xuid %))
+                   (for-each-player! other (send-message other (format #f "~a joined." pname)))))
+
+(add-hook! player-left
+           #%(let [(pname (actor-name %))]
+                   (log-debug "player-left" "~a ~a ~a" pname (uuid->string (player-uuid %)) (player-xuid %))
                    (for-each-player! other (send-message other (format #f "~a joined." pname)))))
 
 (add-hook! player-login
