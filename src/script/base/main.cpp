@@ -69,9 +69,14 @@ TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKNSt7__cxx1112basic_s
   return login_result()[true] <<= [=] { player_login(uuid); };
 }
 
+extern "C" const char *mcpelauncher_get_profile();
+
 LOADFILE(preload, "src/script/base/preload.scm");
 
 PRELOAD_MODULE("minecraft base") {
+  scm::definer("*profile*") = mcpelauncher_get_profile();
+  scm_c_export("*profile*");
+
   onPlayerJoined <<= scm::make_hook<ServerPlayer &>("player-joined");
   onPlayerLeft <<= scm::make_hook<ServerPlayer &>("player-left");
 
