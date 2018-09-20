@@ -51,6 +51,14 @@ SCM_DEFINE_PUBLIC(c_player_stats, "player-stats", 1, 0, 0, (scm::val<ServerPlaye
   return scm::list(status.ping, status.avgping, status.packetloss, status.avgpacketloss);
 }
 
+SCM_DEFINE_PUBLIC(vec3_to_blockpos, "vec3->blockpos", 1, 0, 0, (scm::val<Vec3> vec3), "Convert Vec3 to BlockPos") {
+  return scm::to_scm(BlockPos(vec3.get()));
+}
+
+SCM_DEFINE_PUBLIC(blockpos_to_vec3, "blockpos->vec3", 1, 0, 0, (scm::val<BlockPos> pos), "Convert Vec3 to BlockPos") {
+  return scm::to_scm(Vec3(pos));
+}
+
 MAKE_HOOK(player_login, "player-login", mce::UUID);
 MAKE_FLUID(bool, login_result, "login-result");
 
