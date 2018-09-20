@@ -96,6 +96,14 @@
              0
              (list (command-vtable (list (parameter-position "test")) #%(outp-success (format #f "Pos ~a" (command-args))))))
 
+(reg-command "multiple"
+             "Custom command for testing multiple parameters"
+             0
+             (list (command-vtable (list (parameter-position "pos") (parameter-selector "sel") (parameter-text "text"))
+                                 #%(outp-success (format #f "Multiple parameters ~a" (command-args))))
+                   (command-vtable (list (parameter-selector "sel") (parameter-text "text"))
+                                 #%(outp-success (format #f "Multiple parameters ~a" (command-args))))))
+
 (reg-simple-command "test"
                     "Test form"
                     0
