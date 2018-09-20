@@ -54,54 +54,54 @@
 (reg-simple-command "script"
                     "Custom command from script"
                     0
-                    #%(outp-success %3 "Hello guile!"))
+                    #%(outp-success "Hello guile!"))
 
 (reg-command "message"
              "Custom command for testing message"
              0
-             (list (command-vtable (list (parameter-message "test")) #%(outp-success %3 (format #f "You typed ~a" (command-args %1 %2))))))
+             (list (command-vtable (list (parameter-message "test")) #%(outp-success (format #f "You typed ~a" (command-args))))))
 
 (reg-command "select"
              "Custom command for testing selector"
              0
-             (list (command-vtable (list (parameter-selector "sth")) #%(outp-success %3 (format #f "Selected ~a" (command-args %1 %2))))))
+             (list (command-vtable (list (parameter-selector "sth")) #%(outp-success (format #f "Selected ~a" (command-args))))))
 
 (reg-command "string"
              "Custom command for testing string"
              0
-             (list (command-vtable (list (parameter-string "test")) #%(outp-success %3 (format #f "String ~a" (command-args %1 %2))))))
+             (list (command-vtable (list (parameter-string "test")) #%(outp-success (format #f "String ~a" (command-args))))))
 
 (reg-command "text"
              "Custom command for testing text"
              0
-             (list (command-vtable (list (parameter-text "test")) #%(outp-success %3 (format #f "Text ~a" (command-args %1 %2))))))
+             (list (command-vtable (list (parameter-text "test")) #%(outp-success (format #f "Text ~a" (command-args))))))
 
 (reg-command "int"
              "Custom command for testing int"
              0
-             (list (command-vtable (list (parameter-int "test")) #%(outp-success %3 (format #f "Integer ~a" (command-args %1 %2))))))
+             (list (command-vtable (list (parameter-int "test")) #%(outp-success (format #f "Integer ~a" (command-args))))))
 
 (reg-command "float"
              "Custom command for testing float"
              0
-             (list (command-vtable (list (parameter-float "test")) #%(outp-success %3 (format #f "Float ~a" (command-args %1 %2))))))
+             (list (command-vtable (list (parameter-float "test")) #%(outp-success (format #f "Float ~a" (command-args))))))
 
 (reg-command "bool"
              "Custom command for testing boolean"
              0
-             (list (command-vtable (list (parameter-bool "test")) #%(outp-success %3 (format #f "Boolean ~a" (command-args %1 %2))))))
+             (list (command-vtable (list (parameter-bool "test")) #%(outp-success (format #f "Boolean ~a" (command-args))))))
 
 (reg-command "position"
              "Custom command for testing position"
              0
-             (list (command-vtable (list (parameter-position "test")) #%(outp-success %3 (format #f "Pos ~a" (command-args %1 %2))))))
+             (list (command-vtable (list (parameter-position "test")) #%(outp-success (format #f "Pos ~a" (command-args))))))
 
 (reg-simple-command "test"
                     "Test form"
                     0
-                    #%(let [(player (orig-player %2))]
+                    #%(let [(player (orig-player))]
                             (if (not player)
-                                (outp-error %3 "Only available for player")
+                                (outp-error "Only available for player")
                                 (begin (send-form player
                                                   (scm->json-string '((title   . "test")
                                                                       (type    . "modal")
@@ -109,15 +109,15 @@
                                                                       (button1 . "ok")
                                                                       (button2 . "cancel")))
                                                   #%(log-debug "result" "form: ~a" (json-string->scm %)))
-                                       (outp-success %3)))))
+                                       (outp-success)))))
 
 (reg-simple-command "ping"
                     "Get network stats"
                     0
-                    #%(let [(player (orig-player %2))]
+                    #%(let [(player (orig-player))]
                             (if (not player)
-                                (outp-error %3 "Only available for player")
-                                (outp-success %3 (format #f "~a" (player-stats player))))))
+                                (outp-error "Only available for player")
+                                (outp-success (format #f "~a" (player-stats player))))))
 
 (let [(server (spawn-coop-repl-server))]
       (interval-run! 1 (poll-coop-repl-server server)))

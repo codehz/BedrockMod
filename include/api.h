@@ -331,6 +331,8 @@ template <typename T = SCM> struct fluid : as_scm {
   fluid() { scm = scm_make_fluid(); }
   fluid(T t) { scm = scm_make_fluid(scm::to_scm(t)); }
 
+  std::tuple<fluid<T>, T> operator%(T t) { return std::make_tuple(*this, t); }
+
   struct accessor : as_scm {
     fluid<T> self;
     operator T() { return from_scm<T>(scm); }
@@ -362,6 +364,32 @@ template <typename T = SCM> struct fluid : as_scm {
     return value;                                                                                                                                    \
   })                                                                                                                                                 \
   SCM_SNARF_INIT(scm_c_define(sname, call("fluid->parameter", name())); scm_c_export(sname);)
+
+struct with_fluids {
+  SCM fluids, vals;
+  with_fluids()
+      : fluids(SCM_EOL)
+      , vals(SCM_EOL){};
+
+  template <typename F, typename... T>
+  with_fluids(std::tuple<fluid<F>, F> first, std::tuple<fluid<T>, T>... rest)
+      : with_fluids(rest...) {
+    auto [f, v] = first;
+    fluids      = scm_cons(f, fluids);
+    vals        = scm_cons(to_scm(v), vals);
+  }
+
+  template <typename F> auto operator()(F f) { scm_c_with_fluids(fluids, vals, (SCM(*)(void *))handler<F>, &f); }
+
+  template <typename F> static SCM handler(F &f) {
+    if constexpr (std::is_same_v<void, decltype(f())>) {
+      f();
+      return SCM_UNSPECIFIED;
+    } else {
+      return to_scm(f());
+    }
+  }
+};
 
 template <typename T> struct vector;
 

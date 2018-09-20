@@ -50,18 +50,25 @@ struct ParameterDef {
 
 struct MyCommandVTable {
   std::vector<ParameterDef *> defs;
-  std::function<void(TestCommand *self, CommandOrigin *, CommandOutput *)> exec;
+  std::function<void()> exec;
 
   template <typename... T>
-  MyCommandVTable(std::function<void(TestCommand *self, CommandOrigin *, CommandOutput *)> exec, T... ts)
+  MyCommandVTable(std::function<void()> exec, T... ts)
       : exec(exec)
       , defs(ts...) {}
 };
 
+MAKE_FLUID(TestCommand *, f_current_command, "current-command");
+MAKE_FLUID(CommandOrigin *, f_current_command_origin, "current-command-origin");
+MAKE_FLUID(CommandOutput *, f_current_command_output, "current-command-output");
+
 struct TestCommand : Command {
   MyCommandVTable *vt;
 
-  virtual void execute(CommandOrigin const &orig, CommandOutput &outp) { vt->exec(this, const_cast<CommandOrigin *>(&orig), &outp); }
+  virtual void execute(CommandOrigin const &orig, CommandOutput &outp) {
+    scm::with_fluids{ f_current_command() % this, f_current_command_origin() % const_cast<CommandOrigin *>(&orig),
+                      f_current_command_output() % &outp } <<= vt->exec;
+  }
 
   TestCommand(MyCommandVTable *vt)
       : Command() {
@@ -89,11 +96,12 @@ struct TestCommand : Command {
   }
 };
 
-SCM_DEFINE_PUBLIC(command_fetch, "command-args", 2, 0, 0, (scm::val<TestCommand *> cmd, scm::val<CommandOrigin *> orig), "Get command arguments") {
+SCM_DEFINE_PUBLIC(command_fetch, "command-args", 0, 0, 0, (), "Get command arguments") {
+  auto cmd = (TestCommand *)*f_current_command();
   std::stack<SCM> st;
-  size_t pos = (size_t)cmd.get() + sizeof(TestCommand);
+  size_t pos = (size_t)cmd + sizeof(TestCommand);
   for (auto &def : cmd->vt->defs) {
-    st.push(def->fetch((void *)pos, orig));
+    st.push(def->fetch((void *)pos, *f_current_command_origin()));
     pos += def->size;
   }
   SCM list = SCM_EOL;
@@ -277,9 +285,7 @@ static void handleCommandApply(CommandRegistryApply &apply) {
 }
 
 SCM_DEFINE_PUBLIC(register_simple_command, "reg-simple-command", 4, 0, 0,
-                  (scm::val<char *> name, scm::val<char *> description, scm::val<int> level,
-                   scm::callback<void, TestCommand *, CommandOrigin *, CommandOutput *> cb),
-                  "Register simple command") {
+                  (scm::val<char *> name, scm::val<char *> description, scm::val<int> level, scm::callback<void> cb), "Register simple command") {
   CommandRegistryApply apply{ .name = name.get(), .description = description.get(), .level = level.get() };
   apply.vts.emplace_back(new MyCommandVTable(cb));
   scm_gc_protect_object(cb.scm);
@@ -287,8 +293,7 @@ SCM_DEFINE_PUBLIC(register_simple_command, "reg-simple-command", 4, 0, 0,
   return SCM_BOOL_T;
 }
 
-SCM_DEFINE_PUBLIC(make_vtable, "command-vtable", 2, 0, 0,
-                  (scm::slist<scm::val<ParameterDef *>> params, scm::callback<void, TestCommand *, CommandOrigin *, CommandOutput *> cb),
+SCM_DEFINE_PUBLIC(make_vtable, "command-vtable", 2, 0, 0, (scm::slist<scm::val<ParameterDef *>> params, scm::callback<void> cb),
                   "Make vtable for custom command") {
   scm_gc_protect_object(cb.scm);
   auto ret = new MyCommandVTable(cb);
@@ -305,19 +310,20 @@ SCM_DEFINE_PUBLIC(register_command, "reg-command", 4, 0, 0,
   return SCM_BOOL_T;
 }
 
-SCM_DEFINE_PUBLIC(outp_add, "outp-add", 2, 0, 0, (scm::val<CommandOutput *> outp, scm::val<char *> msg), "Add message to command output") {
-  outp->addMessage(msg.get());
+SCM_DEFINE_PUBLIC(outp_add, "outp-add", 1, 0, 0, (scm::val<char *> msg), "Add message to command output") {
+  f_current_command_output()->addMessage(msg.get());
   return SCM_UNSPECIFIED;
 }
 
-SCM_DEFINE_PUBLIC(outp_success, "outp-success", 1, 1, 0, (scm::val<CommandOutput *> outp, scm::val<char *> msg), "Set command output to success") {
+SCM_DEFINE_PUBLIC(outp_success, "outp-success", 0, 1, 0, (scm::val<char *> msg), "Set command output to success") {
+  auto outp = f_current_command_output();
   if (scm_is_string(msg.scm)) outp->addMessage(msg.get());
   outp->success();
   return SCM_UNSPECIFIED;
 }
 
-SCM_DEFINE_PUBLIC(outp_error, "outp-error", 2, 0, 0, (scm::val<CommandOutput *> outp, scm::val<char *> msg), "Set command output to success") {
-  outp->error(msg.get());
+SCM_DEFINE_PUBLIC(outp_error, "outp-error", 1, 0, 0, (scm::val<char *> msg), "Set command output to success") {
+  f_current_command_output()->error(msg.get());
   return SCM_UNSPECIFIED;
 }
 
@@ -345,12 +351,12 @@ struct CommandOrigin {
   virtual bool mayOverrideName();
 };
 
-SCM_DEFINE_PUBLIC(orig_type, "orig-type", 1, 0, 0, (scm::val<CommandOrigin *> orig), "Get CommandOrigin type") {
-  return scm::to_scm(orig->getOriginType());
+SCM_DEFINE_PUBLIC(orig_type, "orig-type", 0, 0, 0, (), "Get CommandOrigin type") {
+  return scm::to_scm(f_current_command_origin()->getOriginType());
 }
 
-SCM_DEFINE_PUBLIC(orig_player, "orig-player", 1, 0, 0, (scm::val<CommandOrigin *> orig), "Get CommandOrigin type") {
-  if (orig->getOriginType() == 0) { return scm::to_scm((ServerPlayer *)&orig->getEntity()); }
+SCM_DEFINE_PUBLIC(orig_player, "orig-player", 0, 0, 0, (), "Get CommandOrigin type") {
+  if (f_current_command_origin()->getOriginType() == 0) { return scm::to_scm((ServerPlayer *)&f_current_command_origin()->getEntity()); }
   return SCM_BOOL_F;
 }
 
