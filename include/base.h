@@ -65,6 +65,7 @@ struct Vec3 {
 };
 
 struct Vec2 {
+  static Vec2 ZERO;
   float x, y;
 };
 
@@ -151,6 +152,8 @@ struct LevelStorage {
   void save(Actor &);
 };
 
+struct Dimension;
+
 struct Level {
   LevelStorage *getLevelStorage();
   ServerPlayer *getPlayer(const std::string &name) const;
@@ -161,6 +164,9 @@ struct Level {
   void forEachPlayer(std::function<bool(Player &)>);
   BlockPos const &getDefaultSpawn() const;
   void setDefaultSpawn(BlockPos const &);
+  Dimension *getDimension(DimensionId) const;
+  void addEntity(BlockSource &, std::unique_ptr<Actor>);
+  void addAutonomousEntity(BlockSource &, std::unique_ptr<Actor>);
 };
 
 struct DedicatedServer {

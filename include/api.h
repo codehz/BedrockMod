@@ -395,14 +395,14 @@ template <typename T> struct vector;
 
 #define IMPVEC(ctype, stype)                                                                                                                         \
   template <> struct vector<ctype> : as_scm {                                                                                                        \
-    vector(size_t length) { scm = scm_make_##stype##vector(scm_from_size_t(length), to_scm(0)); }                                                    \
-    vector(SCM scm) { scm = scm; }                                                                                                                   \
+    vector(size_t length) { scm = scm_make_##stype##vector(scm_from_size_t(length), to_scm((ctype)0)); }                                             \
+    vector(SCM scm) { this->scm = scm; }                                                                                                             \
     size_t size() { return scm_to_size_t(scm_##stype##vector_length(scm)); }                                                                         \
     template <typename F> auto operator()(F f) {                                                                                                     \
       scm_t_array_handle h;                                                                                                                          \
       size_t len;                                                                                                                                    \
       ssize_t inc;                                                                                                                                   \
-      ctype *vl = scm_##stype##vector_writable_elements(scm, &h, nullptr, nullptr);                                                                  \
+      ctype *vl = scm_##stype##vector_writable_elements(scm, &h, &len, &inc);                                                                        \
       if constexpr (!std::is_same_v<void, decltype(f(vl, len))>) {                                                                                   \
         auto ret = f(vl, len);                                                                                                                       \
         scm_array_handle_release(&h);                                                                                                                \
@@ -436,9 +436,9 @@ template <> struct convertible<Vec3> {
     return vec;
   }
   static Vec3 from_scm(SCM vec) {
-    SCM_ASSERT_TYPE(scm_is_true(scm_f32vector_p(vec)) && scm_to_int(scm_f32vector_length(vec)) == 3, vec, 0, "c:f32vector->vec3",
+    SCM_ASSERT_TYPE(scm_is_true(scm_f32vector_p(vec)) && scm_to_int(scm_f32vector_length(vec)) == 3, vec, SCM_ARG1, "c:f32vector->vec3",
                     "Cannot convert to vec3");
-    return vector<float>(vec)([](float const *el, size_t l) { return *((Vec3 *)el); });
+    return vector<float>(vec)([](float *el, size_t l) { return *((Vec3 *)el); });
   }
 };
 
@@ -449,9 +449,9 @@ template <> struct convertible<BlockPos> {
     return vec;
   }
   static BlockPos from_scm(SCM vec) {
-    SCM_ASSERT_TYPE(scm_is_true(scm_f32vector_p(vec)) && scm_to_int(scm_f32vector_length(vec)) == 3, vec, 0, "c:f32vector->vec3",
-                    "Cannot convert to vec3");
-    return vector<int>(vec)([](int const *el, size_t l) { return *((BlockPos *)el); });
+    SCM_ASSERT_TYPE(scm_is_true(scm_s32vector_p(vec)) && scm_to_int(scm_s32vector_length(vec)) == 3, vec, 0, "c:s32vector->vec3",
+                    "Cannot convert to BlockPos");
+    return vector<int>(vec)([](int *el, size_t l) { return *((BlockPos *)el); });
   }
 };
 } // namespace scm
