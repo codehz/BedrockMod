@@ -46,7 +46,14 @@ struct ParameterDef {
   void (*init)(void *);
   void (*deinit)(void *);
   SCM (*fetch)(void *, CommandOrigin *);
+  bool optional;
 };
+
+SCM_DEFINE_PUBLIC(optional_paramter, "parameter-optional", 1, 0, 1, (SCM val, SCM rest), "Make parameter optional") {
+  auto def = scm::from_scm<ParameterDef *>(scm_apply_0(val, rest));
+  def->optional = true;
+  return scm::to_scm(def);
+}
 
 struct MyCommandVTable {
   std::vector<ParameterDef *> defs;
@@ -196,7 +203,7 @@ template <typename T> static ParameterDef *simpleParameter(temp_string const &na
                            .name   = name,
                            .type   = type_id<CommandRegistry, T>(),
                            .parser = &CommandRegistry::parse<T>,
-                           .init   = nullptr,
+                           .init   = geninit<T>,
                            .deinit = nullptr,
                            .fetch  = simpleFetch<T> };
 }
@@ -277,7 +284,7 @@ static void handleCommandApply(CommandRegistryApply &apply) {
                                        size_t offset = sizeof(TestCommand);
                                        for (auto p : vt->defs) {
                                          overload.params.emplace_back(CommandParameterData(p->type, p->parser, p->name.c_str(),
-                                                                                           (CommandParameterDataType)0, nullptr, offset, false, -1));
+                                                                                           (CommandParameterDataType)0, nullptr, offset, p->optional, -1));
                                          offset += p->size;
                                        }
                                      });
