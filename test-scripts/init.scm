@@ -106,48 +106,48 @@
                    (command-vtable (list (parameter-selector "sel") (parameter-text "text"))
                                  #%(outp-success (format #f "Multiple parameters ~a" (command-args))))))
 
-(define (checked-player fn)
-      #%(let [(player (orig-player))]
-              (if (not player)
-                  (outp-error "Only available for player")
-                  (fn player))))
+(defmacro checked-player! (name . body)
+         `(lambda () (let [(,name (orig-player))]
+                           (if (not ,name)
+                               (outp-error "Only available for player")
+                               (begin ,@body)))))
 
 (reg-simple-command "home"
                     "Teleport to spawnpoint"
                     0
-                    (checked-player #%(let* [(dim (player-dim %))
-                                             (pos (player-spawnpoint %))
-                                             (point (blockpos->vec3 pos))]
-                                             (teleport % point dim)
-                                             (outp-success))))
+                    (checked-player! player
+                                     (let* [(dim (player-dim player))
+                                            (pos (player-spawnpoint player))
+                                            (point (blockpos->vec3 pos))]
+                                            (teleport player point dim)
+                                            (outp-success))))
 
 (reg-simple-command "spawn"
                     "Teleport to world spawnpoint"
                     0
-                    (checked-player #%(let* [(pos (world-spawnpoint))
-                                             (point (blockpos->vec3 pos))]
-                                             (teleport % point 0)
-                                             (outp-success))))
+                    (checked-player! player
+                                     (let* [(pos (world-spawnpoint))
+                                            (point (blockpos->vec3 pos))]
+                                            (teleport player point 0)
+                                            (outp-success))))
 
 (reg-simple-command "test"
                     "Test form"
                     0
-                    (checked-player (megacut (send-form player
-                                                        (scm->json-string '((title   . "test")
-                                                                            (type    . "modal")
-                                                                            (content . "test")
-                                                                            (button1 . "ok")
-                                                                            (button2 . "cancel")))
-                                                        #%(log-debug "result" "form: ~a" (json-string->scm %)))
-                                             (outp-success))))
+                    (checked-player! player
+                                     (send-form player
+                                                (scm->json-string '((title   . "test")
+                                                                    (type    . "modal")
+                                                                    (content . "test")
+                                                                    (button1 . "ok")
+                                                                    (button2 . "cancel")))
+                                                #%(log-debug "result" "form: ~a" (json-string->scm %)))
+                                     (outp-success)))
 
 (reg-simple-command "ping"
                     "Get network stats"
                     0
-                    #%(let [(player (orig-player))]
-                            (if (not player)
-                                (outp-error "Only available for player")
-                                (outp-success (format #f "~a" (player-stats player))))))
+                    (checked-player! player (outp-success (format #f "~a" (player-stats player)))))
 
 (let [(server (spawn-coop-repl-server))]
       (interval-run! 1 (poll-coop-repl-server server)))
