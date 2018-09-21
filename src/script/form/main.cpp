@@ -57,11 +57,11 @@ struct FixedFunction {
   }
 };
 
-std::unordered_map<NetworkIdentifier, FixedFunction> callbacks;
+std::unordered_map<size_t, FixedFunction> callbacks;
 
 TInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK23ModalFormResponsePacket, ServerNetworkHandler,
               NetworkIdentifier const &nid, ModalFormResponsePacket &packet) {
-  auto it = callbacks.find(nid);
+  auto it = callbacks.find(nid.getHash());
   if (it != callbacks.end()) {
     if (it->second.rid == packet.id) {
       it->second(packet.data);
@@ -75,7 +75,7 @@ SCM_DEFINE_PUBLIC(c_send_form, "send-form", 3, 0, 0,
                   "Send form to player") {
   int id = rand();
   ModalFormRequestPacket packet{ player->getClientSubId(), id, request.get() };
-  callbacks.emplace(player->getClientId(), FixedFunction{ id, callback });
+  callbacks.emplace(player->getClientId().getHash(), FixedFunction{ id, callback });
   player->sendNetworkPacket(packet);
   return SCM_UNSPECIFIED;
 }
