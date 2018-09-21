@@ -10,10 +10,7 @@
 (use-modules (megacut))
 (use-modules (sqlite3))
 
-(log-trace "test"
-           "~s - ~a"
-           "测试"
-           123)
+(log-trace "test" "default spawn point: ~a" (world-spawnpoint))
 
 (log-debug "uuid"
            (uuid->string (uuid "107d46e0-4d59-4e51-97ab-6585fe429d94")))
@@ -109,20 +106,40 @@
                    (command-vtable (list (parameter-selector "sel") (parameter-text "text"))
                                  #%(outp-success (format #f "Multiple parameters ~a" (command-args))))))
 
+(define (checked-player fn)
+      #%(let [(player (orig-player))]
+              (if (not player)
+                  (outp-error "Only available for player")
+                  (fn player))))
+
+(reg-simple-command "home"
+                    "Teleport to spawnpoint"
+                    0
+                    (checked-player #%(let* [(dim (player-dim %))
+                                             (pos (player-spawnpoint %))
+                                             (point (blockpos->vec3 pos))]
+                                             (teleport % point dim)
+                                             (outp-success))))
+
+(reg-simple-command "spawn"
+                    "Teleport to world spawnpoint"
+                    0
+                    (checked-player #%(let* [(pos (world-spawnpoint))
+                                             (point (blockpos->vec3 pos))]
+                                             (teleport % point 0)
+                                             (outp-success))))
+
 (reg-simple-command "test"
                     "Test form"
                     0
-                    #%(let [(player (orig-player))]
-                            (if (not player)
-                                (outp-error "Only available for player")
-                                (begin (send-form player
-                                                  (scm->json-string '((title   . "test")
-                                                                      (type    . "modal")
-                                                                      (content . "test")
-                                                                      (button1 . "ok")
-                                                                      (button2 . "cancel")))
-                                                  #%(log-debug "result" "form: ~a" (json-string->scm %)))
-                                       (outp-success)))))
+                    (checked-player (megacut (send-form player
+                                                        (scm->json-string '((title   . "test")
+                                                                            (type    . "modal")
+                                                                            (content . "test")
+                                                                            (button1 . "ok")
+                                                                            (button2 . "cancel")))
+                                                        #%(log-debug "result" "form: ~a" (json-string->scm %)))
+                                             (outp-success))))
 
 (reg-simple-command "ping"
                     "Get network stats"

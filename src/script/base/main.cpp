@@ -6,6 +6,8 @@ MAKE_FOREIGN_TYPE(mce::UUID, "uuid", { "t0", "t1" });
 MAKE_FOREIGN_TYPE(Actor *, "actor");
 MAKE_FOREIGN_TYPE(ServerPlayer *, "player");
 
+extern "C" Minecraft *support_get_minecraft();
+
 #include "main.h"
 
 #ifndef DIAG
@@ -19,6 +21,34 @@ SCM_DEFINE_PUBLIC(c_make_uuid, "uuid", 1, 0, 0, (scm::val<std::string> name), "C
 
 SCM_DEFINE_PUBLIC(c_uuid_to_string, "uuid->string", 1, 0, 0, (scm::val<mce::UUID> uuid), "UUID to string") {
   return scm::to_scm(uuid.get().asString());
+}
+
+struct TeleportCommand {
+  void teleport(Actor &actor, Vec3 pos, Vec3 *center, DimensionId dim) const;
+};
+
+void teleport(Actor &actor, Vec3 target, int dim, Vec3 *center) {
+  auto real = center != nullptr ? *center : target;
+  ((TeleportCommand *)nullptr)->teleport(actor, target, &real, { dim });
+}
+
+SCM_DEFINE_PUBLIC(c_teleport, "teleport", 3, 0, 0, (scm::val<Actor *> actor, scm::val<Vec3> target, scm::val<int> dim), "Teleport actor") {
+  teleport(*actor.get(), target, dim, nullptr);
+  return SCM_UNSPECIFIED;
+}
+
+SCM_DEFINE_PUBLIC(actor_position, "actor-pos", 1, 0, 0, (scm::val<Actor *> actor), "Get position of actor") { return scm::to_scm(actor->getPos()); }
+
+SCM_DEFINE_PUBLIC(player_dim, "player-dim", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get player dim") {
+  return scm::to_scm(player->getDimensionId());
+}
+
+SCM_DEFINE_PUBLIC(player_spawnpoint, "player-spawnpoint", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get spawnpoint of player") {
+  return scm::to_scm(player->getSpawnPosition());
+}
+
+SCM_DEFINE_PUBLIC(level_spawnpoint, "world-spawnpoint", 0, 0, 0, (scm::val<ServerPlayer *> player), "Get spawnpoint of level") {
+  return scm::to_scm(support_get_minecraft()->getLevel().getDefaultSpawn());
 }
 
 SCM_DEFINE_PUBLIC(c_actor_name, "actor-name", 1, 0, 0, (scm::val<Actor *> act), "Return Actor's name") { return scm::to_scm(act->getNameTag()); }
