@@ -133,6 +133,13 @@
                                             (teleport player point 0)
                                             (outp-success))))
 
+(define* (make-simple-form title content #:optional (button1 "Accept") (button2 "Reject"))
+         (scm->json-string `((title   . ,title)
+                             (type    . "modal")
+                             (content . ,content)
+                             (button1 . ,button1)
+                             (button2 . ,button2))))
+
 (reg-command "tpa"
              "Send a teleport request to other player"
              0
@@ -143,11 +150,7 @@
                                                               (outp-error "Must have 1 player selected")
                                                               (let [(target (car targets))]
                                                                     (send-form target
-                                                                               (scm->json-string `((title   . "Teleport request")
-                                                                                                   (type    . "modal")
-                                                                                                   (content . ,(format #f "From ~a" (actor-name self)))
-                                                                                                   (button1 . "Accept")
-                                                                                                   (button2 . "Reject")))
+                                                                               (make-simple-form "Teleport request" (format #f "From ~a" (actor-name self)))
                                                                              #%(if (json-string->scm %)
                                                                                    (let* [(pos (actor-pos target))
                                                                                           (dim (actor-dim target))]
@@ -167,11 +170,7 @@
                                                               (outp-error "Must have 1 player selected")
                                                               (let [(target (car targets))]
                                                                     (send-form target
-                                                                               (scm->json-string `((title   . "Teleport here request")
-                                                                                                   (type    . "modal")
-                                                                                                   (content . ,(format #f "To ~a" (actor-name self)))
-                                                                                                   (button1 . "Accept")
-                                                                                                   (button2 . "Reject")))
+                                                                               (make-simple-form "Teleport request" (format #f "To ~a" (actor-name self)))
                                                                              #%(if (json-string->scm %)
                                                                                    (let* [(pos (actor-pos self))
                                                                                           (dim (actor-dim self))]
@@ -194,11 +193,7 @@
                     0
                     (checked-player! player
                                      (send-form player
-                                                (scm->json-string '((title   . "test")
-                                                                    (type    . "modal")
-                                                                    (content . "test")
-                                                                    (button1 . "ok")
-                                                                    (button2 . "cancel")))
+                                                (make-simple-form "Test" "test form" "Ok" "Dismiss")
                                               #%(log-debug "result" "form: ~a" (json-string->scm %)))
                                      (outp-success)))
 
