@@ -5,10 +5,13 @@
 (use-modules (minecraft chat))
 (use-modules (minecraft form))
 (use-modules (minecraft command))
+(use-modules (minecraft transfer))
 (use-modules (system repl coop-server))
 (use-modules (json))
 (use-modules (megacut))
 (use-modules (sqlite3))
+
+(use-modules (ice-9 match))
 
 (log-trace "test" "default spawn point: ~a" (world-spawnpoint))
 
@@ -177,6 +180,14 @@
                                                                                           (send-message target "Teleported."))
                                                                                    (send-message self "Request rejected.")))
                                                                     (outp-success "Request sent."))))))))
+
+(reg-command "transfer"
+             "Transfer player to another server"
+             1
+             (list (command-vtable (list (parameter-selector "target" #t) (parameter-string "address") (parameter-int "port"))
+                                 #%(match (command-args)
+                                          (((player) address port) (player-transfer player address port) (outp-success))
+                                          (_                       (outp-error "Must have 1 player selected"))))))
 
 (reg-simple-command "test"
                     "Test form"
