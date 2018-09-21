@@ -154,6 +154,30 @@
                                                                                    (send-message self "Request rejected.")))
                                                                     (outp-success "Request sent."))))))))
 
+(reg-command "tpahere"
+             "Send a teleport here request to other player"
+             0
+             (list (command-vtable (list (parameter-selector "target" #t))
+                                   (checked-player! self
+                                                    (let [(targets (car (command-args)))]
+                                                          (if (not (eq? (length targets) 1))
+                                                              (outp-error "Must have 1 player selected")
+                                                              (let [(target (car targets))]
+                                                                    (send-form target
+                                                                               (scm->json-string `((title   . "Teleport here request")
+                                                                                                   (type    . "modal")
+                                                                                                   (content . ,(format #f "To ~a" (actor-name self)))
+                                                                                                   (button1 . "Accept")
+                                                                                                   (button2 . "Reject")))
+                                                                             #%(if (json-string->scm %)
+                                                                                   (let* [(pos (actor-pos self))
+                                                                                          (dim (actor-dim self))]
+                                                                                          (f32vector-set! pos 1 (- (f32vector-ref pos 1) 1.5))
+                                                                                          (teleport target pos dim)
+                                                                                          (send-message target "Teleported."))
+                                                                                   (send-message self "Request rejected.")))
+                                                                    (outp-success "Request sent."))))))))
+
 (reg-simple-command "test"
                     "Test form"
                     0
