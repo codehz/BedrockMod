@@ -11,7 +11,7 @@ public:
     int family;
 
     bool equalsTypeData(NetworkIdentifier const&) const;
-    size_t getHash() const;
+    int getHash() const;
     std::string toString() const;
 
     bool operator==(NetworkIdentifier const& addr) const { return equalsTypeData(addr); }
