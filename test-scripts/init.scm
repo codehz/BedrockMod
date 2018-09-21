@@ -116,10 +116,9 @@
                     "Teleport to spawnpoint"
                     0
                     (checked-player! player
-                                     (let* [(dim (player-dim player))
-                                            (pos (player-spawnpoint player))
+                                     (let* [(pos (player-spawnpoint player))
                                             (point (blockpos->vec3 pos))]
-                                            (teleport player point dim)
+                                            (teleport player point 0)
                                             (outp-success))))
 
 (reg-simple-command "spawn"
@@ -131,6 +130,30 @@
                                             (teleport player point 0)
                                             (outp-success))))
 
+(reg-command "tpa"
+             "Send a teleport request to other player"
+             0
+             (list (command-vtable (list (parameter-selector "target" #t))
+                                   (checked-player! self
+                                                    (let [(targets (car (command-args)))]
+                                                          (if (not (eq? (length targets) 1))
+                                                              (outp-error "Must have 1 player selected")
+                                                              (let [(target (car targets))]
+                                                                    (send-form target
+                                                                               (scm->json-string `((title   . "Teleport request")
+                                                                                                   (type    . "modal")
+                                                                                                   (content . ,(format #f "From ~a" (actor-name self)))
+                                                                                                   (button1 . "Accept")
+                                                                                                   (button2 . "Reject")))
+                                                                             #%(if (json-string->scm %)
+                                                                                   (let* [(pos (actor-pos target))
+                                                                                          (dim (actor-dim target))]
+                                                                                          (f32vector-set! pos 1 (- (f32vector-ref pos 1) 1.5))
+                                                                                          (teleport self pos dim)
+                                                                                          (send-message self "Teleported."))
+                                                                                   (send-message self "Request rejected.")))
+                                                                    (outp-success "Request sent."))))))))
+
 (reg-simple-command "test"
                     "Test form"
                     0
@@ -141,7 +164,7 @@
                                                                     (content . "test")
                                                                     (button1 . "ok")
                                                                     (button2 . "cancel")))
-                                                #%(log-debug "result" "form: ~a" (json-string->scm %)))
+                                              #%(log-debug "result" "form: ~a" (json-string->scm %)))
                                      (outp-success)))
 
 (reg-simple-command "ping"
