@@ -39,9 +39,7 @@ SCM_DEFINE_PUBLIC(c_teleport, "teleport", 3, 0, 0, (scm::val<Actor *> actor, scm
 
 SCM_DEFINE_PUBLIC(actor_position, "actor-pos", 1, 0, 0, (scm::val<Actor *> actor), "Get position of actor") { return scm::to_scm(actor->getPos()); }
 
-SCM_DEFINE_PUBLIC(player_dim, "player-dim", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get player dim") {
-  return scm::to_scm(player->getDimensionId());
-}
+SCM_DEFINE_PUBLIC(actor_dim, "actor-dim", 1, 0, 0, (scm::val<Actor *> actor), "Get actor dim") { return scm::to_scm(actor->getDimensionId()); }
 
 SCM_DEFINE_PUBLIC(player_spawnpoint, "player-spawnpoint", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get spawnpoint of player") {
   return scm::to_scm(player->getSpawnPosition());
