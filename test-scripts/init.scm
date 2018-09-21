@@ -115,12 +115,15 @@
                                (outp-error "Only available for player")
                                (begin ,@body)))))
 
+(define* (fix-pos pos #:optional (fix 1.6)) (f32vector-set! pos 1 (- (f32vector-ref pos 1) fix)))
+
 (reg-simple-command "home"
                     "Teleport to spawnpoint"
                     0
                     (checked-player! player
                                      (let* [(pos (player-spawnpoint player))
                                             (point (blockpos->vec3 pos))]
+                                            (fix-pos point 1)
                                             (teleport player point 0)
                                             (outp-success))))
 
@@ -130,8 +133,19 @@
                     (checked-player! player
                                      (let* [(pos (world-spawnpoint))
                                             (point (blockpos->vec3 pos))]
+                                            (fix-pos point 1)
                                             (teleport player point 0)
                                             (outp-success))))
+
+(reg-command "setplayerspawn"
+             "Set player's spawnpoint"
+             1
+             (list (command-vtable (list (parameter-selector "target" #t) (parameter-position "pos"))
+                                 #%(match (command-args)
+                                         [(() _) (outp-error "No player selected")]
+                                         [(players vec) (let [(pos (vec3->blockpos vec))]
+                                                              (for-each (lambda (player) (set-player-spawnpoint player pos)) players)
+                                                              (outp-success))]))))
 
 (define* (make-simple-form title content #:optional (button1 "Accept") (button2 "Reject"))
          (scm->json-string `((title   . ,title)
@@ -151,7 +165,7 @@
                                                                                #%(if (json-string->scm %)
                                                                                      (let* [(pos (actor-pos target))
                                                                                             (dim (actor-dim target))]
-                                                                                            (f32vector-set! pos 1 (- (f32vector-ref pos 1) 1.5))
+                                                                                            (fix-pos pos)
                                                                                             (teleport self pos dim)
                                                                                             (send-message self "Teleported."))
                                                                                      (send-message self "Request rejected.")))
@@ -169,7 +183,7 @@
                                                                                #%(if (json-string->scm %)
                                                                                      (let* [(pos (actor-pos self))
                                                                                             (dim (actor-dim self))]
-                                                                                            (f32vector-set! pos 1 (- (f32vector-ref pos 1) 1.5))
+                                                                                            (fix-pos pos)
                                                                                             (teleport target pos dim)
                                                                                             (send-message target "Teleported."))
                                                                                      (send-message self "Request rejected.")))

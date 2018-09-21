@@ -45,6 +45,10 @@ SCM_DEFINE_PUBLIC(player_spawnpoint, "player-spawnpoint", 1, 0, 0, (scm::val<Ser
   return scm::to_scm(player->getSpawnPosition());
 }
 
+SCM_DEFINE_PUBLIC(player_set_spawnpoint, "set-player-spawnpoint", 2, 0, 0, (scm::val<ServerPlayer *> player, scm::val<BlockPos> pos), "Set spawnpoint of player") {
+  return scm::to_scm(player->setBedRespawnPosition(pos));
+}
+
 SCM_DEFINE_PUBLIC(level_spawnpoint, "world-spawnpoint", 0, 0, 0, (scm::val<ServerPlayer *> player), "Get spawnpoint of level") {
   return scm::to_scm(support_get_minecraft()->getLevel().getDefaultSpawn());
 }

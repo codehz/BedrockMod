@@ -136,6 +136,8 @@ struct Player : Mob {
   NetworkIdentifier const &getClientId() const;
   unsigned char getClientSubId() const;
   BlockPos getSpawnPosition();
+  bool setRespawnPosition(BlockPos const&,bool);
+  bool setBedRespawnPosition(BlockPos const&);
   int getCommandPermissionLevel() const;
 };
 
