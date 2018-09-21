@@ -145,48 +145,44 @@
              0
              (list (command-vtable (list (parameter-selector "target" #t))
                                    (checked-player! self
-                                                    (let [(targets (car (command-args)))]
-                                                          (if (not (eq? (length targets) 1))
-                                                              (outp-error "Must have 1 player selected")
-                                                              (let [(target (car targets))]
-                                                                    (send-form target
-                                                                               (make-simple-form "Teleport request" (format #f "From ~a" (actor-name self)))
-                                                                             #%(if (json-string->scm %)
-                                                                                   (let* [(pos (actor-pos target))
-                                                                                          (dim (actor-dim target))]
-                                                                                          (f32vector-set! pos 1 (- (f32vector-ref pos 1) 1.5))
-                                                                                          (teleport self pos dim)
-                                                                                          (send-message self "Teleported."))
-                                                                                   (send-message self "Request rejected.")))
-                                                                    (outp-success "Request sent."))))))))
+                                                    (match (command-args)
+                                                          [((target)) (send-form target
+                                                                                 (make-simple-form "Teleport request" (format #f "From ~a" (actor-name self)))
+                                                                               #%(if (json-string->scm %)
+                                                                                     (let* [(pos (actor-pos target))
+                                                                                            (dim (actor-dim target))]
+                                                                                            (f32vector-set! pos 1 (- (f32vector-ref pos 1) 1.5))
+                                                                                            (teleport self pos dim)
+                                                                                            (send-message self "Teleported."))
+                                                                                     (send-message self "Request rejected.")))
+                                                                      (outp-success "Request sent.")]
+                                                          [_ (outp-error "Must have 1 player selected")])))))
 
 (reg-command "tpahere"
              "Send a teleport here request to other player"
              0
              (list (command-vtable (list (parameter-selector "target" #t))
                                    (checked-player! self
-                                                    (let [(targets (car (command-args)))]
-                                                          (if (not (eq? (length targets) 1))
-                                                              (outp-error "Must have 1 player selected")
-                                                              (let [(target (car targets))]
-                                                                    (send-form target
-                                                                               (make-simple-form "Teleport request" (format #f "To ~a" (actor-name self)))
-                                                                             #%(if (json-string->scm %)
-                                                                                   (let* [(pos (actor-pos self))
-                                                                                          (dim (actor-dim self))]
-                                                                                          (f32vector-set! pos 1 (- (f32vector-ref pos 1) 1.5))
-                                                                                          (teleport target pos dim)
-                                                                                          (send-message target "Teleported."))
-                                                                                   (send-message self "Request rejected.")))
-                                                                    (outp-success "Request sent."))))))))
+                                                    (match (command-args)
+                                                          [((target)) (send-form target
+                                                                                 (make-simple-form "Teleport request" (format #f "To ~a" (actor-name self)))
+                                                                               #%(if (json-string->scm %)
+                                                                                     (let* [(pos (actor-pos self))
+                                                                                            (dim (actor-dim self))]
+                                                                                            (f32vector-set! pos 1 (- (f32vector-ref pos 1) 1.5))
+                                                                                            (teleport target pos dim)
+                                                                                            (send-message target "Teleported."))
+                                                                                     (send-message self "Request rejected.")))
+                                                                      (outp-success "Request sent.")]
+                                                          [_ (outp-error "Must have 1 player selected")])))))
 
 (reg-command "transfer"
              "Transfer player to another server"
              1
              (list (command-vtable (list (parameter-selector "target" #t) (parameter-string "address") (parameter-int "port"))
                                  #%(match (command-args)
-                                          (((player) address port) (player-transfer player address port) (outp-success))
-                                          (_                       (outp-error "Must have 1 player selected"))))))
+                                         [((player) address port) (player-transfer player address port) (outp-success)]
+                                         [_                       (outp-error "Must have 1 player selected")]))))
 
 (reg-simple-command "test"
                     "Test form"
