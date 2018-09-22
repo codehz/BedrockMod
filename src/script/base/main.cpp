@@ -100,6 +100,22 @@ SCM_DEFINE_PUBLIC(c_player_open_inventory, "player-open-inventory", 1, 0, 0, (sc
   return SCM_UNSPECIFIED;
 }
 
+SCM_DEFINE_PUBLIC(c_player_is_survival, "player-survival?", 1, 0, 0, (scm::val<ServerPlayer *> player), "Check if player is in survival mode") {
+  return scm::to_scm(player->isSurvival());
+}
+
+SCM_DEFINE_PUBLIC(c_player_is_creative, "player-creative?", 1, 0, 0, (scm::val<ServerPlayer *> player), "Check if player is in creative mode") {
+  return scm::to_scm(player->isCreative());
+}
+
+SCM_DEFINE_PUBLIC(c_player_is_adventure, "player-adventure?", 1, 0, 0, (scm::val<ServerPlayer *> player), "Check if player is in adventure mode") {
+  return scm::to_scm(player->isAdventure());
+}
+
+SCM_DEFINE_PUBLIC(c_player_is_worldbuilder, "player-worldbuilder?", 1, 0, 0, (scm::val<ServerPlayer *> player), "Check if player is worldbuilder") {
+  return scm::to_scm(player->isWorldBuilder());
+}
+
 SCM_DEFINE_PUBLIC(vec3_to_blockpos, "vec3->blockpos", 1, 0, 0, (scm::val<Vec3> vec3), "Convert Vec3 to BlockPos") {
   return scm::to_scm(BlockPos(vec3.get()));
 }

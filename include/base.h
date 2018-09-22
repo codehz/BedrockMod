@@ -142,6 +142,10 @@ struct Player : Mob {
   bool setRespawnPosition(BlockPos const&,bool);
   bool setBedRespawnPosition(BlockPos const&);
   int getCommandPermissionLevel() const;
+  bool isSurvival() const;
+  bool isAdventure() const;
+  bool isCreative() const;
+  bool isWorldBuilder();
 
   void setOffhandSlot(ItemInstance const &);
 };
