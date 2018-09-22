@@ -154,6 +154,11 @@
                              (button1 . ,button1)
                              (button2 . ,button2))))
 
+(add-hook! player-joined
+         #%(delay-run! 100 (send-form %
+                                      (make-simple-form "Hello" "world" "Done" "Dismiss")
+                                      (lambda (x) x))))
+
 (reg-command "tpa"
              "Send a teleport request to other player"
              0
