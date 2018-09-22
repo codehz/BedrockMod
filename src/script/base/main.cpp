@@ -45,7 +45,8 @@ SCM_DEFINE_PUBLIC(player_spawnpoint, "player-spawnpoint", 1, 0, 0, (scm::val<Ser
   return scm::to_scm(player->getSpawnPosition());
 }
 
-SCM_DEFINE_PUBLIC(player_set_spawnpoint, "set-player-spawnpoint", 2, 0, 0, (scm::val<ServerPlayer *> player, scm::val<BlockPos> pos), "Set spawnpoint of player") {
+SCM_DEFINE_PUBLIC(player_set_spawnpoint, "set-player-spawnpoint", 2, 0, 0, (scm::val<ServerPlayer *> player, scm::val<BlockPos> pos),
+                  "Set spawnpoint of player") {
   return scm::to_scm(player->setBedRespawnPosition(pos));
 }
 
@@ -81,6 +82,11 @@ SCM_DEFINE_PUBLIC(c_player_xuid, "player-xuid", 1, 0, 0, (scm::val<ServerPlayer 
 SCM_DEFINE_PUBLIC(c_player_stats, "player-stats", 1, 0, 0, (scm::val<ServerPlayer *> player), "Get Player's stats info") {
   auto status = ServerCommand::mGame->getNetworkHandler().getPeerForUser(player->getClientId()).getNetworkStatus();
   return scm::list(status.ping, status.avgping, status.packetloss, status.avgpacketloss);
+}
+
+SCM_DEFINE_PUBLIC(c_player_open_inventory, "player-open-inventory", 1, 0, 0, (scm::val<ServerPlayer *> player), "Open player's inventory") {
+  player->openInventory();
+  return SCM_UNSPECIFIED;
 }
 
 SCM_DEFINE_PUBLIC(vec3_to_blockpos, "vec3->blockpos", 1, 0, 0, (scm::val<Vec3> vec3), "Convert Vec3 to BlockPos") {

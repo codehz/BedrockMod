@@ -198,13 +198,20 @@
                                          [((player) address port) (player-transfer player address port) (outp-success)]
                                          [_                       (outp-error "Must have 1 player selected")]))))
 
-(reg-simple-command "test"
+(reg-simple-command "test-form"
                     "Test form"
                     0
                     (checked-player! player
                                      (send-form player
                                                 (make-simple-form "Test" "test form" "Ok" "Dismiss")
                                               #%(log-debug "result" "form: ~a" (json-string->scm %)))
+                                     (outp-success)))
+
+(reg-simple-command "test-inventory"
+                    "Test open inventory"
+                    0
+                    (checked-player! player
+                                     (player-open-inventory player)
                                      (outp-success)))
 
 (reg-simple-command "ping"

@@ -144,6 +144,8 @@ struct Player : Mob {
 struct ServerPlayer : Player {
   void disconnect();
   void sendNetworkPacket(Packet &packet) const;
+
+  void openInventory();
 };
 
 struct PacketSender {
