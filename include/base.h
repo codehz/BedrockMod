@@ -105,6 +105,8 @@ struct BlockSource {
   BlockEntity &getBlockEntity(BlockPos const &);
 };
 
+struct ItemInstance;
+
 struct Actor {
   const std::string &getNameTag() const;
   EntityRuntimeID getRuntimeID() const;
@@ -114,6 +116,7 @@ struct Actor {
   int getDimensionId() const;
   void getDebugText(std::vector<std::string> &);
   BlockSource &getRegion() const;
+  void setOffhandSlot(ItemInstance const &);
 
   virtual ~Actor();
 };
@@ -139,6 +142,8 @@ struct Player : Mob {
   bool setRespawnPosition(BlockPos const&,bool);
   bool setBedRespawnPosition(BlockPos const&);
   int getCommandPermissionLevel() const;
+
+  void setOffhandSlot(ItemInstance const &);
 };
 
 struct ServerPlayer : Player {
@@ -194,6 +199,7 @@ struct NetworkHandler {
 };
 
 struct ServerNetworkHandler : NetworkHandler {
+  void disconnectClient(NetworkIdentifier const&,std::string const&,bool);
 };
 
 struct MinecraftCommands;
@@ -203,6 +209,7 @@ struct Minecraft {
   void activateWhitelist();
   Level &getLevel() const;
   ServerNetworkHandler &getNetworkHandler();
+  ServerNetworkHandler &getNetEventCallback();
   MinecraftCommands &getCommands();
 };
 
@@ -224,6 +231,10 @@ struct ItemInstance {
   std::string getName() const;
   std::string getCustomName() const;
   std::string toString() const;
+
+  bool isOffhandItem() const;
+
+  static ItemInstance EMPTY_ITEM;
 };
 struct ItemUseCallback;
 

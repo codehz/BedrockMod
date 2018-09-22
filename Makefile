@@ -23,7 +23,7 @@ clean:
 
 out/lib%.so: obj/mods/%/main.o
 	@echo LD $@
-	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^)
+	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^) $(addprefix -Lout -l:,$(notdir $(filter out/%.so,$^)))
 out/libbridge.so: obj/mods/bridge/main.o obj/mods/bridge/bus.o obj/mods/bridge/command.o obj/mods/bridge/player_ext.o
 	@echo LD $@
 	@$(CXX) $(LDFLAGS) -shared -fPIC -o $@ $(filter %.o,$^) -lsystemd
