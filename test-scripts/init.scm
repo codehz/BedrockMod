@@ -227,6 +227,7 @@
                     (checked-player! player (outp-success (format #f "~a" (player-stats player)))))
 
 ; Designed for testing, feel free to remove them
+
 (define (actor-dump actor)
         (string-concatenate/shared (map (lambda (x) (string-append x ";")) (actor-debug-info actor))))
 
@@ -250,8 +251,8 @@
          #%(send-message (policy-self) (format #f "Use ~a ~a ~a" (item-instance-debug-info %) %2 (show-vec3 %3))))
 
 ; Example
-
 ; You can find the id from item-instance-debug-info
+
 (define blacklist-item '(7 -161))
 
 (add-hook! policy-player-use-on
