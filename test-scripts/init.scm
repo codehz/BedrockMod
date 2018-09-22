@@ -6,12 +6,14 @@
 (use-modules (minecraft form))
 (use-modules (minecraft command))
 (use-modules (minecraft transfer))
+(use-modules (minecraft policy))
 (use-modules (system repl coop-server))
 (use-modules (json))
 (use-modules (megacut))
 (use-modules (sqlite3))
 
 (use-modules (ice-9 match))
+(use-modules (srfi srfi-1))
 
 (log-trace "test" "default spawn point: ~a" (world-spawnpoint))
 
@@ -223,6 +225,40 @@
                     "Get network stats"
                     0
                     (checked-player! player (outp-success (format #f "~a" (player-stats player)))))
+
+; Designed for testing, feel free to remove them
+(define (actor-dump actor)
+        (string-concatenate/shared (map (lambda (x) (string-append x ";")) (actor-debug-info actor))))
+
+(define (show-vec3 vec)
+        (match (f32vector->list vec)
+              [(x y z) (format #f "(~1,2f ~1,2f ~1,2f)" x y z)]))
+
+(add-hook! policy-player-attack
+         #%(send-message (policy-self) (format #f "Attack ~a" (actor-dump %))))
+
+(add-hook! policy-player-destroy
+         #%(send-message (policy-self) (format #f "Destroy@~a" %)))
+
+(add-hook! policy-player-interact
+         #%(send-message (policy-self) (format #f "Interact@~a ~a" (show-vec3 %2) (actor-dump %))))
+
+(add-hook! policy-player-use
+         #%(send-message (policy-self) (format #f "Use ~a" (item-instance-debug-info %))))
+
+(add-hook! policy-player-use-on
+         #%(send-message (policy-self) (format #f "Use ~a ~a ~a" (item-instance-debug-info %) %2 (show-vec3 %3))))
+
+; Example
+
+; You can find the id from item-instance-debug-info
+(define blacklist-item '(7 -161))
+
+(add-hook! policy-player-use-on
+           (lambda (item pos vec)
+                   (if (member (item-instance-id item) blacklist-item)
+                       (begin (policy-result #f)
+                              (send-message (policy-self) (format #f "You cannot place ~a here" (item-instance-name item)))))))
 
 (let [(server (spawn-coop-repl-server))]
       (interval-run! 1 (poll-coop-repl-server server)))

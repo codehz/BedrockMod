@@ -5,6 +5,7 @@
 MAKE_FOREIGN_TYPE(mce::UUID, "uuid", { "t0", "t1" });
 MAKE_FOREIGN_TYPE(Actor *, "actor");
 MAKE_FOREIGN_TYPE(ServerPlayer *, "player");
+MAKE_FOREIGN_TYPE(ItemInstance *, "item-instance");
 
 extern "C" Minecraft *support_get_minecraft();
 
@@ -54,6 +55,16 @@ SCM_DEFINE_PUBLIC(level_spawnpoint, "world-spawnpoint", 0, 0, 0, (scm::val<Serve
   return scm::to_scm(support_get_minecraft()->getLevel().getDefaultSpawn());
 }
 
+SCM_DEFINE_PUBLIC(c_actor_debug, "actor-debug-info", 1, 0, 0, (scm::val<Actor *> act), "Get Actor's debug info") {
+  std::vector<std::string> vect;
+  act->getDebugText(vect);
+  SCM list = SCM_EOL;
+  for (auto it = vect.rbegin(); it != vect.rend(); it++) {
+    list = scm_cons(scm::to_scm(*it), list);
+  }
+  return list;
+}
+
 SCM_DEFINE_PUBLIC(c_actor_name, "actor-name", 1, 0, 0, (scm::val<Actor *> act), "Return Actor's name") { return scm::to_scm(act->getNameTag()); }
 
 SCM_DEFINE_PUBLIC(c_for_each_player, "for-each-player", 1, 0, 0, (scm::callback<bool, ServerPlayer *> callback), "Invoke function for each player") {
@@ -95,6 +106,22 @@ SCM_DEFINE_PUBLIC(vec3_to_blockpos, "vec3->blockpos", 1, 0, 0, (scm::val<Vec3> v
 
 SCM_DEFINE_PUBLIC(blockpos_to_vec3, "blockpos->vec3", 1, 0, 0, (scm::val<BlockPos> pos), "Convert Vec3 to BlockPos") {
   return scm::to_scm(Vec3(pos));
+}
+
+SCM_DEFINE_PUBLIC(item_instance_null_p, "item-instance-null?", 1, 0, 0, (scm::val<ItemInstance *> instance), "Check ItemInstance is null") {
+  return scm::to_scm(instance->isNull());
+}
+
+SCM_DEFINE_PUBLIC(item_instance_to_string, "item-instance-debug-info", 1, 0, 0, (scm::val<ItemInstance *> instance), "Get Debug Info of the ItemInstance") {
+  return scm::to_scm(instance->toString());
+}
+
+SCM_DEFINE_PUBLIC(item_instance_name, "item-instance-name", 1, 0, 0, (scm::val<ItemInstance *> instance), "Get the name of the ItemInstance") {
+  return scm::to_scm(instance->getName());
+}
+
+SCM_DEFINE_PUBLIC(item_instance_id, "item-instance-id", 1, 0, 0, (scm::val<ItemInstance *> instance), "Get ItemInstancee's id") {
+  return scm::to_scm(instance->getId());
 }
 
 MAKE_HOOK(player_login, "player-login", mce::UUID);

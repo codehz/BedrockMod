@@ -379,7 +379,13 @@ struct with_fluids {
     vals        = scm_cons(to_scm(v), vals);
   }
 
-  template <typename F> auto operator()(F f) { scm_c_with_fluids(fluids, vals, (SCM(*)(void *))handler<F>, &f); }
+  template <typename F> auto operator()(F f) {
+    if constexpr (std::is_same_v<void, decltype(f())>) {
+      scm_c_with_fluids(fluids, vals, (SCM(*)(void *))handler<F>, &f);
+    } else {
+      return from_scm<decltype(f())>(scm_c_with_fluids(fluids, vals, (SCM(*)(void *))handler<F>, &f));
+    }
+  }
 
   template <typename F> static SCM handler(F &f) {
     if constexpr (std::is_same_v<void, decltype(f())>) {

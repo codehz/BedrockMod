@@ -11,4 +11,5 @@ template <> struct convertible<Actor *> : foreign_object_is_convertible<Actor *>
     return foreign_object_is_convertible<Actor *>::from_scm(act);
   }
 };
+template <> struct convertible<ItemInstance *> : foreign_object_is_convertible<ItemInstance *> {};
 } // namespace scm

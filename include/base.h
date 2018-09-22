@@ -26,7 +26,7 @@ struct Item {
   unsigned short filler[0x1000];
   Item(Item const &) = delete;
   Item &operator=(Item const &) = delete;
-  unsigned short getId() const { return filler[9]; }
+  unsigned short getId() const;
   bool operator==(Item const &rhs) const { return this == &rhs; }
 };
 
@@ -223,46 +223,10 @@ struct ItemInstance {
   short getId() const;
   std::string getName() const;
   std::string getCustomName() const;
+  std::string toString() const;
 };
 struct ItemUseCallback;
 
-struct GameMode {
-  GameMode(Player &);
-  ServerPlayer &player;
-  virtual ~GameMode();
-  virtual int startDestroyBlock(BlockPos const &, signed char, bool &);
-  virtual int destroyBlock(BlockPos const &, signed char);
-  virtual int continueDestroyBlock(BlockPos const &, signed char, bool &);
-  virtual int stopDestroyBlock(BlockPos const &);
-  virtual int startBuildBlock(BlockPos const &, signed char);
-  virtual int buildBlock(BlockPos const &, signed char);
-  virtual int continueBuildBlock(BlockPos const &, signed char);
-  virtual int stopBuildBlock(void);
-  virtual void tick(void);
-  virtual long double getPickRange(InputMode const &, bool);
-  virtual int useItem(ItemInstance &);
-  virtual int useItemOn(ItemInstance &, BlockPos const &, signed char, Vec3 const &, ItemUseCallback *);
-  virtual int interact(Actor &, Vec3 const &);
-  virtual int attack(Actor &);
-  virtual int releaseUsingItem(void);
-  virtual int setTrialMode(bool);
-  virtual int isInTrialMode(void);
-  virtual int registerUpsellScreenCallback(std::function<void(bool)>);
-};
-struct SurvivalMode : GameMode {
-  SurvivalMode(Player &);
-  virtual ~SurvivalMode();
-  virtual int startDestroyBlock(BlockPos const &, signed char, bool &);
-  virtual int destroyBlock(BlockPos const &, signed char);
-  virtual void tick(void);
-  virtual int useItem(ItemInstance &);
-  virtual int useItemOn(ItemInstance &, BlockPos const &, signed char, Vec3 const &, ItemUseCallback *);
-  virtual int setTrialMode(bool);
-  virtual int isInTrialMode(void);
-  virtual int registerUpsellScreenCallback(std::function<void(bool)>);
-};
-
-extern void onPlayerAdded(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerJoined(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerLeft(std::function<void(ServerPlayer &player)> callback);
 
