@@ -14,7 +14,7 @@ struct Enchant {
 
 int limitLevel(int input, int max) {
   if (input < 0) return 0;
-  else if (input > max) return max;
+  else if (input > max) return 0;
   return input;
 }
 
