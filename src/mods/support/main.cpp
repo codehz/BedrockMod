@@ -47,7 +47,18 @@ ServerPlayer *findPlayer(NetworkIdentifier const &nid, unsigned char subIndex) {
   for (auto player : players) {
     if (player->getClientSubId() == subIndex) return player;
   }
-  return nullptr;
+  playermap.clear();
+  ServerPlayer *result = nullptr;
+  ServerCommand::mGame->getLevel().forEachPlayer([&](Player &p) {
+    auto &player = static_cast<ServerPlayer &>(p);
+    auto vnid = player.getClientId();
+    playermap[vnid].push_back(&player);
+    if (vnid == nid && player.getClientSubId() == subIndex) {
+      result = &player;
+    }
+    return true;
+  });
+  return result;
 }
 
 static Minecraft *mc;
