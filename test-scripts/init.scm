@@ -283,6 +283,8 @@
                          (if (string=? "minecraft:element_0" blockname)
                              (let [(player (policy-self))]
                                    (send-message player "Lucky!")
+                                   (player-clear-block@ pos player)
+                                   (policy-result #f)
                                    (fake-explode 10.0 (actor-pos player) (actor-dim player))
                                    (delay-run! 1 ((list-ref lucky-actions (random (length lucky-actions))) player pos)))))))
 

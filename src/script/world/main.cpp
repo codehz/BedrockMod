@@ -39,6 +39,10 @@ struct CommandUtils {
   static bool spawnEntityAt(BlockSource &, Vec3 const &, ActorType, ActorUniqueID &, Actor *);
 };
 
+struct BedrockBlocks {
+  static Block *mAir;
+};
+
 SCM_DEFINE_PUBLIC(get_block_at, "get-block@", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<int> did), "Get Block") {
   auto dim = ServerCommand::mGame->getLevel().getDimension(DimensionId(did));
   CommandAreaFactory factory{ *dim };
@@ -74,6 +78,22 @@ SCM_DEFINE_PUBLIC(set_block_player_at, "player-set-block@", 3, 0, 0,
   return SCM_BOOL_T;
 }
 
+SCM_DEFINE_PUBLIC(clear_block_at, "clear-block@", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<int> did), "Clear block") {
+  auto dim = ServerCommand::mGame->getLevel().getDimension(DimensionId(did));
+  CommandAreaFactory factory{ *dim };
+  auto area = factory.findArea(pos, false);
+  if (!area) return SCM_BOOL_F;
+  auto &source = area->getRegion();
+  source.setBlock(pos, *BedrockBlocks::mAir, 3, nullptr);
+  return SCM_BOOL_T;
+}
+
+SCM_DEFINE_PUBLIC(clear_block_player_at, "player-clear-block@", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<ServerPlayer *> player), "Clear block") {
+  auto &source = player->getRegion();
+  source.setBlock(pos, *BedrockBlocks::mAir, 3, nullptr);
+  return SCM_BOOL_T;
+}
+
 SCM_DEFINE_PUBLIC(block_name, "block-name", 1, 0, 0, (scm::val<Block *> block), "Get Block Name") {
   return scm::to_scm(block->getLegacyBlock()->getFullName());
 }
@@ -92,7 +112,8 @@ SCM_DEFINE_PUBLIC(spawn_actor, "spawn-actor", 3, 0, 0, (scm::val<Vec3> pos, scm:
   return scm::to_scm((long)id);
 }
 
-SCM_DEFINE_PUBLIC(player_spawn_actor, "player-spawn-actor", 3, 0, 0, (scm::val<Vec3> pos, scm::val<ServerPlayer *> player, scm::val<std::string> name), "Spawn actor") {
+SCM_DEFINE_PUBLIC(player_spawn_actor, "player-spawn-actor", 3, 0, 0,
+                  (scm::val<Vec3> pos, scm::val<ServerPlayer *> player, scm::val<std::string> name), "Spawn actor") {
   auto &source = player->getRegion();
   auto atype   = EntityTypeFromString(name);
   if (!atype) return SCM_BOOL_F;
