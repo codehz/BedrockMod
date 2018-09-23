@@ -7,6 +7,8 @@
 (use-modules (minecraft command))
 (use-modules (minecraft transfer))
 (use-modules (minecraft policy))
+(use-modules (minecraft world))
+(use-modules (minecraft fake))
 (use-modules (system repl coop-server))
 (use-modules (json))
 (use-modules (megacut))
@@ -239,7 +241,15 @@
          #%(send-message (policy-self) (format #f "Attack ~a" (actor-dump %))))
 
 (add-hook! policy-player-destroy
-         #%(send-message (policy-self) (format #f "Destroy@~a" %)))
+         #%(send-message (policy-self) (format #f "Destroy@~a ~a" % (block-name (player-get-block@ % (policy-self))))))
+
+(reg-command "dump-block"
+             "Dump block for position"
+             0
+             (list (command-vtable (list (parameter-position "pos") (parameter-int "dim"))
+                                   (lambda ()
+                                           (match (command-args)
+                                                 [(pos dim) (outp-success (block-name (get-block@ (vec3->blockpos pos) dim)))])))))
 
 (add-hook! policy-player-interact
          #%(send-message (policy-self) (format #f "Interact@~a ~a" (show-vec3 %2) (actor-dump %))))
@@ -251,7 +261,7 @@
          #%(send-message (policy-self) (format #f "Use ~a ~a ~a" (item-instance-debug-info %) %2 (show-vec3 %3))))
 
 ; Example
-; You can find the id from item-instance-debug-info
+; You can find the item id from item-instance-debug-info
 
 (define blacklist-item '(7 -161))
 
@@ -260,6 +270,17 @@
                    (if (member (item-instance-id item) blacklist-item)
                        (begin (policy-result #f)
                               (send-message (policy-self) (format #f "You cannot place ~a here" (item-instance-name item)))))))
+
+; Lucky Block sample (Only TNT)
+
+(add-hook! policy-player-destroy
+           (lambda (pos)
+                   (let [(blockname (block-name (player-get-block@ pos (policy-self))))]
+                         (if (string=? "minecraft:element_0" blockname)
+                             (let [(player (policy-self))]
+                                   (send-message player "Lucky!")
+                                   (fake-explode 10.0 (actor-pos player) (actor-dim player))
+                                   (delay-run! 1 (player-spawn-actor (blockpos->vec3 pos) player "minecraft:tnt")))))))
 
 (let [(server (spawn-coop-repl-server))]
       (interval-run! 1 (poll-coop-repl-server server)))

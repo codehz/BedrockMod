@@ -42,6 +42,7 @@ struct Vec3;
 
 struct BlockPos {
   int x, y, z;
+  BlockPos();
   BlockPos(int x, int y, int z)
       : x(x)
       , y(y)
@@ -51,6 +52,9 @@ struct BlockPos {
       : x(p.x)
       , y(p.y)
       , z(p.z) {}
+  BlockPos const &operator=(BlockPos const&);
+  bool operator==(BlockPos const&);
+  bool operator!=(BlockPos const&);
 };
 
 struct Vec3 {
@@ -101,8 +105,27 @@ struct BlockEntity {
   void setChanged();
 };
 
+struct Biome;
+struct Block;
+
+struct BlockLegacy {
+  Block *getBlockStateFromLegacyData(unsigned char) const;
+  std::string getFullName() const;
+};
+
+struct Block {
+  BlockLegacy *getLegacyBlock() const;
+};
+
+struct ActorBlockSyncMessage;
+
 struct BlockSource {
-  BlockEntity &getBlockEntity(BlockPos const &);
+  BlockEntity *getBlockEntity(BlockPos const &);
+  Biome *getBiome(BlockPos const &);
+  Block *getBlock(BlockPos const &) const;
+  Block *getExtraBlock(BlockPos const &) const;
+
+  void setBlock(BlockPos const&,Block const&,int,ActorBlockSyncMessage const*);
 };
 
 struct ItemInstance;
