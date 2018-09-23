@@ -24,6 +24,10 @@ SCM_DEFINE_PUBLIC(c_uuid_to_string, "uuid->string", 1, 0, 0, (scm::val<mce::UUID
   return scm::to_scm(uuid.get().asString());
 }
 
+SCM_DEFINE_PUBLIC(c_uuid_eq, "uuid=?", 2, 0, 0, (scm::val<mce::UUID> uuid1, scm::val<mce::UUID> uuid2), "UUID equal test") {
+  return scm::to_scm(uuid1.get() == uuid2.get());
+}
+
 struct TeleportCommand {
   void teleport(Actor &actor, Vec3 pos, Vec3 *center, DimensionId dim) const;
 };
