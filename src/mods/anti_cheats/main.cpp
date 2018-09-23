@@ -16,7 +16,12 @@ struct EnchantmentInstance {
 struct Enchant {
   enum Type : int {};
   static std::vector<std::unique_ptr<Enchant>> mEnchants;
-  int getMaxLevel() const;
+  virtual ~Enchant();
+  virtual bool isCompatibleWith(Enchant::Type type);
+  virtual int getMinCost(int);
+  virtual int getMaxCost(int);
+  virtual int getMinLevel();
+  virtual int getMaxLevel();
 };
 
 int limitLevel(int input, int max) {
@@ -27,16 +32,11 @@ int limitLevel(int input, int max) {
   return input;
 }
 
-TInstanceHook(void, _ZN19EnchantmentInstance15setEnchantLevelEi, EnchantmentInstance, int level) {
-  auto &enchant = Enchant::mEnchants[this->getEnchantType()];
-  auto max      = enchant->getMaxLevel();
-  original(this, limitLevel(level, max));
-}
-
 TInstanceHook(int, _ZNK19EnchantmentInstance15getEnchantLevelEv, EnchantmentInstance) {
   auto level    = original(this);
   auto &enchant = Enchant::mEnchants[this->getEnchantType()];
   auto max      = enchant->getMaxLevel();
+  Log::debug("LV", "%d = %d/%d", this->getEnchantType(), level, max);
   return limitLevel(level, max);
 }
 
