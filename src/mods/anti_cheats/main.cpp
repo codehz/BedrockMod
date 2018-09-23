@@ -36,7 +36,6 @@ TInstanceHook(int, _ZNK19EnchantmentInstance15getEnchantLevelEv, EnchantmentInst
   auto level    = original(this);
   auto &enchant = Enchant::mEnchants[this->getEnchantType()];
   auto max      = enchant->getMaxLevel();
-  Log::debug("LV", "%d = %d/%d", this->getEnchantType(), level, max);
   return limitLevel(level, max);
 }
 
