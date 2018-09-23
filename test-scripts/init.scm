@@ -113,12 +113,6 @@
                    (command-vtable (list (parameter-selector "sel") (parameter-text "text"))
                                  #%(outp-success (format #f "Multiple parameters ~a" (command-args))))))
 
-(defmacro checked-player! (name . body)
-         `(lambda () (let [(,name (orig-player))]
-                           (if (not ,name)
-                               (outp-error "Only available for player")
-                               (begin ,@body)))))
-
 (define* (fix-pos pos #:optional (fix 1.6)) (f32vector-set! pos 1 (- (f32vector-ref pos 1) fix)))
 
 (reg-simple-command "home"

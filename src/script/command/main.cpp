@@ -367,8 +367,13 @@ SCM_DEFINE_PUBLIC(orig_player, "orig-player", 0, 0, 0, (), "Get CommandOrigin ty
   return SCM_BOOL_F;
 }
 
+LOADFILE(preload, "src/script/command/preload.scm");
+
 PRELOAD_MODULE("minecraft command") {
 #ifndef DIAG
 #include "main.x"
+#include "preload.scm.z"
 #endif
+
+  scm_c_eval_string(&file_preload_start);
 }
