@@ -271,7 +271,17 @@
                        (begin (policy-result #f)
                               (send-message (policy-self) (format #f "You cannot place ~a here" (item-instance-name item)))))))
 
-; Lucky Block sample (Only TNT)
+; Lucky Block sample
+
+(define lucky-actions
+        (letrec [(ret '())
+                 (append-action (lambda (n action)
+                                        (for-each (lambda (x) (set! ret (cons action ret))) (iota n))))]
+                 ; (append-action 1 (lambda (player pos) (player-spawn-actor (blockpos->vec3 pos) player "minecraft:tnt")))
+                 (append-action 3 (lambda (player pos) (player-spawn-actor (blockpos->vec3 pos) player "minecraft:villager")))
+                 (append-action 3 (lambda (player pos) (player-set-block@ pos player "minecraft:diamond_block")))
+                 (append-action 5 (lambda (player pos) (player-set-block@ pos player "minecraft:stone")))
+                 ret))
 
 (add-hook! policy-player-destroy
            (lambda (pos)
@@ -280,7 +290,7 @@
                              (let [(player (policy-self))]
                                    (send-message player "Lucky!")
                                    (fake-explode 10.0 (actor-pos player) (actor-dim player))
-                                   (delay-run! 1 (player-spawn-actor (blockpos->vec3 pos) player "minecraft:tnt")))))))
+                                   (delay-run! 1 ((list-ref lucky-actions (random (length lucky-actions))) player pos)))))))
 
 (let [(server (spawn-coop-repl-server))]
       (interval-run! 1 (poll-coop-repl-server server)))
