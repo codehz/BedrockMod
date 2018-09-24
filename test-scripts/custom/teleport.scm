@@ -10,7 +10,9 @@
                #:use-module (megacut)
                
                #:use-module (srfi srfi-1)
-               #:use-module (ice-9 match))
+               #:use-module (ice-9 match)
+               
+               #:export (set-teleport-cooldown!))
 
 (define* (fix-pos pos #:optional (fix 1.6)) (f32vector-set! pos 1 (- (f32vector-ref pos 1) fix)))
 
@@ -41,6 +43,8 @@
 
 (define tp-cooldown-list '())
 (define tp-cooldown 1000)
+
+(define (set-teleport-cooldown! value) (set! tp-cooldown value))
 
 (define (tp from to)
         (let [(pos (actor-pos to))

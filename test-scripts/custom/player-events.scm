@@ -18,7 +18,6 @@
 (add-hook! player-login
            #%(log-debug "player-login" (uuid->string %)))
 
-
 (add-hook! player-chat
            #%(let [(pname (actor-name %1))]
                    (for-each-player! other (send-message other (format #f "~a: ~a" pname %2)))
