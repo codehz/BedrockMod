@@ -9,6 +9,7 @@
 (use-modules (tests misc))
 (use-modules (tests nbt))
 (use-modules (tests policy))
+(use-modules (tests database))
 
 (use-modules (custom block-items))
 (use-modules (custom lucky-block))
