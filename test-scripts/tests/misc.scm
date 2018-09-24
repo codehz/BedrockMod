@@ -3,9 +3,11 @@
                #:use-module (minecraft base)
                #:use-module (minecraft command)
                #:use-module (minecraft dbus)
+               #:use-module (minecraft form)
 
                #:use-module (utils form)
                #:use-module (megacut)
+               #:use-module (json)
 
                #:use-module (ice-9 match))
 
