@@ -142,6 +142,12 @@ SCM_DEFINE_PUBLIC(item_instance_id, "item-instance-id", 1, 0, 0, (scm::val<ItemI
   return scm::to_scm(instance->getId());
 }
 
+SCM_DEFINE_PUBLIC(item_id_from_string, "lookup-item-id", 1, 0, 0, (scm::val<std::string> name), "Get Item Id from name") {
+  auto item = ItemRegistry::lookupByName(name, true);
+  if (!item) return SCM_BOOL_F;
+  return scm::to_scm(item->getId());
+}
+
 MAKE_HOOK(player_login, "player-login", mce::UUID);
 MAKE_FLUID(bool, login_result, "login-result");
 

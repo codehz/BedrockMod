@@ -16,10 +16,7 @@ struct Item;
 struct ItemRegistry {
   static std::unordered_map<std::string, std::unique_ptr<Item>> mItemLookupMap;
   static Item *getItem(short id);
-  static Item *findItem(std::string str) {
-    std::unique_ptr<Item> &ret = mItemLookupMap[str];
-    return ret ? ret.get() : nullptr;
-  };
+  static Item *lookupByName(std::string const &str, bool);
 };
 
 struct Item {
@@ -256,7 +253,7 @@ enum struct InputMode { UNK };
 
 struct ItemInstance {
   bool isNull() const;
-  short getId() const;
+  unsigned short getId() const;
   std::string getName() const;
   std::string getCustomName() const;
   std::string toString() const;

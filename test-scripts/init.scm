@@ -34,4 +34,6 @@
 
 (set-teleport-cooldown! 500)
 
+(init-block-items (map lookup-item-id '("minecraft:bedrock" "minecraft:barrier")))
+
 (log-debug "guile" "done")
