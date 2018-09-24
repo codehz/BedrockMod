@@ -85,3 +85,45 @@ TInstanceHook(void *, _ZN27InventoryTransactionManager9addActionERK15InventoryAc
   }
   return original(this, action);
 }
+
+struct ConnectionRequest {
+  std::string getDeviceId() const;
+  std::string getTenantId() const;
+  std::string getDeviceModel() const;
+  std::string getSelfSignedId() const;
+  std::string getSkinGeometry() const;
+  std::string getServerAddress() const;
+  std::string getClientPlatformId() const;
+  std::string getSkinGeometryName() const;
+  std::string getGameVersionString() const;
+  std::string getClientThirdPartyName() const;
+  std::string getClientPlatformOnlineId() const;
+  std::string getClientPlatformOfflineId() const;
+  std::string getSkinId() const;
+
+  int getDeviceOS() const;
+  int getGuiScale() const;
+  int getUIProfile() const;
+  int getCurrentInputMode() const;
+  int getDefaultInputMode() const;
+  int getADRole() const;
+  std::string toString();
+};
+
+TInstanceHook(bool, _ZNK17ConnectionRequest9isEduModeEv, ConnectionRequest) {
+  Log::debug("login", "Version: %s", getGameVersionString().c_str());
+  Log::debug("login", "3rdName: %s", getClientThirdPartyName().c_str());
+  Log::debug("login", "DeviceID: %s", getDeviceId().c_str());
+  Log::debug("login", "DeviceModel: %s", getDeviceModel().c_str());
+  Log::debug("login", "ServerAddress: %s", getServerAddress().c_str());
+  Log::debug("login", "TenantID: %s", getTenantId().c_str());
+  Log::debug("login", "SkinId: %s", getSkinId().c_str());
+  // Log::debug("login", "SkinGeometry: %s", getSkinGeometry().c_str()); // too long!
+  Log::debug("login", "SkinGeometryName: %s", getSkinGeometryName().c_str());
+  Log::debug("login", "SelfSignedId: %s", getSelfSignedId().c_str());
+  Log::debug("login", "ClientPlatformOnlineId: %s", getClientPlatformOnlineId().c_str());
+  Log::debug("login", "ClientPlatformOfflineId: %s", getClientPlatformOfflineId().c_str());
+  Log::debug("login", "OS: %d GuiScale: %d UIProfile: %d CurrentIME: %d DefaultIME: %d ADRole: %d", getDeviceOS(), getGuiScale(), getUIProfile(),
+             getCurrentInputMode(), getDefaultInputMode(), getADRole());
+  return getGameVersionString() == "1.6.0";
+}
