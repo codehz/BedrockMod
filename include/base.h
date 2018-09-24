@@ -129,6 +129,7 @@ struct BlockSource {
 };
 
 struct ItemInstance;
+struct CompoundTag;
 
 struct Actor {
   const std::string &getNameTag() const;
@@ -140,6 +141,7 @@ struct Actor {
   void getDebugText(std::vector<std::string> &);
   BlockSource &getRegion() const;
   void setOffhandSlot(ItemInstance const &);
+  bool save(CompoundTag &);
 
   virtual ~Actor();
 };

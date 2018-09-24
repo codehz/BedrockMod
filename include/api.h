@@ -438,7 +438,7 @@ IMPVEC(double, f64);
 template <> struct convertible<Vec3> {
   static SCM to_scm(Vec3 v) {
     auto vec = vector<float>(3);
-    vec([&](float *el, size_t l) { *((Vec3 *)el) = v; });
+    vec <<= [&](float *el, size_t l) { *((Vec3 *)el) = v; };
     return vec;
   }
   static Vec3 from_scm(SCM vec) {
@@ -451,7 +451,7 @@ template <> struct convertible<Vec3> {
 template <> struct convertible<BlockPos> {
   static SCM to_scm(BlockPos v) {
     auto vec = vector<int>(3);
-    vec([&](int *el, size_t l) { *((BlockPos *)el) = v; });
+    vec <<= [&](int *el, size_t l) { *((BlockPos *)el) = v; };
     return vec;
   }
   static BlockPos from_scm(SCM vec) {

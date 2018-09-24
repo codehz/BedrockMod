@@ -8,13 +8,14 @@
 (use-modules (minecraft transfer))
 (use-modules (minecraft policy))
 (use-modules (minecraft world))
+(use-modules (minecraft nbt))
 (use-modules (minecraft fake))
 (use-modules (system repl coop-server))
 (use-modules (json))
 (use-modules (megacut))
 (use-modules (sqlite3))
 
-(use-modules (ice-9 match))
+(use-modules (ice-9 match) (ice-9 pretty-print))
 (use-modules (srfi srfi-1))
 
 (log-trace "test" "default spawn point: ~a" (world-spawnpoint))
@@ -140,10 +141,31 @@
              1
              (list (command-vtable (list (parameter-selector "target" #t) (parameter-position "pos"))
                                  #%(match (command-args)
-                                         [(() _) (outp-error "No player selected")]
+                                         [(() _) (outp-error "No players selected")]
                                          [(players vec) (let [(pos (vec3->blockpos vec))]
                                                               (for-each (lambda (player) (set-player-spawnpoint player pos)) players)
                                                               (outp-success))]))))
+
+(reg-command "dump-nbt"
+             "Dump NBT"
+             0
+             (list (command-vtable '()
+                                    (checked-player! self
+                                                     (with-nbt (actor-nbt self)
+                                                               (lambda (nbt)
+                                                                       (outp-success (call-with-output-string #%(pretty-print (nbt-unbox-rec/tag nbt) % #:width 200)))))))
+                   (command-vtable (list (parameter-selector "target"))
+                                 #%(match (command-args)
+                                         [(()) (outp-error "No actors selected")]
+                                         [(actors) (for-each (lambda (actor)
+                                                                      (with-nbt (actor-nbt actor)
+                                                                                (lambda (nbt)
+                                                                                        (outp-add (call-with-output-string (lambda (port)
+                                                                                                                                   (pretty-print (nbt-unbox-rec/tag nbt)
+                                                                                                                                                 port
+                                                                                                                                                 #:width 200)))))))
+                                                              actors)
+                                                    (outp-success)]))))
 
 (define* (make-simple-form title content #:optional (button1 "Accept") (button2 "Reject"))
          (scm->json-string `((title   . ,title)

@@ -1,6 +1,5 @@
 #include <StaticHook.h>
 #include <api.h>
-#include <base.h>
 
 MAKE_FOREIGN_TYPE(mce::UUID, "uuid", { "t0", "t1" });
 MAKE_FOREIGN_TYPE(Actor *, "actor");
@@ -63,9 +62,7 @@ SCM_DEFINE_PUBLIC(c_actor_debug, "actor-debug-info", 1, 0, 0, (scm::val<Actor *>
   std::vector<std::string> vect;
   act->getDebugText(vect);
   SCM list = SCM_EOL;
-  for (auto it = vect.rbegin(); it != vect.rend(); it++) {
-    list = scm_cons(scm::to_scm(*it), list);
-  }
+  for (auto it = vect.rbegin(); it != vect.rend(); it++) { list = scm_cons(scm::to_scm(*it), list); }
   return list;
 }
 
@@ -132,7 +129,8 @@ SCM_DEFINE_PUBLIC(item_instance_null_p, "item-instance-null?", 1, 0, 0, (scm::va
   return scm::to_scm(instance->isNull());
 }
 
-SCM_DEFINE_PUBLIC(item_instance_to_string, "item-instance-debug-info", 1, 0, 0, (scm::val<ItemInstance *> instance), "Get Debug Info of the ItemInstance") {
+SCM_DEFINE_PUBLIC(item_instance_to_string, "item-instance-debug-info", 1, 0, 0, (scm::val<ItemInstance *> instance),
+                  "Get Debug Info of the ItemInstance") {
   return scm::to_scm(instance->toString());
 }
 
