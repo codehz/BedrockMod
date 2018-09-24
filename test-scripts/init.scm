@@ -158,12 +158,12 @@
                                  #%(match (command-args)
                                          [(()) (outp-error "No actors selected")]
                                          [(actors) (for-each (lambda (actor)
-                                                                      (with-nbt (actor-nbt actor)
-                                                                                (lambda (nbt)
-                                                                                        (outp-add (call-with-output-string (lambda (port)
-                                                                                                                                   (pretty-print (nbt-unbox-rec/tag nbt)
-                                                                                                                                                 port
-                                                                                                                                                 #:width 200)))))))
+                                                                     (with-nbt (actor-nbt actor)
+                                                                               (lambda (nbt)
+                                                                                       (outp-add (call-with-output-string (lambda (port)
+                                                                                                                                  (pretty-print (nbt-unbox-rec/tag nbt)
+                                                                                                                                                port
+                                                                                                                                                #:width 200)))))))
                                                               actors)
                                                     (outp-success)]))))
 
