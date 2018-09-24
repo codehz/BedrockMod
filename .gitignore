@@ -1,6 +1,11 @@
+/test64
 /test
 /lib
 /out
 /dep
 /obj
 /ref
+/guile
+*.bak
+*.x
+*.z

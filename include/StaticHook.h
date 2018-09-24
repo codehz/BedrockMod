@@ -9,8 +9,8 @@ struct RegisterStaticHook {
 
   RegisterStaticHook(const char *sym, void *hook, void **org) {
     auto r = dlsym(MinecraftHandle(), sym);
-    if (r == nullptr) { Log::fatal("HOOK", "Symbol not found: %s", sym); }
-    if (!mcpelauncher_hook(r, hook, org)) { Log::fatal("HOOK", "SYM: %s", sym); }
+    if (r == nullptr) { Log::fatal("hook", "Symbol not found: %s", sym); }
+    mcpelauncher_hook(r, hook, org);
   }
 
   // workaround for a warning

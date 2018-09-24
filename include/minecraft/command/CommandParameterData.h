@@ -5,12 +5,12 @@
 #include "CommandRegistry.h"
 #include "../util/typeid.h"
 
-enum class CommandParameterDataType;
+enum CommandParameterDataType : int {};
 
 class CommandParameterData {
 
 private:
-    char filler[0x28];
+    char filler[88];
 
 public:
     CommandParameterData(typeid_t<CommandRegistry>, bool (CommandRegistry::*)(void*, CommandRegistry::ParseToken const&, CommandOrigin const&, int, std::string&, std::vector<std::string>&) const, char const*, CommandParameterDataType, char const*, int, bool, int);

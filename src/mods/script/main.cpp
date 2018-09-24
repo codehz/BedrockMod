@@ -1,12 +1,25 @@
+#include <StaticHook.h>
 #include <api.h>
 #include <dirent.h>
 #include <libguile.h>
 #include <log.h>
-#include <scm/scm.hpp>
+#include <queue>
 #include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
+
+struct GuildMod {
+  void (*fn)(void *);
+  const char *name;
+  GuildMod(void (*fn)(void *), const char *name)
+      : fn(fn)
+      , name(name) {}
+};
+
+static std::queue<GuildMod> mod_queue;
+
+void script_preload(void (*fn)(void *), const char *name) { mod_queue.emplace(fn, name); }
 
 std::string GetCwd() {
   char cwd[1024];
@@ -41,112 +54,72 @@ inline bool exists(const std::string &name) {
   return (stat(name.c_str(), &buffer) == 0);
 }
 
-chaiscript::ChaiScript chai({ cwd + "/user/chai/modules/" }, { cwd + "/user/chai/scripts/" });
+void log(int level, const char *tag, const char *content) { Log::log((LogLevel)level, tag, "%s", content); }
 
-struct LogForChai {
-  template <LogLevel Level> void log(std::string tag, std::string content) const { Log::log(Level, ("chai::" + tag).c_str(), "%s", content.c_str()); }
+SCM_DEFINE_PUBLIC(s_log, "log-raw", 3, 0, 0, (scm::val<int> level, scm::val<char *> tag, scm::val<char *> content), "Log function") {
+  log(level, (temp_string)tag, (temp_string)content);
+  return SCM_UNSPECIFIED;
+}
+
+LOADFILE(preload, "src/mods/script/preload.scm");
+
+PRELOAD_MODULE("minecraft") {
+  scm::definer("log-level-trace")  = (int)LogLevel::LOG_LEVEL_TRACE;
+  scm::definer("log-level-debug")  = (int)LogLevel::LOG_LEVEL_DEBUG;
+  scm::definer("log-level-info")   = (int)LogLevel::LOG_LEVEL_INFO;
+  scm::definer("log-level-notice") = (int)LogLevel::LOG_LEVEL_NOTICE;
+  scm::definer("log-level-warn")   = (int)LogLevel::LOG_LEVEL_WARN;
+  scm::definer("log-level-error")  = (int)LogLevel::LOG_LEVEL_ERROR;
+  scm::definer("log-level-fatal")  = (int)LogLevel::LOG_LEVEL_FATAL;
+
+#ifndef DIAG
+#include "main.x"
+#include "preload.scm.z"
+#endif
+
+  scm_c_eval_string(&file_preload_start);
+}
+
+struct strport {
+  SCM stream;
+  int pos, len;
 };
 
-template <LogLevel Level> void Slog(std::string tag, std::string content) { Log::log(Level, ("guile::" + tag).c_str(), "%s", content.c_str()); }
-
-static void doLog(int level, std::string tag, std::string content) { Log::log((LogLevel)level, tag.c_str(), content.c_str()); }
-
-static LogForChai LogInstance;
-
-extern "C" void loadModule(chaiscript::ModulePtr ptr) { chai.add(ptr); }
-extern "C" chaiscript::ChaiScript &getChai() { return chai; }
-
-struct temp_string {
-  char *data;
-  std::string get() { return { data }; }
-  ~temp_string() { free(data); }
-};
-
-static std::string makeString(scm::val val) {
-  if (scm_is_string(val)) {
-    return temp_string{ scm_to_utf8_string(val) }.get();
-  } else {
-    return temp_string{ scm_to_utf8_string(scm_simple_format(SCM_BOOL_F, scm::val{ "~a" }, scm_list_1(val))) }.get();
-  }
-}
-
-static std::string concatString(scm::args xs) {
-  std::stringstream ss;
-  for (auto x : xs) {
-    if (scm_is_string(x))
-      ss << temp_string{ scm_to_utf8_string(x) }.get();
-    else
-      ss << temp_string{ scm_to_utf8_string(scm_simple_format(SCM_BOOL_F, scm::val{ "~a" }, scm_list_1(x))) }.get();
-  }
-  return ss.str();
-}
-
-static std::string formatString(scm::val fmt, scm::args xs) {
-  return temp_string{ scm_to_utf8_string(scm_simple_format(SCM_BOOL_F, fmt, xs)) }.get();
-}
-
-static scm::val unwrapString(std::string str) { return scm_from_utf8_string(str.c_str()); }
-
-extern "C" void mod_init() {
-  scm_init_guile();
-  scm::type<std::string>("str").constructor(&makeString);
-  scm::group("str").define("concat", &concatString).define("format", &formatString);
-  scm::group().define("unstr", &unwrapString);
-  scm::group("log")
-      .define("log", &doLog)
-      .define("trace", &Slog<LogLevel::LOG_TRACE>)
-      .define("info", &Slog<LogLevel::LOG_INFO>)
-      .define("notice", &Slog<LogLevel::LOG_NOTICE>)
-      .define("debug", &Slog<LogLevel::LOG_DEBUG>)
-      .define("warn", &Slog<LogLevel::LOG_WARN>)
-      .define("error", &Slog<LogLevel::LOG_ERROR>)
-      .define("fatal", &Slog<LogLevel::LOG_FATAL>);
-  scm_c_eval_string(R"((set! %load-hook (lambda (filename) (log-trace (str "loader") (str-format "Loading script ~a" filename)))))");
-  scm_c_eval_string(R"((set! %load-path '("user/scm/modules" "user/scm/scripts")))");
-  chai.add(chaiscript::user_type<LogForChai>(), "LogTy");
-  chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_TRACE>), "trace");
-  chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_INFO>), "info");
-  chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_NOTICE>), "notice");
-  chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_DEBUG>), "debug");
-  chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_WARN>), "warn");
-  chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_ERROR>), "error");
-  chai.add(chaiscript::fun(&LogForChai::log<LogLevel::LOG_FATAL>), "fatal");
-  chai.add_global_const(chaiscript::const_var(LogInstance), "Log");
-  chai.add(chaiscript::bootstrap::standard_library::map_type<std::map<std::string, std::string>>("StringMap"));
-}
-
-extern "C" {
-const char *mcpelauncher_property_get(const char *name, const char *def);
-}
-
-static void handler_message(void *handler_data, SCM tag, SCM args) {
+static void handler_message(char *&errstr, SCM tag, SCM args) {
   SCM p, stack, frame;
 
-  p     = scm_current_error_port();
+  p     = scm_open_output_string();
   stack = scm_make_stack(SCM_BOOL_T, scm_list_1(scm_from_int(2)));
   frame = scm_is_true(stack) ? scm_stack_ref(stack, SCM_INUM0) : SCM_BOOL_F;
 
-  scm_puts("Backtrace:\n", p);
-  scm_display_backtrace_with_highlights(stack, p, SCM_BOOL_F, SCM_BOOL_F, SCM_EOL);
-  scm_newline(p);
-
   scm_print_exception(p, frame, tag, args);
+  errstr = scm_to_utf8_string(scm_get_output_string(p));
+  scm_close_output_port(p);
 }
 
-static SCM catch_handler(void *filename, scm::val key, scm::val xs) {
-  handler_message(filename, key, xs);
-  return SCM_BOOL_F;
+static void init_thread() {
+  scm_init_guile();
+  while (!mod_queue.empty()) {
+    auto mod = mod_queue.front();
+    Log::debug("reg", "%s", mod.name);
+    scm_c_define_module(mod.name, mod.fn, (void *)mod.name);
+    mod_queue.pop();
+  }
+  if (exists("scm/scripts/init.scm")) {
+    char *errstr = nullptr;
+    scm_c_catch(SCM_BOOL_T, (scm_t_catch_body)scm_c_primitive_load, (void *)"scm/scripts/init.scm", (scm_t_catch_handler)handler_message, &errstr,
+                nullptr, nullptr);
+    if (errstr) {
+      errstr[strlen(errstr) - 1] = 0;
+      Log::error("guile", "%s", errstr);
+      free(errstr);
+    }
+  }
 }
 
-extern "C" void mod_exec() {
-  if (exists("user/scm/scripts/init.scm"))
-    scm_c_catch(SCM_BOOL_T, (scm_t_catch_body)scm_c_primitive_load, (void *)"user/scm/scripts/init.scm", (scm_t_catch_handler)catch_handler,
-                (void *)"user/scm/scripts/init.scm", nullptr, nullptr);
-  try {
-    chai.use("init.chai");
-    chai.eval_file("worlds/" + std::string(mcpelauncher_property_get("level-dir", "world")) + "/init.chai");
-  } catch (const chaiscript::exception::eval_error &e) {
-    auto print = e.pretty_print();
-    Log::error("ChaiSupport", "EvalError: %s", print.c_str());
-  } catch (const std::exception &e) { Log::error("ChaiSupport", "Failed to execute script: %s", e.what()); }
+extern "C" void mod_set_server(void *) {
+  setenv("GUILE_SYSTEM_PATH", "scm/modules", 1);
+  setenv("GUILE_SYSTEM_COMPILED_PATH", "scm/ccache", 1);
+  setenv("GUILE_SYSTEM_EXTENSIONS_PATH", "scm/extensions", 1);
+  mcpelauncher_server_thread(init_thread);
 }

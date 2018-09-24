@@ -6,13 +6,8 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "make -j8",
-      "options": {
-        "env": {
-          "CXX": "/opt/mcpe-sdk/bin/i686-linux-android-g++",
-          "CC": "/opt/mcpe-sdk/bin/i686-linux-android-gcc"
-        }
-      },
+      "command": "make -j",
+      "options": {},
       "group": {
         "kind": "build",
         "isDefault": true
@@ -44,7 +39,7 @@
     {
       "label": "test",
       "type": "shell",
-      "command": "make",
+      "command": "./run.sh",
       "options": {
         "cwd": "./test"
       },

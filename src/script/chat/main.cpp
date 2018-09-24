@@ -1,20 +1,14 @@
+// Deps: out/script_chat.so: out/script_base.so
+#include "../base/main.h"
 #include <api.h>
 
 #include <StaticHook.h>
-#include <fix/string.h>
-#include <log.h>
-
-#include <functional>
-
-#include <base.h>
 
 struct TextPacket : Packet {
-  unsigned char type; // 13
-  int primaryName;
-  int thirdPartyName;
-  int platform;
-  std::string message; // 28
-  unsigned char filler[30];
+  unsigned char type; // 17
+  unsigned char filler[96 - 18];
+  std::string message; // 96
+  unsigned char filler2[150];
   static TextPacket createSystemMessage(std::string const &);
 
   TextPacket(unsigned char playerSubIndex)
@@ -28,33 +22,28 @@ struct TextPacket : Packet {
   virtual bool disallowBatching() const;
 };
 
-std::function<void(ServerPlayer *, std::string)> chatHook;
+MAKE_HOOK(player_chat, "player-chat", ServerPlayer *, std::string);
+MAKE_FLUID(bool, cancel_chat, "cancel-chat");
 
 TClasslessInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK10TextPacket, NetworkIdentifier const &nid,
                        TextPacket const &packet) {
-  if (chatHook) {
+  auto canceled = cancel_chat()[false] <<= [=] {
     auto player = findPlayer(nid, packet.playerSubIndex);
-    try {
-      chatHook(player, packet.message);
-      return;
-    } catch (std::exception const &e) { Log::error("CHATHOOK", "Error: %s", e.what()); }
-  }
-  original(this, nid, packet);
+    player_chat((ServerPlayer *)player, packet.message);
+  };
+  if (!canceled) original(this, nid, packet);
 }
 
-extern "C" void mod_init() {
-  chaiscript::ModulePtr m(new chaiscript::Module());
-  m->add(chaiscript::fun([](ServerPlayer *player, std::string message, unsigned type) {
-           auto packet = TextPacket::createSystemMessage(message);
-           packet.type = type;
-           player->sendNetworkPacket(packet);
-         }),
-         "sendCustomMessage");
-  m->add(chaiscript::fun([](ServerPlayer *player, std::string message) {
-           auto packet = TextPacket::createSystemMessage(message);
-           player->sendNetworkPacket(packet);
-         }),
-         "sendMessage");
-  m->add(chaiscript::fun([](std::function<void(ServerPlayer *, std::string)> fn) { chatHook = fn; }), "setChatHook");
-  loadModule(m);
+SCM_DEFINE_PUBLIC(c_send_message, "send-message", 2, 1, 0, (scm::val<ServerPlayer *> player, scm::val<std::string> message, scm::val<int> type),
+                  "Send message to player") {
+  auto packet = TextPacket::createSystemMessage(message);
+  if (scm_is_integer(type.scm)) packet.type = type;
+  player->sendNetworkPacket(packet);
+  return SCM_UNSPECIFIED;
+}
+
+PRELOAD_MODULE("minecraft chat") {
+#ifndef DIAG
+#include "main.x"
+#endif
 }

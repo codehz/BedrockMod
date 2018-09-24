@@ -3,24 +3,31 @@ version: 2
 jobs:
   build:
     docker:
-      - image: codehz/mcpe-sdk:mod
+      - image: base/devel
     working_directory: /data/projects
     steps:
       - checkout
       - run:
+          name: prepare git
+          command: pacman -Sy git cmake clang boost --noconfirm --needed
+      - run:
           name: build
           command: make
-          environment:
-            CXX: /data/sdk/bin/i686-linux-android-g++
-            CC : /data/sdk/bin/i686-linux-android-gcc
       - run:
           name: package
-          command:
-            cd /data/projects/out &&
-            strip * &&
-            tar cvf mods.tar.xz *.so
+          command: |
+            cd /data/projects/out
+            strip *
+            tar cvJf mods.tar.xz *.so
+      - run:
+          name: upload to bintray
+          command: |
+            curl -T /data/projects/out/mods.tar.xz "-ucodehz:$bintray" "https://api.bintray.com/content/codehz/Minecraft/BedrockMod/Testing/mods.tar.xz?publish=1&override=1"
+            curl -T /data/projects/guile.zip "-ucodehz:$bintray" "https://api.bintray.com/content/codehz/Minecraft/BedrockMod/Testing/guile.zip?publish=1&override=1"
       - store_artifacts:
           path: /data/projects/out/mods.tar.xz
+      - store_artifacts:
+          path: /data/projects/guile.zip
 
 workflows:
   version: 2

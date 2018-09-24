@@ -4,8 +4,6 @@
 
 #include <polyfill.h>
 
-#include <chaiscript/chaiscript.hpp>
-
 #include <minecraft/net/NetworkIdentifier.h>
 #include <minecraft/net/UUID.h>
 
@@ -28,7 +26,7 @@ struct Item {
   unsigned short filler[0x1000];
   Item(Item const &) = delete;
   Item &operator=(Item const &) = delete;
-  unsigned short getId() const { return filler[9]; }
+  unsigned short getId() const;
   bool operator==(Item const &rhs) const { return this == &rhs; }
 };
 
@@ -44,6 +42,7 @@ struct Vec3;
 
 struct BlockPos {
   int x, y, z;
+  BlockPos();
   BlockPos(int x, int y, int z)
       : x(x)
       , y(y)
@@ -53,6 +52,9 @@ struct BlockPos {
       : x(p.x)
       , y(p.y)
       , z(p.z) {}
+  BlockPos const &operator=(BlockPos const&);
+  bool operator==(BlockPos const&);
+  bool operator!=(BlockPos const&);
 };
 
 struct Vec3 {
@@ -67,6 +69,7 @@ struct Vec3 {
 };
 
 struct Vec2 {
+  static Vec2 ZERO;
   float x, y;
 };
 
@@ -102,9 +105,31 @@ struct BlockEntity {
   void setChanged();
 };
 
-struct BlockSource {
-  BlockEntity &getBlockEntity(BlockPos const &);
+struct Biome;
+struct Block;
+
+struct BlockLegacy {
+  Block *getBlockStateFromLegacyData(unsigned char) const;
+  std::string getFullName() const;
 };
+
+struct Block {
+  BlockLegacy *getLegacyBlock() const;
+};
+
+struct ActorBlockSyncMessage;
+
+struct BlockSource {
+  BlockEntity *getBlockEntity(BlockPos const &);
+  Biome *getBiome(BlockPos const &);
+  Block *getBlock(BlockPos const &) const;
+  Block *getExtraBlock(BlockPos const &) const;
+
+  void setBlock(BlockPos const&,Block const&,int,ActorBlockSyncMessage const*);
+};
+
+struct ItemInstance;
+struct CompoundTag;
 
 struct Actor {
   const std::string &getNameTag() const;
@@ -115,23 +140,46 @@ struct Actor {
   int getDimensionId() const;
   void getDebugText(std::vector<std::string> &);
   BlockSource &getRegion() const;
+  void setOffhandSlot(ItemInstance const &);
+  bool save(CompoundTag &);
+
+  virtual ~Actor();
 };
 
 struct Mob : Actor {
   float getYHeadRot() const;
 };
 
+struct Certificate {};
+
+struct ExtendedCertificate {
+  static std::string getXuid(Certificate const &);
+};
+
 struct Player : Mob {
   void remove();
+  Certificate &getCertificate() const;
+  mce::UUID &getUUID() const;  // requires bridge
+  std::string getXUID() const; // requires bridge
   NetworkIdentifier const &getClientId() const;
   unsigned char getClientSubId() const;
   BlockPos getSpawnPosition();
+  bool setRespawnPosition(BlockPos const&,bool);
+  bool setBedRespawnPosition(BlockPos const&);
   int getCommandPermissionLevel() const;
+  bool isSurvival() const;
+  bool isAdventure() const;
+  bool isCreative() const;
+  bool isWorldBuilder();
+
+  void setOffhandSlot(ItemInstance const &);
 };
 
 struct ServerPlayer : Player {
   void disconnect();
   void sendNetworkPacket(Packet &packet) const;
+
+  void openInventory();
 };
 
 struct PacketSender {
@@ -139,8 +187,10 @@ struct PacketSender {
 };
 
 struct LevelStorage {
-  void save(Actor&);
+  void save(Actor &);
 };
+
+struct Dimension;
 
 struct Level {
   LevelStorage *getLevelStorage();
@@ -152,6 +202,54 @@ struct Level {
   void forEachPlayer(std::function<bool(Player &)>);
   BlockPos const &getDefaultSpawn() const;
   void setDefaultSpawn(BlockPos const &);
+  Dimension *getDimension(DimensionId) const;
+  void addEntity(BlockSource &, std::unique_ptr<Actor>);
+  void addAutonomousEntity(BlockSource &, std::unique_ptr<Actor>);
+};
+
+struct DedicatedServer {
+  void stop();
+};
+
+struct NetworkStats {
+  int32_t filler, ping, avgping, maxbps;
+  float packetloss, avgpacketloss;
+};
+
+struct NetworkPeer {
+  virtual ~NetworkPeer();
+  virtual void sendPacket();
+  virtual void receivePacket();
+  virtual NetworkStats getNetworkStatus(void);
+};
+
+struct NetworkHandler {
+  NetworkPeer &getPeerForUser(NetworkIdentifier const&);
+};
+
+struct ServerNetworkHandler : NetworkHandler {
+  void disconnectClient(NetworkIdentifier const&,std::string const&,bool);
+};
+
+struct MinecraftCommands;
+
+struct Minecraft {
+  void init(bool);
+  void activateWhitelist();
+  Level &getLevel() const;
+  ServerNetworkHandler &getNetworkHandler();
+  ServerNetworkHandler &getNetEventCallback();
+  MinecraftCommands &getCommands();
+};
+
+struct ServerCommand {
+  static Minecraft *mGame;
+};
+
+struct ServerInstance {
+  void *vt, *filler;
+  DedicatedServer *server;
+  void queueForServerThread(std::function<void()> p1);
 };
 
 enum struct InputMode { UNK };
@@ -161,46 +259,14 @@ struct ItemInstance {
   short getId() const;
   std::string getName() const;
   std::string getCustomName() const;
+  std::string toString() const;
+
+  bool isOffhandItem() const;
+
+  static ItemInstance EMPTY_ITEM;
 };
 struct ItemUseCallback;
 
-struct GameMode {
-  GameMode(Player &);
-  ServerPlayer &player;
-  virtual ~GameMode();
-  virtual int startDestroyBlock(BlockPos const &, signed char, bool &);
-  virtual int destroyBlock(BlockPos const &, signed char);
-  virtual int continueDestroyBlock(BlockPos const &, signed char, bool &);
-  virtual int stopDestroyBlock(BlockPos const &);
-  virtual int startBuildBlock(BlockPos const &, signed char);
-  virtual int buildBlock(BlockPos const &, signed char);
-  virtual int continueBuildBlock(BlockPos const &, signed char);
-  virtual int stopBuildBlock(void);
-  virtual void tick(void);
-  virtual long double getPickRange(InputMode const &, bool);
-  virtual int useItem(ItemInstance &);
-  virtual int useItemOn(ItemInstance &, BlockPos const &, signed char, Vec3 const &, ItemUseCallback *);
-  virtual int interact(Actor &, Vec3 const &);
-  virtual int attack(Actor &);
-  virtual int releaseUsingItem(void);
-  virtual int setTrialMode(bool);
-  virtual int isInTrialMode(void);
-  virtual int registerUpsellScreenCallback(std::function<void(bool)>);
-};
-struct SurvivalMode : GameMode {
-  SurvivalMode(Player &);
-  virtual ~SurvivalMode();
-  virtual int startDestroyBlock(BlockPos const &, signed char, bool &);
-  virtual int destroyBlock(BlockPos const &, signed char);
-  virtual void tick(void);
-  virtual int useItem(ItemInstance &);
-  virtual int useItemOn(ItemInstance &, BlockPos const &, signed char, Vec3 const &, ItemUseCallback *);
-  virtual int setTrialMode(bool);
-  virtual int isInTrialMode(void);
-  virtual int registerUpsellScreenCallback(std::function<void(bool)>);
-};
-
-extern void onPlayerAdded(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerJoined(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerLeft(std::function<void(ServerPlayer &player)> callback);
 
