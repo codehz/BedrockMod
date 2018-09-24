@@ -8,6 +8,7 @@
 
                #:use-module (utils form)
                #:use-module (megacut)
+               #:use-module (json)
                
                #:use-module (srfi srfi-1)
                #:use-module (ice-9 match)
