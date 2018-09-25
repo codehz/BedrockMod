@@ -7,6 +7,7 @@
                #:use-module (minecraft chat)
 
                #:use-module (utils form)
+               #:use-module (utils point-select)
                #:use-module (megacut)
                #:use-module (json)
 
@@ -56,6 +57,16 @@
                     0
                     (checked-player! player
                                      (player-open-inventory player)
+                                     (outp-success)))
+
+(reg-simple-command "select-point"
+                    "Test point select"
+                    0
+                    (checked-player! player
+                                     (select-point player
+                                                   (lookup-item-id "minecraft:stick")
+                                                   (lambda (pos)
+                                                           (send-message player (format #f "You just selected ~a" pos))))
                                      (outp-success)))
 
 (register-dbus-interface ""
