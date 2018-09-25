@@ -4,6 +4,7 @@
                #:use-module (minecraft command)
                #:use-module (minecraft dbus)
                #:use-module (minecraft form)
+               #:use-module (minecraft chat)
 
                #:use-module (utils form)
                #:use-module (megacut)
@@ -27,7 +28,16 @@
                     (checked-player! player
                                      (send-form player
                                                 (make-simple-form "Test" "test form" "Ok" "Dismiss")
-                                              #%(log-debug "result" "form: ~a" (json-string->scm %)))
+                                              #%(send-message player %))
+                                     (outp-success)))
+
+(reg-simple-command "test-form2"
+                    "Test Type2 form"
+                    0
+                    (checked-player! player
+                                     (send-form player
+                                                (make-buttons-form "Test2" "Type2 content" `("Command Block" . "textures/blocks/command_block.png") "Button2")
+                                              #%(send-message player %))
                                      (outp-success)))
 
 (reg-simple-command "test-inventory"
