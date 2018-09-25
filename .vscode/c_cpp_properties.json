@@ -7,7 +7,7 @@
                 "/usr/include/guile/2.2",
                 "/usr/include"
             ],
-            "defines": ["DIAG"],
+            "defines": ["DIAG", "MODS_TAG=\"test\""],
             "compilerPath": "/user/bin/g++",
             "cStandard": "c11",
             "cppStandard": "c++17",

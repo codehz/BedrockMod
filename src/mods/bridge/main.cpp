@@ -55,7 +55,7 @@ TStaticHook(void, _ZN10BedrockLog7_log_vaEjjPKciS1_P13__va_list_tag, BedrockLog,
   if (getenv("disable_stdout") == nullptr) printf("%c [%s] %s\n", getProirity(a1)[lvc], s0, buffer);
 }
 
-extern "C" const char *bridge_version() { return "0.2.1"; }
+extern "C" const char *bridge_version() { return MODS_TAG; }
 
 extern ServerInstance *si __attribute__((visibility("hidden")));
 static std::thread *dbus_thread;

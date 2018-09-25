@@ -1,8 +1,10 @@
 CXX = clang++
 CC = clang
 
+TAG = $(shell git describe --always --long --dirty --tags)
+
 CFLAGSQL = -g -fPIC -std=c99 -Iinclude -O3 -fdiagnostics-color=always
-CXXFLAGS = -g -fPIC -std=c++2a -Iinclude -I/usr/include/guile/2.2 -Wno-invalid-offsetof -Wno-undefined-var-template -O3 -fdiagnostics-color=always
+CXXFLAGS = -g -fPIC -std=c++2a -DMODS_TAG=\"$(TAG)\" -Iinclude -I/usr/include/guile/2.2 -Wno-invalid-offsetof -Wno-undefined-var-template -O3 -fdiagnostics-color=always
 LDFLAGS = -g -fPIC
 
 LPLAYER = -Lout -lsupport
