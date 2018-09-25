@@ -316,16 +316,22 @@ struct definer {
   void operator=(const as_scm &v) { scm_c_module_define(scm_current_module(), name, v); }
 };
 
-template <typename... T> std::function<void(T...)> make_hook(const char *name) {
-  auto hook = scm_make_hook(to_scm(sizeof...(T)));
-  scm_c_module_define(scm_current_module(), name, hook);
+template <typename... T> struct hook : as_scm {
+  hook() { scm = scm_make_hook(to_scm(sizeof...(T))); }
+
+  void operator()(T... ts) { scm_c_run_hook(scm, list(to_scm<T>(ts)...)); }
+};
+
+template <typename... T> auto define_hook(const char *name) {
+  hook<T...> hookInstance;
+  scm_c_module_define(scm_current_module(), name, hookInstance);
   scm_c_export(name);
-  return [=](T... ts) { scm_c_run_hook(hook, list(to_scm<T>(ts)...)); };
+  return hookInstance;
 }
 
 #define MAKE_HOOK(name, sname, ...)                                                                                                                  \
-  SCM_SNARF_HERE(static std::function<void(__VA_ARGS__)> name;)                                                                                      \
-  SCM_SNARF_INIT(name = (::scm::make_hook<__VA_ARGS__>(sname));)
+  SCM_SNARF_HERE(static ::std::function<void(__VA_ARGS__)> name;)                                                                                      \
+  SCM_SNARF_INIT(name = (::scm::define_hook<__VA_ARGS__>(sname));)
 
 template <typename T = SCM> struct fluid : as_scm {
   fluid() { scm = scm_make_fluid(); }

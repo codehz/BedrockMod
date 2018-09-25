@@ -58,6 +58,10 @@ SCM_DEFINE_PUBLIC(level_spawnpoint, "world-spawnpoint", 0, 0, 0, (scm::val<Serve
   return scm::to_scm(support_get_minecraft()->getLevel().getDefaultSpawn());
 }
 
+SCM_DEFINE_PUBLIC(c_actor_eq, "actor=?", 2, 0, 0, (scm::val<Actor *> act1, scm::val<Actor *> act2), "Test equal of two actors") {
+  return scm::to_scm(act1.get() == act2.get());
+}
+
 SCM_DEFINE_PUBLIC(c_actor_debug, "actor-debug-info", 1, 0, 0, (scm::val<Actor *> act), "Get Actor's debug info") {
   std::vector<std::string> vect;
   act->getDebugText(vect);
@@ -160,14 +164,29 @@ TInstanceHook(bool, _ZNK9Whitelist9isAllowedERKN3mce4UUIDERKNSt7__cxx1112basic_s
 
 extern "C" const char *mcpelauncher_get_profile();
 
+std::unordered_map<ServerPlayer *, scm::hook<>> playerLeftHooks;
+
+SCM_DEFINE_PUBLIC(c_when_player_leave, "player-left-for", 1, 0, 0, (scm::val<ServerPlayer *> player), "player leave hook") {
+  if (playerLeftHooks.count(player) > 0) { scm_gc_protect_object(playerLeftHooks[player]); }
+  return playerLeftHooks[player];
+}
+
 LOADFILE(preload, "src/script/base/preload.scm");
 
 PRELOAD_MODULE("minecraft base") {
   scm::definer("*profile*") = mcpelauncher_get_profile();
   scm_c_export("*profile*");
 
-  onPlayerJoined <<= scm::make_hook<ServerPlayer &>("player-joined");
-  onPlayerLeft <<= scm::make_hook<ServerPlayer &>("player-left");
+  onPlayerJoined <<= scm::define_hook<ServerPlayer &>("player-joined");
+  onPlayerLeft <<= scm::define_hook<ServerPlayer &>("player-left");
+
+  onPlayerLeft <<= [](ServerPlayer &player) {
+    if (playerLeftHooks.count(&player) > 0) {
+      playerLeftHooks[&player]();
+      scm_gc_unprotect_object(playerLeftHooks[&player]);
+      playerLeftHooks.erase(&player);
+    }
+  };
 
 #ifndef DIAG
 #include "main.x"
