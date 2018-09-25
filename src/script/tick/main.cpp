@@ -25,9 +25,14 @@ struct FixedFunction {
   }
 };
 
+uint64_t GetTimeUS_Linux();
+
 std::unordered_multimap<int16_t, FixedFunction> tickHandlers;
 std::list<FixedFunction> timeoutHandlers;
 int16_t count = 0;
+int16_t tickcount = 0;
+int16_t lasttickcount = 0;
+uint64_t lastus = GetTimeUS_Linux();
 
 TInstanceHook(void, _ZN5Level4tickEv, Level) {
   for (auto &it : tickHandlers)
@@ -44,7 +49,17 @@ TInstanceHook(void, _ZN5Level4tickEv, Level) {
     }
   }
   count++;
+  tickcount++;
+  if (auto now = GetTimeUS_Linux(); now - lastus >= 1000000) {
+    lasttickcount = tickcount;
+    tickcount = 0;
+    lastus += 1000000;
+  }
   original(this);
+}
+
+SCM_DEFINE_PUBLIC(c_get_tps, "get-tps", 0, 0, 0, (), "Get TPS") {
+  return scm::to_scm(lasttickcount);
 }
 
 SCM_DEFINE_PUBLIC(c_set_interval, "interval-run", 2, 0, 0, (scm::val<uint> cycle, scm::callback<> fn), "setInterval") {

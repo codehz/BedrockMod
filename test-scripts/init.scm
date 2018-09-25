@@ -14,6 +14,7 @@
 (use-modules (custom block-items))
 (use-modules (custom lucky-block))
 (use-modules (custom ping))
+(use-modules (custom tps))
 (use-modules (custom player-events))
 (use-modules (custom teleport))
 (use-modules (custom transfer))
