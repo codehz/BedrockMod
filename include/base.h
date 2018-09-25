@@ -23,7 +23,7 @@ struct Item {
   unsigned short filler[0x1000];
   Item(Item const &) = delete;
   Item &operator=(Item const &) = delete;
-  unsigned short getId() const;
+  short getId() const;
   bool operator==(Item const &rhs) const { return this == &rhs; }
 };
 
@@ -253,7 +253,7 @@ enum struct InputMode { UNK };
 
 struct ItemInstance {
   bool isNull() const;
-  unsigned short getId() const;
+  short getId() const;
   std::string getName() const;
   std::string getCustomName() const;
   std::string toString() const;
