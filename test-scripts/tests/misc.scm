@@ -36,7 +36,18 @@
                     0
                     (checked-player! player
                                      (send-form player
-                                                (make-buttons-form "Test2" "Type2 content" `("Command Block" . "textures/blocks/command_block.png") "Button2")
+                                                (make-menu "Test2" "Type2 content" `("Command Block" . "textures/blocks/command_block.png") "Button2")
+                                              #%(send-message player %))
+                                     (outp-success)))
+
+(reg-simple-command "test-form3"
+                    "Test Type3 form"
+                    0
+                    (checked-player! player
+                                     (send-form player
+                                                (make-custom-form "Custom form testing"
+                                                                 `((type . "label") (text . "Test Label"))
+                                                                 `((type . "input") (text . "Input") (placeholder . "placeholder")))
                                               #%(send-message player %))
                                      (outp-success)))
 
@@ -54,3 +65,11 @@
                                                       (λ (m u e)
                                                          (let [(data (dbus-read m #\s))]
                                                               (dbus-reply m "s" data))))))
+
+(add-hook! open-server-settings
+           (lambda (player) (send-settings-form player
+                                                (make-settings-form "Custom Settings :P"
+                                                                    "textures/blocks/command_block.png"
+                                                                   `((type . "label") (text . "Test Label"))
+                                                                   `((type . "input") (text . "Input") (placeholder . "placeholder")))
+                                              #%(log-debug "ServerSettings" "~a" %))))

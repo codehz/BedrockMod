@@ -37,6 +37,22 @@ struct ModalFormResponsePacket : Packet {
   virtual bool disallowBatching() const;
 };
 
+struct ServerSettingsResponsePacket : Packet {
+  int id;
+  std::string data;
+  ServerSettingsResponsePacket(unsigned char playerSubIndex, int id, std::string data)
+      : Packet(playerSubIndex)
+      , id(id)
+      , data(data) {}
+
+  virtual void *getId() const;
+  virtual void *getName() const;
+  virtual void *write(BinaryStream &) const;
+  virtual void *read(BinaryStream &);
+  virtual void *handle(NetworkIdentifier const &, NetEventCallback &) const;
+  virtual bool disallowBatching() const;
+};
+
 struct FixedFunction {
   int32_t rid;
   scm::callback<void, std::string> fun;
@@ -70,11 +86,31 @@ TInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK23Mo
   }
 }
 
+MAKE_HOOK(server_settings, "open-server-settings", ServerPlayer *);
+TInstanceHook(void, _ZN16NetEventCallback6handleERK17NetworkIdentifierRK27ServerSettingsRequestPacket, ServerNetworkHandler,
+              NetworkIdentifier const &nid, ModalFormResponsePacket &packet) {
+  auto result = findPlayer(nid, packet.playerSubIndex);
+  if (result)
+    server_settings(result);
+  else
+    Log::warn("form", "Player Not Found: %s", nid.toString().c_str());
+}
+
 SCM_DEFINE_PUBLIC(c_send_form, "send-form", 3, 0, 0,
                   (scm::val<ServerPlayer *> player, scm::val<std::string> request, scm::callback<void, std::string> callback),
                   "Send form to player") {
   int id = rand();
   ModalFormRequestPacket packet{ player->getClientSubId(), id, request.get() };
+  callbacks.emplace(player->getClientId(), FixedFunction{ id, callback });
+  player->sendNetworkPacket(packet);
+  return SCM_UNSPECIFIED;
+}
+
+SCM_DEFINE_PUBLIC(c_send_server_settings_form, "send-settings-form", 3, 0, 0,
+                  (scm::val<ServerPlayer *> player, scm::val<std::string> request, scm::callback<void, std::string> callback),
+                  "Send settings form to player") {
+  int id = rand();
+  ServerSettingsResponsePacket packet{ player->getClientSubId(), id, request.get() };
   callbacks.emplace(player->getClientId(), FixedFunction{ id, callback });
   player->sendNetworkPacket(packet);
   return SCM_UNSPECIFIED;
