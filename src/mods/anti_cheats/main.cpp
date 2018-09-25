@@ -11,6 +11,7 @@
 
 struct EnchantmentInstance {
   int getEnchantType() const;
+  void setEnchantLevel(int);
 };
 
 struct Enchant {
@@ -36,16 +37,9 @@ TInstanceHook(int, _ZNK19EnchantmentInstance15getEnchantLevelEv, EnchantmentInst
   auto level    = original(this);
   auto &enchant = Enchant::mEnchants[this->getEnchantType()];
   auto max      = enchant->getMaxLevel();
-  return limitLevel(level, max);
-}
-
-struct ItemInstance;
-
-THook(int, _ZN12EnchantUtils15getEnchantLevelEN7Enchant4TypeERK12ItemInstance, Enchant::Type type, ItemInstance const &item) {
-  auto level    = original(type, item);
-  auto &enchant = Enchant::mEnchants[type];
-  auto max      = enchant->getMaxLevel();
-  return limitLevel(level, max);
+  auto result = limitLevel(level, max);
+  if (result != level) setEnchantLevel(level);
+  return result;
 }
 
 struct InventorySource {
