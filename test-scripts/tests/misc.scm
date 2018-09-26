@@ -23,6 +23,14 @@
                                                               (for-each (lambda (player) (set-player-spawnpoint player pos)) players)
                                                               (outp-success))]))))
 
+(reg-command "change-dim"
+             "Change player's dimension"
+             1
+             (list (command-vtable (list (parameter-int "dim"))
+                                   (checked-player! player
+                                                    (match (command-args)
+                                                          [(dim) (actor-dim-set! player dim)])))))
+
 (reg-simple-command "test-form"
                     "Test form"
                     0

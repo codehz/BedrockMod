@@ -138,6 +138,7 @@ struct Actor {
   Vec3 const &getPos() const;
   Level &getLevel() const;
   int getDimensionId() const;
+  void changeDimension(DimensionId, bool);
   void getDebugText(std::vector<std::string> &);
   BlockSource &getRegion() const;
   void setOffhandSlot(ItemInstance const &);
@@ -178,6 +179,7 @@ struct Player : Mob {
 struct ServerPlayer : Player {
   void disconnect();
   void sendNetworkPacket(Packet &packet) const;
+  void changeDimension(DimensionId, bool);
 
   void openInventory();
 };

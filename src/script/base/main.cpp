@@ -63,6 +63,17 @@ SCM_DEFINE_PUBLIC(c_actor_eq, "actor=?", 2, 0, 0, (scm::val<Actor *> act1, scm::
   return scm::to_scm(act1.get() == act2.get());
 }
 
+SCM_DEFINE_PUBLIC(c_actor_dim, "actor-dim", 1, 0, 0, (scm::val<Actor *> act), "Get actor's dimension") { return scm::to_scm(act->getDimensionId()); }
+
+SCM_DEFINE_PUBLIC(c_actor_dim_set, "actor-dim-set!", 2, 1, 0, (scm::val<Actor *> act, scm::val<int> dim, scm::val<bool> showCredit),
+                  "Set actor's dimension") {
+  if (auto player = dynamic_cast<ServerPlayer *>(act.get()); player)
+    player->changeDimension(DimensionId(dim), showCredit[false]);
+  else
+    act->changeDimension(DimensionId(dim), showCredit[false]);
+  return SCM_UNSPECIFIED;
+}
+
 SCM_DEFINE_PUBLIC(c_actor_debug, "actor-debug-info", 1, 0, 0, (scm::val<Actor *> act), "Get Actor's debug info") {
   std::vector<std::string> vect;
   act->getDebugText(vect);
