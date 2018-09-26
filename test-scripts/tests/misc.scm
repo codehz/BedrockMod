@@ -31,6 +31,18 @@
                                                     (match (command-args)
                                                           [(dim) (actor-dim-set! player dim)])))))
 
+(reg-simple-command "test-suspend"
+                    "Test suspend"
+                    0
+                    (checked-player! player
+                                     (player-suspend player)))
+
+(reg-simple-command "test-resume"
+                    "Test resume"
+                    0
+                    (checked-player! player
+                                     (player-resume player)))
+
 (reg-simple-command "test-form"
                     "Test form"
                     0

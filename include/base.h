@@ -208,6 +208,9 @@ struct Level {
   Dimension *getDimension(DimensionId) const;
   void addEntity(BlockSource &, std::unique_ptr<Actor>);
   void addAutonomousEntity(BlockSource &, std::unique_ptr<Actor>);
+
+  void suspendPlayer(Player &);
+  void resumePlayer(Player &);
 };
 
 struct ItemActor : Actor {

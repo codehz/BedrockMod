@@ -117,6 +117,16 @@ SCM_DEFINE_PUBLIC(c_player_open_inventory, "player-open-inventory", 1, 0, 0, (sc
   return SCM_UNSPECIFIED;
 }
 
+SCM_DEFINE_PUBLIC(c_player_suspend, "player-suspend", 1, 0, 0, (scm::val<ServerPlayer *> player), "Suspend Player") {
+  player->getLevel().suspendPlayer(*player.get());
+  return SCM_UNSPECIFIED;
+}
+
+SCM_DEFINE_PUBLIC(c_player_resume, "player-resume", 1, 0, 0, (scm::val<ServerPlayer *> player), "Suspend Player") {
+  player->getLevel().resumePlayer(*player.get());
+  return SCM_UNSPECIFIED;
+}
+
 SCM_DEFINE_PUBLIC(c_player_is_survival, "player-survival?", 1, 0, 0, (scm::val<ServerPlayer *> player), "Check if player is in survival mode") {
   return scm::to_scm(player->isSurvival());
 }
