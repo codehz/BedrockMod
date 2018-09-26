@@ -20,7 +20,7 @@ TInstanceHook(void, _ZN20ServerNetworkHandler24onReady_ClientGenerationER6Player
 
 void kickPlayer(ServerPlayer *player) {
   player->disconnect();
-  player->getLevel()->getLevelStorage()->save(*player);
+  player->getLevel().getLevelStorage()->save(*player);
   player->remove();
 
   if (player != nullptr) {

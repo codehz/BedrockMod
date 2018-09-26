@@ -11,10 +11,10 @@
 (define (init-lucky-block target lucky-actions)
         (add-hook! policy-player-destroy
                    (lambda (pos)
-                           (let [(blockname (block-name (player-get-block@ pos (policy-self))))]
+                           (let [(blockname (block-name (get-block/player pos (policy-self))))]
                                  (if (string=? target blockname)
                                      (let [(player (policy-self))]
-                                           (player-clear-block@ pos player)
+                                           (clear-block/player pos player)
                                            (policy-result #f)
                                            (fake-explode 10.0 (actor-pos player) (actor-dim player))
                                            (delay-run! 1 ((list-ref lucky-actions (random (length lucky-actions))) player pos))))))))

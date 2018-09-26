@@ -18,8 +18,8 @@
 (define (prevent-block-destroy unbreakable-blocks)
         (add-hook! policy-player-destroy
            (lambda (pos)
-                   (if (member (block-name (player-get-block@ pos (policy-self))) unbreakable-blocks)
+                   (if (member (block-name (get-block/player pos (policy-self))) unbreakable-blocks)
                        (begin (policy-result #f)
-                              (send-message (policy-self) (format #f "You cannot break ~a here" (block-name (player-get-block@ pos (policy-self))))))))))
+                              (send-message (policy-self) (format #f "You cannot break ~a here" (block-name (get-block/player pos (policy-self))))))))))
 
 

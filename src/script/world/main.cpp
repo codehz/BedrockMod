@@ -1,5 +1,6 @@
-// Deps: out/script_world.so: out/script_base.so
+// Deps: out/script_world.so: out/script_base.so out/script_nbt.so
 #include "../base/main.h"
+#include "../nbt/main.h"
 
 #include <api.h>
 
@@ -43,7 +44,7 @@ struct BedrockBlocks {
   static Block *mAir;
 };
 
-SCM_DEFINE_PUBLIC(get_block_at, "get-block@", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<int> did), "Get Block") {
+SCM_DEFINE_PUBLIC(get_block_at, "get-block", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<int> did), "Get Block") {
   auto dim = ServerCommand::mGame->getLevel().getDimension(DimensionId(did));
   CommandAreaFactory factory{ *dim };
   auto area = factory.findArea(pos, false);
@@ -52,12 +53,12 @@ SCM_DEFINE_PUBLIC(get_block_at, "get-block@", 2, 0, 0, (scm::val<BlockPos> pos, 
   return scm::to_scm(source.getBlock(pos));
 }
 
-SCM_DEFINE_PUBLIC(get_block_player_at, "player-get-block@", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<ServerPlayer *> player), "Get Block") {
+SCM_DEFINE_PUBLIC(get_block_player_at, "get-block/player", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<ServerPlayer *> player), "Get Block") {
   auto &source = player->getRegion();
   return scm::to_scm(source.getBlock(pos));
 }
 
-SCM_DEFINE_PUBLIC(set_block_at, "set-block@", 3, 0, 0, (scm::val<BlockPos> pos, scm::val<int> did, scm::val<std::string> name), "Set block") {
+SCM_DEFINE_PUBLIC(set_block_at, "set-block", 3, 0, 0, (scm::val<BlockPos> pos, scm::val<int> did, scm::val<std::string> name), "Set block") {
   auto dim = ServerCommand::mGame->getLevel().getDimension(DimensionId(did));
   CommandAreaFactory factory{ *dim };
   auto area = factory.findArea(pos, false);
@@ -69,7 +70,7 @@ SCM_DEFINE_PUBLIC(set_block_at, "set-block@", 3, 0, 0, (scm::val<BlockPos> pos, 
   return SCM_BOOL_T;
 }
 
-SCM_DEFINE_PUBLIC(set_block_player_at, "player-set-block@", 3, 0, 0,
+SCM_DEFINE_PUBLIC(set_block_player_at, "set-block/player", 3, 0, 0,
                   (scm::val<BlockPos> pos, scm::val<ServerPlayer *> player, scm::val<std::string> name), "Set block") {
   auto &source = player->getRegion();
   auto bl      = BlockTypeRegistry::lookupByName(name);
@@ -78,7 +79,7 @@ SCM_DEFINE_PUBLIC(set_block_player_at, "player-set-block@", 3, 0, 0,
   return SCM_BOOL_T;
 }
 
-SCM_DEFINE_PUBLIC(clear_block_at, "clear-block@", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<int> did), "Clear block") {
+SCM_DEFINE_PUBLIC(clear_block_at, "clear-block", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<int> did), "Clear block") {
   auto dim = ServerCommand::mGame->getLevel().getDimension(DimensionId(did));
   CommandAreaFactory factory{ *dim };
   auto area = factory.findArea(pos, false);
@@ -88,7 +89,7 @@ SCM_DEFINE_PUBLIC(clear_block_at, "clear-block@", 2, 0, 0, (scm::val<BlockPos> p
   return SCM_BOOL_T;
 }
 
-SCM_DEFINE_PUBLIC(clear_block_player_at, "player-clear-block@", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<ServerPlayer *> player), "Clear block") {
+SCM_DEFINE_PUBLIC(clear_block_player_at, "clear-block/player", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<ServerPlayer *> player), "Clear block") {
   auto &source = player->getRegion();
   source.setBlock(pos, *BedrockBlocks::mAir, 3, nullptr);
   return SCM_BOOL_T;
@@ -112,7 +113,7 @@ SCM_DEFINE_PUBLIC(spawn_actor, "spawn-actor", 3, 0, 0, (scm::val<Vec3> pos, scm:
   return scm::to_scm((long)id);
 }
 
-SCM_DEFINE_PUBLIC(player_spawn_actor, "player-spawn-actor", 3, 0, 0,
+SCM_DEFINE_PUBLIC(player_spawn_actor, "spawn-actor/player", 3, 0, 0,
                   (scm::val<Vec3> pos, scm::val<ServerPlayer *> player, scm::val<std::string> name), "Spawn actor") {
   auto &source = player->getRegion();
   auto atype   = EntityTypeFromString(name);
@@ -121,6 +122,45 @@ SCM_DEFINE_PUBLIC(player_spawn_actor, "player-spawn-actor", 3, 0, 0,
   auto ret = CommandUtils::spawnEntityAt(source, pos, atype, id, nullptr);
   if (!ret) return SCM_BOOL_F;
   return scm::to_scm((long)id);
+}
+
+SCM_DEFINE_PUBLIC(create_item_instance, "create-item-instance", 2, 2, 0,
+                  (scm::val<std::string> name, scm::val<int> number, scm::val<int> aux, scm::val<CompoundTag *> tag), "Create ItemInstance") {
+  auto item = ItemRegistry::lookupByName(name, true);
+  if (!item) return SCM_BOOL_F;
+  return scm::to_scm(new ItemInstance(*item, number, aux[0], tag[nullptr]));
+}
+
+SCM_DEFINE_PUBLIC(with_item_instance, "with-item-instance", 2, 0, 0, (scm::val<ItemInstance *> ins, scm::callback<SCM, ItemInstance *> cb),
+                  "Managed ItemInstance") {
+  if (scm_is_false(ins.scm)) return SCM_BOOL_F;
+  scm::dynwind dyn;
+  auto instance = dyn(ins.get());
+  auto ret      = cb(ins);
+  return ret;
+}
+
+SCM_DEFINE_PUBLIC(spawn_item, "spawn-item", 3, 0, 0, (scm::val<Vec3> pos, scm::val<int> did, scm::val<ItemInstance *> item), "Spawn actor") {
+  auto &level   = ServerCommand::mGame->getLevel();
+  auto &spawner = level.getSpawner();
+  auto dim      = level.getDimension(DimensionId(did));
+  CommandAreaFactory factory{ *dim };
+  auto area = factory.findArea(BlockPos(pos), false);
+  if (!area) return SCM_BOOL_F;
+  auto &source = area->getRegion();
+  auto ret     = spawner.spawnItem(source, *item.get(), nullptr, pos, 0);
+  if (!ret) return SCM_BOOL_F;
+  return scm::to_scm(ret);
+}
+
+SCM_DEFINE_PUBLIC(player_spawn_item, "spawn-item/player", 3, 0, 0,
+                  (scm::val<Vec3> pos, scm::val<ServerPlayer *> player, scm::val<ItemInstance *> item), "Spawn actor") {
+  auto &level   = player->getLevel();
+  auto &spawner = level.getSpawner();
+  auto &source  = player->getRegion();
+  auto ret      = spawner.spawnItem(source, *item.get(), nullptr, pos, 0);
+  if (!ret) return SCM_BOOL_F;
+  return scm::to_scm(ret);
 }
 
 PRELOAD_MODULE("minecraft world") {

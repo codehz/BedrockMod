@@ -21,7 +21,7 @@
          #%(send-message (policy-self) (format #f "Attack ~a" (actor-dump %))))
 
 (add-hook! policy-player-destroy
-         #%(send-message (policy-self) (format #f "Destroy@~a ~a" % (block-name (player-get-block@ % (policy-self))))))
+         #%(send-message (policy-self) (format #f "Destroy@~a ~a" % (block-name (get-block/player % (policy-self))))))
 
 (reg-command "dump-block"
              "Dump block for position"
@@ -29,7 +29,7 @@
              (list (command-vtable (list (parameter-position "pos") (parameter-int "dim"))
                                    (lambda ()
                                            (match (command-args)
-                                                 [(pos dim) (outp-success (block-name (get-block@ (vec3->blockpos pos) dim)))])))))
+                                                 [(pos dim) (outp-success (block-name (get-block (vec3->blockpos pos) dim)))])))))
 
 (add-hook! policy-player-interact
          #%(send-message (policy-self) (format #f "Interact@~a ~a" (show-vec3 %2) (actor-dump %))))

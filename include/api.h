@@ -1,6 +1,7 @@
 #pragma once
 
 #include <base.h>
+#include <boost/core/noncopyable.hpp>
 #include <functional>
 #include <libguile.h>
 #include <log.h>
@@ -23,7 +24,7 @@ void script_preload(void (*fn)(void *), const char *name);
   extern "C" void mod_init() { script_preload(init_module, name); }                                                                                  \
   void init_module(void *)
 
-struct temp_string {
+struct temp_string : private boost::noncopyable {
   char *data;
   temp_string(char *data)
       : data(data) {}
@@ -31,7 +32,6 @@ struct temp_string {
       : data(rhs.data) {
     rhs.data = nullptr;
   }
-  void operator=(const temp_string &rhs) = delete;
   std::string get() const { return { data }; }
   operator char *() const { return data; }
   operator std::string() const { return { data }; }
@@ -55,7 +55,7 @@ struct gc_string {
   operator char *() const { return data; }
 };
 
-template <typename T, typename F> auto operator<<=(T t, F f) -> decltype(t(f)) { return t(std::forward<F>(f)); }
+template <typename T, typename F> auto operator<<=(T t, F f) -> decltype(t(f)) { return t(f); }
 
 namespace scm {
 
@@ -172,14 +172,12 @@ template <typename T> void set_scm(const SCM &s, T v) { return convertible<std::
 
 template <typename T> struct val {
   SCM scm;
-
   auto get() { return std::move(from_scm<T>(scm)); }
-
   operator auto() { return std::move(from_scm<T>(scm)); }
-
   auto operator-> () { return from_scm<T>(scm); }
-
   void operator=(T t) { set_scm(scm, t); }
+  bool operator()() { return !scm_is_eq(scm, SCM_UNDEFINED); }
+  auto operator[](T const &def) { return (*this)() ? get() : def; }
 
   void operator()(std::function<T(T)> access_fn) { set_scm(access_fn(from_scm<T>(scm))); }
   void operator()(std::function<void(T &)> modify_fn) {
@@ -305,7 +303,7 @@ template <typename T> struct foreign_type<T *> : as_scm {
   }
 };
 
-struct definer {
+struct definer : private boost::noncopyable {
   const char *name;
   definer(const char *name)
       : name(name) {}
@@ -330,7 +328,7 @@ template <typename... T> auto define_hook(const char *name) {
 }
 
 #define MAKE_HOOK(name, sname, ...)                                                                                                                  \
-  SCM_SNARF_HERE(static ::std::function<void(__VA_ARGS__)> name;)                                                                                      \
+  SCM_SNARF_HERE(static ::std::function<void(__VA_ARGS__)> name;)                                                                                    \
   SCM_SNARF_INIT(name = (::scm::define_hook<__VA_ARGS__>(sname));)
 
 template <typename T = SCM> struct fluid : as_scm {
@@ -371,7 +369,7 @@ template <typename T = SCM> struct fluid : as_scm {
   })                                                                                                                                                 \
   SCM_SNARF_INIT(scm_c_define(sname, call("fluid->parameter", name())); scm_c_export(sname);)
 
-struct with_fluids {
+struct with_fluids : private boost::noncopyable {
   SCM fluids, vals;
   with_fluids()
       : fluids(SCM_EOL)
@@ -466,6 +464,20 @@ template <> struct convertible<BlockPos> {
     return vector<int>(vec)([](int *el, size_t l) { return *((BlockPos *)el); });
   }
 };
+
+struct dynwind : private boost::noncopyable {
+  dynwind(scm_t_dynwind_flags flag = (scm_t_dynwind_flags)0) { scm_dynwind_begin(flag); }
+
+  template <typename T> auto operator()(T *ptr) & {
+    scm_dynwind_unwind_handler(safe_free<T>, ptr, SCM_F_WIND_EXPLICITLY);
+    return ptr;
+  }
+
+  template <typename T> static void safe_free(void *ptr) { delete (T *)ptr; }
+
+  ~dynwind() { scm_dynwind_end(); }
+};
+
 } // namespace scm
 
 namespace std {

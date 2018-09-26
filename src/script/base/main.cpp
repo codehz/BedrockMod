@@ -3,6 +3,7 @@
 
 MAKE_FOREIGN_TYPE(mce::UUID, "uuid", { "t0", "t1" });
 MAKE_FOREIGN_TYPE(Actor *, "actor");
+MAKE_FOREIGN_TYPE(ItemActor *, "item-actor");
 MAKE_FOREIGN_TYPE(ServerPlayer *, "player");
 MAKE_FOREIGN_TYPE(ItemInstance *, "item-instance");
 
@@ -129,6 +130,10 @@ SCM_DEFINE_PUBLIC(blockpos_to_vec3, "blockpos->vec3", 1, 0, 0, (scm::val<BlockPo
   return scm::to_scm(Vec3(pos));
 }
 
+SCM_DEFINE_PUBLIC(blockpos_to_vec3_center, "blockpos->vec3/center", 1, 0, 0, (scm::val<BlockPos> pos), "Convert Vec3 to BlockPos") {
+  return scm::to_scm(Vec3(pos.get().x + 0.5, pos.get().y + 0.5, pos.get().z + 0.5));
+}
+
 SCM_DEFINE_PUBLIC(item_instance_null_p, "item-instance-null?", 1, 0, 0, (scm::val<ItemInstance *> instance), "Check ItemInstance is null") {
   return scm::to_scm(instance->isNull());
 }
@@ -150,6 +155,14 @@ SCM_DEFINE_PUBLIC(item_id_from_string, "lookup-item-id", 1, 0, 0, (scm::val<std:
   auto item = ItemRegistry::lookupByName(name, true);
   if (!item) return SCM_BOOL_F;
   return scm::to_scm(item->getId());
+}
+
+SCM_DEFINE_PUBLIC(item_actor_name, "item-actor-name", 1, 0, 0, (scm::val<ItemActor *> act), "Get ItemActor's name") {
+  return scm::to_scm(act->getPrimaryName());
+}
+
+SCM_DEFINE_PUBLIC(item_actor_to_instance, "item-actor->item-instance", 1, 0, 0, (scm::val<ItemActor *> act), "Get ItemInstance from ItemActor") {
+  return scm::to_scm(&act->getItemInstance());
 }
 
 MAKE_HOOK(player_login, "player-login", mce::UUID);

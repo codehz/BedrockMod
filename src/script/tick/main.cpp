@@ -27,12 +27,12 @@ struct FixedFunction {
 
 uint64_t GetTimeUS_Linux();
 
-std::unordered_multimap<int16_t, FixedFunction> tickHandlers;
-std::list<FixedFunction> timeoutHandlers;
-int16_t count = 0;
-int16_t tickcount = 0;
-int16_t lasttickcount = 0;
-uint64_t lastus = GetTimeUS_Linux();
+static std::unordered_multimap<int16_t, FixedFunction> tickHandlers;
+static std::list<FixedFunction> timeoutHandlers;
+static int16_t count = 0;
+static int16_t tickcount = 0;
+static int16_t lasttickcount = 0;
+static uint64_t lastus = GetTimeUS_Linux();
 
 TInstanceHook(void, _ZN5Level4tickEv, Level) {
   for (auto &it : tickHandlers)

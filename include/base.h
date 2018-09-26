@@ -49,9 +49,9 @@ struct BlockPos {
       : x(p.x)
       , y(p.y)
       , z(p.z) {}
-  BlockPos const &operator=(BlockPos const&);
-  bool operator==(BlockPos const&);
-  bool operator!=(BlockPos const&);
+  BlockPos const &operator=(BlockPos const &);
+  bool operator==(BlockPos const &);
+  bool operator!=(BlockPos const &);
 };
 
 struct Vec3 {
@@ -104,6 +104,8 @@ struct BlockEntity {
 
 struct Biome;
 struct Block;
+struct BlockSource;
+struct ItemInstance;
 
 struct BlockLegacy {
   Block *getBlockStateFromLegacyData(unsigned char) const;
@@ -112,6 +114,7 @@ struct BlockLegacy {
 
 struct Block {
   BlockLegacy *getLegacyBlock() const;
+  ItemInstance *asItemInstance(BlockSource &, BlockPos const &) const;
 };
 
 struct ActorBlockSyncMessage;
@@ -122,7 +125,7 @@ struct BlockSource {
   Block *getBlock(BlockPos const &) const;
   Block *getExtraBlock(BlockPos const &) const;
 
-  void setBlock(BlockPos const&,Block const&,int,ActorBlockSyncMessage const*);
+  void setBlock(BlockPos const &, Block const &, int, ActorBlockSyncMessage const *);
 };
 
 struct ItemInstance;
@@ -133,7 +136,7 @@ struct Actor {
   EntityRuntimeID getRuntimeID() const;
   Vec2 const &getRotation() const;
   Vec3 const &getPos() const;
-  Level *getLevel() const;
+  Level &getLevel() const;
   int getDimensionId() const;
   void getDebugText(std::vector<std::string> &);
   BlockSource &getRegion() const;
@@ -161,8 +164,8 @@ struct Player : Mob {
   NetworkIdentifier const &getClientId() const;
   unsigned char getClientSubId() const;
   BlockPos getSpawnPosition();
-  bool setRespawnPosition(BlockPos const&,bool);
-  bool setBedRespawnPosition(BlockPos const&);
+  bool setRespawnPosition(BlockPos const &, bool);
+  bool setBedRespawnPosition(BlockPos const &);
   int getCommandPermissionLevel() const;
   bool isSurvival() const;
   bool isAdventure() const;
@@ -188,20 +191,30 @@ struct LevelStorage {
 };
 
 struct Dimension;
+struct Spawner;
 
 struct Level {
   LevelStorage *getLevelStorage();
   ServerPlayer *getPlayer(const std::string &name) const;
   ServerPlayer *getPlayer(mce::UUID const &uuid) const;
   ServerPlayer *getPlayer(EntityUniqueID uuid) const;
-
   PacketSender &getPacketSender() const;
+  Spawner &getSpawner() const;
   void forEachPlayer(std::function<bool(Player &)>);
   BlockPos const &getDefaultSpawn() const;
   void setDefaultSpawn(BlockPos const &);
   Dimension *getDimension(DimensionId) const;
   void addEntity(BlockSource &, std::unique_ptr<Actor>);
   void addAutonomousEntity(BlockSource &, std::unique_ptr<Actor>);
+};
+
+struct ItemActor : Actor {
+  std::string getPrimaryName() const;
+  ItemInstance &getItemInstance();
+};
+
+struct Spawner {
+  ItemActor *spawnItem(BlockSource &, ItemInstance const &, Actor *, Vec3 const &, int);
 };
 
 struct DedicatedServer {
@@ -221,11 +234,11 @@ struct NetworkPeer {
 };
 
 struct NetworkHandler {
-  NetworkPeer &getPeerForUser(NetworkIdentifier const&);
+  NetworkPeer &getPeerForUser(NetworkIdentifier const &);
 };
 
 struct ServerNetworkHandler : NetworkHandler {
-  void disconnectClient(NetworkIdentifier const&,std::string const&,bool);
+  void disconnectClient(NetworkIdentifier const &, std::string const &, bool);
 };
 
 struct MinecraftCommands;
@@ -251,12 +264,22 @@ struct ServerInstance {
 
 enum struct InputMode { UNK };
 
+struct CompoundTag;
+
 struct ItemInstance {
+  char filler[112];
+  ItemInstance();
+  ItemInstance(Item const &);
+  ItemInstance(Item const &, int number);
+  ItemInstance(Item const &, int number, int auxValue);
+  ItemInstance(Item const &, int number, int auxValue, CompoundTag const *);
   bool isNull() const;
   short getId() const;
   std::string getName() const;
   std::string getCustomName() const;
   std::string toString() const;
+  std::unique_ptr<CompoundTag> &getUserData();
+  void getUserData(std::unique_ptr<CompoundTag> tag);
 
   bool isOffhandItem() const;
 
