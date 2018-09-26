@@ -11,7 +11,7 @@
 (use-modules (tests policy))
 (use-modules (tests database))
 
-(use-modules (custom block-items))
+(use-modules (custom prevent-action))
 (use-modules (custom lucky-block))
 (use-modules (custom ping))
 (use-modules (custom tps))
@@ -35,6 +35,7 @@
 
 (set-teleport-cooldown! 500)
 
-(init-block-items (map lookup-item-id '("minecraft:bedrock" "minecraft:barrier")))
+(prevent-item-use (map lookup-item-id '("minecraft:bedrock" "minecraft:barrier")))
+(prevent-block-destroy '("minecraft:bedrock"))
 
 (log-debug "guile" "done")
