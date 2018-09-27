@@ -244,6 +244,7 @@ struct NetworkHandler {
 
 struct ServerNetworkHandler : NetworkHandler {
   void disconnectClient(NetworkIdentifier const &, std::string const &, bool);
+  ServerPlayer *_getServerPlayer(NetworkIdentifier const &, unsigned char);
 };
 
 struct MinecraftCommands;
@@ -295,5 +296,4 @@ struct ItemUseCallback;
 extern void onPlayerJoined(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerLeft(std::function<void(ServerPlayer &player)> callback);
 
-extern ServerPlayer *findPlayer(NetworkIdentifier const &nid, unsigned char subIndex);
 extern void kickPlayer(ServerPlayer *player);

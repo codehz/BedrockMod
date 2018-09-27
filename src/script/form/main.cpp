@@ -73,11 +73,11 @@ struct FixedFunction {
   }
 };
 
-std::unordered_map<NetworkIdentifier, FixedFunction> callbacks;
+std::unordered_map<ServerPlayer *, FixedFunction> callbacks;
 
 TInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK23ModalFormResponsePacket, ServerNetworkHandler,
               NetworkIdentifier const &nid, ModalFormResponsePacket &packet) {
-  auto it = callbacks.find(nid);
+  auto it = callbacks.find(_getServerPlayer(nid, packet.playerSubIndex));
   if (it != callbacks.end()) {
     if (it->second.rid == packet.id) {
       it->second(packet.data);
@@ -89,7 +89,7 @@ TInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK23Mo
 MAKE_HOOK(server_settings, "open-server-settings", ServerPlayer *);
 TInstanceHook(void, _ZN16NetEventCallback6handleERK17NetworkIdentifierRK27ServerSettingsRequestPacket, ServerNetworkHandler,
               NetworkIdentifier const &nid, ModalFormResponsePacket &packet) {
-  auto result = findPlayer(nid, packet.playerSubIndex);
+  auto result = _getServerPlayer(nid, packet.playerSubIndex);
   if (result)
     server_settings(result);
   else
@@ -101,7 +101,7 @@ SCM_DEFINE_PUBLIC(c_send_form, "send-form", 3, 0, 0,
                   "Send form to player") {
   int id = rand();
   ModalFormRequestPacket packet{ player->getClientSubId(), id, request.get() };
-  callbacks.emplace(player->getClientId(), FixedFunction{ id, callback });
+  callbacks.emplace(player, FixedFunction{ id, callback });
   player->sendNetworkPacket(packet);
   return SCM_UNSPECIFIED;
 }
@@ -111,7 +111,7 @@ SCM_DEFINE_PUBLIC(c_send_server_settings_form, "send-settings-form", 3, 0, 0,
                   "Send settings form to player") {
   int id = rand();
   ServerSettingsResponsePacket packet{ player->getClientSubId(), id, request.get() };
-  callbacks.emplace(player->getClientId(), FixedFunction{ id, callback });
+  callbacks.emplace(player, FixedFunction{ id, callback });
   player->sendNetworkPacket(packet);
   return SCM_UNSPECIFIED;
 }
