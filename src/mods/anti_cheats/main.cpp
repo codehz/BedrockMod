@@ -37,7 +37,7 @@ TInstanceHook(int, _ZNK19EnchantmentInstance15getEnchantLevelEv, EnchantmentInst
   auto level    = original(this);
   auto &enchant = Enchant::mEnchants[this->getEnchantType()];
   auto max      = enchant->getMaxLevel();
-  auto result = limitLevel(level, max);
+  auto result   = limitLevel(level, max);
   if (result != level) setEnchantLevel(level);
   return result;
 }
@@ -110,13 +110,13 @@ TInstanceHook(bool, _ZNK17ConnectionRequest9isEduModeEv, ConnectionRequest) {
   Log::debug("login", "DeviceID: %s", getDeviceId().c_str());
   Log::debug("login", "DeviceModel: %s", getDeviceModel().c_str());
   Log::debug("login", "ServerAddress: %s", getServerAddress().c_str());
-  Log::debug("login", "TenantID: %s", getTenantId().c_str());
+  // Log::debug("login", "TenantID: %s", getTenantId().c_str()); // Always empty
   Log::debug("login", "SkinId: %s", getSkinId().c_str());
   // Log::debug("login", "SkinGeometry: %s", getSkinGeometry().c_str()); // too long!
   Log::debug("login", "SkinGeometryName: %s", getSkinGeometryName().c_str());
   Log::debug("login", "SelfSignedId: %s", getSelfSignedId().c_str());
-  Log::debug("login", "ClientPlatformOnlineId: %s", getClientPlatformOnlineId().c_str());
-  Log::debug("login", "ClientPlatformOfflineId: %s", getClientPlatformOfflineId().c_str());
+  // Log::debug("login", "ClientPlatformOnlineId: %s", getClientPlatformOnlineId().c_str()); // Always empty
+  // Log::debug("login", "ClientPlatformOfflineId: %s", getClientPlatformOfflineId().c_str()); // Always empty
   Log::debug("login", "OS: %d GuiScale: %d UIProfile: %d CurrentIME: %d DefaultIME: %d ADRole: %d", getDeviceOS(), getGuiScale(), getUIProfile(),
              getCurrentInputMode(), getDefaultInputMode(), getADRole());
   return getGameVersionString() == "1.6.0";
