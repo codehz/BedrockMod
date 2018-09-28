@@ -38,6 +38,8 @@
 
 (init-stats-bar (lambda (player) (send-message player (apply format #f "ping: ~ams/~ams loss: ~1,2f/~1,2f" (player-stats player)) 5)))
 
+(init-player-trace "enchantingtable" 0)
+
 (set-teleport-cooldown! 500)
 
 (prevent-item-use (map lookup-item-id '("minecraft:bedrock" "minecraft:barrier")))

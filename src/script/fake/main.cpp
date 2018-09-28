@@ -56,12 +56,18 @@ SCM_DEFINE_PUBLIC(fake_explode, "fake-explode", 3, 0, 0, (scm::val<float> size, 
   return SCM_UNSPECIFIED;
 }
 
+int getParticleId(std::string const &name) {
+  if (name == "forcefield") return 3;
+  if (name == "risingreddust") return 11;
+  return ParticleTypeMap::getParticleTypeId(name);
+}
+
 SCM_DEFINE_PUBLIC(fake_particle, "fake-particle", 3, 1, 0, (scm::val<std::string> name, scm::val<Vec3> pos, scm::val<int> did, scm::val<int> data),
                   "Create a fake particle") {
   auto &level = ServerCommand::mGame->getLevel();
   auto dim    = level.getDimension(DimensionId(did));
   if (!dim) return SCM_BOOL_F;
-  LevelEventPacket pkt{ LevelEvent(0x4000 + ParticleTypeMap::getParticleTypeId(name)), pos.get(), data[0] };
+  LevelEventPacket pkt{ LevelEvent(0x4000 + getParticleId(name)), pos.get(), data[0] };
   dim->sendPacketForPosition(BlockPos(pos), pkt, nullptr);
   return SCM_UNSPECIFIED;
 }
