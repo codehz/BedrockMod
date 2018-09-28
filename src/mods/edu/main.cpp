@@ -4,7 +4,7 @@
 #define hookedu(name)                                                                                                                                \
   THook(bool, name, void *) { return true; }
 
-#define hooknotedu(name)                                                                                                                                \
+#define hooknotedu(name)                                                                                                                             \
   THook(bool, name, void *) { return false; }
 
 hookedu(_ZNK15DedicatedServer9isEduModeEv);
