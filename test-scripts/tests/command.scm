@@ -50,6 +50,12 @@
              0
              (list (command-vtable (list (parameter-optional parameter-position "test")) #%(outp-success (format #f "Pos ~a" (command-args))))))
 
+(reg-command "enum"
+             "Custom command for testing enum"
+             0
+             (list (command-vtable (list (parameter-enum "test" "TENUM" "X" "Y" "Z"))
+                                 #%(outp-success (format #f "Enum ~a" (command-args))))))
+
 (reg-command "multiple"
              "Custom command for testing multiple parameters"
              0

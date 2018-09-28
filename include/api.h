@@ -170,6 +170,74 @@ template <typename T> auto to_scm(T s) { return convertible<std::remove_const_t<
 template <typename T> auto from_scm(const SCM &s) { return convertible<std::remove_const_t<T>>::from_scm(s); }
 template <typename T> void set_scm(const SCM &s, T v) { return convertible<std::remove_const_t<T>>::set_scm(s, v); }
 
+#define DO_PAIR(x)                                                                                                                                   \
+  template <typename T> auto x(SCM scm) { return from_scm<T>(scm_##x(scm)); }
+
+DO_PAIR(car);
+DO_PAIR(cdr);
+DO_PAIR(caar);
+DO_PAIR(cadr);
+DO_PAIR(cdar);
+DO_PAIR(cddr);
+DO_PAIR(caaar);
+DO_PAIR(caadr);
+DO_PAIR(cadar);
+DO_PAIR(caddr);
+DO_PAIR(cdaar);
+DO_PAIR(cdadr);
+DO_PAIR(cddar);
+DO_PAIR(cdddr);
+DO_PAIR(caaaar);
+DO_PAIR(caaadr);
+DO_PAIR(caadar);
+DO_PAIR(caaddr);
+DO_PAIR(cadaar);
+DO_PAIR(cadadr);
+DO_PAIR(caddar);
+DO_PAIR(cadddr);
+DO_PAIR(cdaaar);
+DO_PAIR(cdaadr);
+DO_PAIR(cdadar);
+DO_PAIR(cdaddr);
+DO_PAIR(cddaar);
+DO_PAIR(cddadr);
+DO_PAIR(cdddar);
+DO_PAIR(cddddr);
+
+#undef DO_PAIR
+
+template <typename A, typename B> struct convertible<std::pair<A, B>> {
+  static SCM to_scm(std::pair<A, B> tp) {
+    auto &[a, b] = tp;
+    return scm_cons(to_scm(a), to_scm(b));
+  }
+  static std::pair<A, B> from_scm(SCM s) { return { car<A>(s), cdr<B>(s) }; }
+};
+
+template <typename T> struct convertible<std::tuple<T>> {
+  static SCM to_scm(std::tuple<T> tp) {
+    auto &[a] = tp;
+    return to_scm(a);
+  }
+  static std::tuple<T> from_scm(SCM s) { return { ::scm::from_scm<T>(s) }; }
+};
+
+namespace {
+template <typename T, typename Tuple> auto push_front(const T &t, const Tuple &tuple) { return std::tuple_cat(std::make_tuple(t), tuple); }
+
+template <typename Tuple, std::size_t... Is> auto pop_front_impl(const Tuple &tuple, std::index_sequence<Is...>) {
+  return std::make_tuple(std::get<1 + Is>(tuple)...);
+}
+template <typename Tuple> auto pop_front(const Tuple &tuple) {
+  return pop_front_impl(tuple, std::make_index_sequence<std::tuple_size<Tuple>::value - 1>());
+}
+} // namespace
+
+template <typename T, typename... PS> struct convertible<std::tuple<T, PS...>> {
+  static SCM to_scm(std::tuple<T, PS...> tp) { return cons(to_scm(std::get<0>(tp)), to_scm(pop_front(tp))); }
+  static std::tuple<T, PS...> from_scm(SCM s) { return push_front(car<T>(s), cdr<std::tuple<PS...>>(s)); }
+};
+
 template <typename T> struct val {
   SCM scm;
   auto get() { return std::move(from_scm<T>(scm)); }
@@ -369,7 +437,7 @@ template <typename T = SCM> struct fluid : as_scm {
   })                                                                                                                                                 \
   SCM_SNARF_INIT(scm_c_define(sname, call("fluid->parameter", name())); scm_c_export(sname);)
 
-struct with_fluids : private boost::noncopyable {
+struct with_fluids {
   SCM fluids, vals;
   with_fluids()
       : fluids(SCM_EOL)
@@ -482,8 +550,8 @@ struct dynwind : private boost::noncopyable {
 
 namespace std {
 template <typename A, typename B> struct tuple_size<scm::pair<A, B>> : std::integral_constant<size_t, 2> {};
-template <typename A, typename B> struct tuple_element<0, scm::pair<A, B>> { using type = A; };
-template <typename A, typename B> struct tuple_element<1, scm::pair<A, B>> { using type = B; };
+template <typename A, typename B> struct tuple_element<0, scm::pair<A, B>> { using type = decltype(scm::from_scm<A>(SCM_UNSPECIFIED)); };
+template <typename A, typename B> struct tuple_element<1, scm::pair<A, B>> { using type = decltype(scm::from_scm<B>(SCM_UNSPECIFIED)); };
 } // namespace std
 
 #define STR2(x) #x

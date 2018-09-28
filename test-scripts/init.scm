@@ -18,6 +18,7 @@
 (use-modules (custom player-events))
 (use-modules (custom teleport))
 (use-modules (custom transfer))
+(use-modules (custom vanilla-ext))
 
 (log-debug "guile" "config")
 

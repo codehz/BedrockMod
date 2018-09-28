@@ -46,6 +46,7 @@ struct BedrockBlocks {
 
 SCM_DEFINE_PUBLIC(get_block_at, "get-block", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<int> did), "Get Block") {
   auto dim = ServerCommand::mGame->getLevel().getDimension(DimensionId(did));
+  if (!dim) return SCM_BOOL_F;
   CommandAreaFactory factory{ *dim };
   auto area = factory.findArea(pos, false);
   if (!area) return SCM_BOOL_F;
@@ -60,6 +61,7 @@ SCM_DEFINE_PUBLIC(get_block_player_at, "get-block/player", 2, 0, 0, (scm::val<Bl
 
 SCM_DEFINE_PUBLIC(set_block_at, "set-block", 3, 0, 0, (scm::val<BlockPos> pos, scm::val<int> did, scm::val<std::string> name), "Set block") {
   auto dim = ServerCommand::mGame->getLevel().getDimension(DimensionId(did));
+  if (!dim) return SCM_BOOL_F;
   CommandAreaFactory factory{ *dim };
   auto area = factory.findArea(pos, false);
   if (!area) return SCM_BOOL_F;
@@ -81,6 +83,7 @@ SCM_DEFINE_PUBLIC(set_block_player_at, "set-block/player", 3, 0, 0,
 
 SCM_DEFINE_PUBLIC(clear_block_at, "clear-block", 2, 0, 0, (scm::val<BlockPos> pos, scm::val<int> did), "Clear block") {
   auto dim = ServerCommand::mGame->getLevel().getDimension(DimensionId(did));
+  if (!dim) return SCM_BOOL_F;
   CommandAreaFactory factory{ *dim };
   auto area = factory.findArea(pos, false);
   if (!area) return SCM_BOOL_F;
@@ -101,6 +104,7 @@ SCM_DEFINE_PUBLIC(block_name, "block-name", 1, 0, 0, (scm::val<Block *> block), 
 
 SCM_DEFINE_PUBLIC(spawn_actor, "spawn-actor", 3, 0, 0, (scm::val<Vec3> pos, scm::val<int> did, scm::val<std::string> name), "Spawn actor") {
   auto dim = ServerCommand::mGame->getLevel().getDimension(DimensionId(did));
+  if (!dim) return SCM_BOOL_F;
   CommandAreaFactory factory{ *dim };
   auto area = factory.findArea(BlockPos(pos), false);
   if (!area) return SCM_BOOL_F;
@@ -144,6 +148,7 @@ SCM_DEFINE_PUBLIC(spawn_item, "spawn-item", 3, 0, 0, (scm::val<Vec3> pos, scm::v
   auto &level   = ServerCommand::mGame->getLevel();
   auto &spawner = level.getSpawner();
   auto dim      = level.getDimension(DimensionId(did));
+  if (!dim) return SCM_BOOL_F;
   CommandAreaFactory factory{ *dim };
   auto area = factory.findArea(BlockPos(pos), false);
   if (!area) return SCM_BOOL_F;

@@ -63,6 +63,8 @@ struct Vec3 {
   Vec3(BlockPos const &);
   Vec3()             = default;
   Vec3(Vec3 const &) = default;
+
+  static Vec3 ZERO;
 };
 
 struct Vec2 {
@@ -194,6 +196,7 @@ struct LevelStorage {
 
 struct Dimension;
 struct Spawner;
+enum ParticleType : int {};
 
 struct Level {
   LevelStorage *getLevelStorage();
@@ -208,9 +211,15 @@ struct Level {
   Dimension *getDimension(DimensionId) const;
   void addEntity(BlockSource &, std::unique_ptr<Actor>);
   void addAutonomousEntity(BlockSource &, std::unique_ptr<Actor>);
+  void *addParticle(ParticleType type, Vec3 const &pos, Vec3 const &mot, int dim, CompoundTag const *, bool);
 
   void suspendPlayer(Player &);
   void resumePlayer(Player &);
+};
+
+struct ParticleTypeMap {
+  static std::string getParticleName(ParticleType type);
+  static ParticleType getParticleTypeId(std::string const &name);
 };
 
 struct ItemActor : Actor {

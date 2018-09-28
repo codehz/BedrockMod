@@ -46,11 +46,13 @@ struct ParameterDef {
   void (*init)(void *);
   void (*deinit)(void *);
   SCM (*fetch)(void *, CommandOrigin *);
+  std::string softEnum;
+  std::vector<std::string> enumItems;
   bool optional;
 };
 
 SCM_DEFINE_PUBLIC(optional_paramter, "parameter-optional", 1, 0, 1, (SCM val, SCM rest), "Make parameter optional") {
-  auto def = scm::from_scm<ParameterDef *>(scm_apply_0(val, rest));
+  auto def      = scm::from_scm<ParameterDef *>(scm_apply_0(val, rest));
   def->optional = true;
   return scm::to_scm(def);
 }
@@ -120,13 +122,15 @@ SCM_DEFINE_PUBLIC(command_fetch, "command-args", 0, 0, 0, (), "Get command argum
 }
 
 static ParameterDef *messageParameter(temp_string const &name) {
-  return new ParameterDef{ .size   = sizeof(CommandMessage),
-                           .name   = name,
-                           .type   = CommandMessage::type_id(),
-                           .parser = &CommandRegistry::parse<CommandMessage>,
-                           .init   = (void (*)(void *))dlsym(MinecraftHandle(), "_ZN14CommandMessageC2Ev"),
-                           .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZN14CommandMessageD2Ev"),
-                           .fetch  = [](void *self, CommandOrigin *orig) { return scm::to_scm(((CommandMessage *)self)->getMessage(*orig)); } };
+  return new ParameterDef{
+    .size   = sizeof(CommandMessage),
+    .name   = name,
+    .type   = CommandMessage::type_id(),
+    .parser = &CommandRegistry::parse<CommandMessage>,
+    .init   = (void (*)(void *))dlsym(MinecraftHandle(), "_ZN14CommandMessageC2Ev"),
+    .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZN14CommandMessageD2Ev"),
+    .fetch  = [](void *self, CommandOrigin *orig) { return scm::to_scm(((CommandMessage *)self)->getMessage(*orig)); },
+  };
 }
 
 SCM_DEFINE_PUBLIC(parameter_message, "parameter-message", 1, 0, 0, (scm::val<char *> name), "Message parameter") {
@@ -183,29 +187,54 @@ template <typename T> static void geninit(void *str) { new (str) T(); }
 static SCM fetchString(void *self, CommandOrigin *orig) { return scm::to_scm(*(std::string *)self); }
 
 static ParameterDef *stringParameter(temp_string const &name) {
-  return new ParameterDef{ .size   = sizeof(std::string),
-                           .name   = name,
-                           .type   = type_id<CommandRegistry, std::string>(),
-                           .parser = &CommandRegistry::parse<std::string>,
-                           .init   = (void (*)(void *))geninit<std::string>,
-                           .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev"),
-                           .fetch  = &fetchString };
+  return new ParameterDef{
+    .size   = sizeof(std::string),
+    .name   = name,
+    .type   = type_id<CommandRegistry, std::string>(),
+    .parser = &CommandRegistry::parse<std::string>,
+    .init   = (void (*)(void *))geninit<std::string>,
+    .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev"),
+    .fetch  = &fetchString,
+  };
 }
 
 SCM_DEFINE_PUBLIC(parameter_string, "parameter-string", 1, 0, 0, (scm::val<char *> name), "String parameter") {
   return scm::to_scm(stringParameter(name));
 }
 
+static ParameterDef *enumParameter(std::string const &name, std::string const &enumName, std::vector<std::string> const &enumData) {
+  return new ParameterDef{
+    .size      = sizeof(std::string),
+    .name      = name,
+    .type      = type_id<CommandRegistry, std::string>(),
+    .parser    = &CommandRegistry::parse<std::string>,
+    .init      = (void (*)(void *))geninit<std::string>,
+    .deinit    = (void (*)(void *))dlsym(MinecraftHandle(), "_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev"),
+    .fetch     = &fetchString,
+    .softEnum  = enumName,
+    .enumItems = enumData,
+  };
+}
+
+SCM_DEFINE_PUBLIC(parameter_enum, "parameter-enum", 2, 0, 1, (scm::val<std::string> name, scm::val<std::string> type, scm::slist<std::string> list),
+                  "String parameter") {
+  std::vector<std::string> input;
+  for (auto item : list) input.emplace_back(item);
+  return scm::to_scm(enumParameter(name, type, input));
+}
+
 template <typename T> static SCM simpleFetch(void *v, CommandOrigin *orig) { return scm::to_scm(*(T *)v); }
 
 template <typename T> static ParameterDef *simpleParameter(temp_string const &name) {
-  return new ParameterDef{ .size   = sizeof(T),
-                           .name   = name,
-                           .type   = type_id<CommandRegistry, T>(),
-                           .parser = &CommandRegistry::parse<T>,
-                           .init   = geninit<T>,
-                           .deinit = nullptr,
-                           .fetch  = simpleFetch<T> };
+  return new ParameterDef{
+    .size   = sizeof(T),
+    .name   = name,
+    .type   = type_id<CommandRegistry, T>(),
+    .parser = &CommandRegistry::parse<T>,
+    .init   = geninit<T>,
+    .deinit = nullptr,
+    .fetch  = simpleFetch<T>,
+  };
 }
 
 SCM_DEFINE_PUBLIC(parameter_int, "parameter-int", 1, 0, 0, (scm::val<char *> name), "Integer parameter") {
@@ -225,13 +254,15 @@ struct CommandRawText {
 };
 
 static ParameterDef *textParameter(temp_string const &name) {
-  return new ParameterDef{ .size   = sizeof(std::string),
-                           .name   = name,
-                           .type   = type_id<CommandRegistry, CommandRawText>(),
-                           .parser = &CommandRegistry::parse<CommandRawText>,
-                           .init   = (void (*)(void *))geninit<std::string>,
-                           .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev"),
-                           .fetch  = &fetchString };
+  return new ParameterDef{
+    .size   = sizeof(std::string),
+    .name   = name,
+    .type   = type_id<CommandRegistry, CommandRawText>(),
+    .parser = &CommandRegistry::parse<CommandRawText>,
+    .init   = (void (*)(void *))geninit<std::string>,
+    .deinit = (void (*)(void *))dlsym(MinecraftHandle(), "_ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEED1Ev"),
+    .fetch  = &fetchString,
+  };
 }
 
 SCM_DEFINE_PUBLIC(parameter_text, "parameter-text", 1, 0, 0, (scm::val<char *> name), "String parameter") { return scm::to_scm(textParameter(name)); }
@@ -283,8 +314,14 @@ static void handleCommandApply(CommandRegistryApply &apply) {
                                      [&](CommandRegistry::Overload &overload) {
                                        size_t offset = sizeof(TestCommand);
                                        for (auto p : vt->defs) {
+                                         char *enumPtr = nullptr;
+                                         if (!p->softEnum.empty()) {
+                                           registry->addSoftEnum(p->softEnum, p->enumItems);
+                                           enumPtr = p->softEnum.data();
+                                         }
                                          overload.params.emplace_back(CommandParameterData(p->type, p->parser, p->name.c_str(),
-                                                                                           (CommandParameterDataType)0, nullptr, offset, p->optional, -1));
+                                                                                           CommandParameterDataType(enumPtr ? 2 : 0), enumPtr, offset,
+                                                                                           p->optional, -1));
                                          offset += p->size;
                                        }
                                      });
@@ -334,6 +371,10 @@ SCM_DEFINE_PUBLIC(outp_error, "outp-error", 1, 0, 0, (scm::val<char *> msg), "Se
   return SCM_UNSPECIFIED;
 }
 
+struct Dimension {
+  int getId() const;
+};
+
 struct CommandOrigin {
   virtual ~CommandOrigin();
   virtual std::string getRequestId();
@@ -341,7 +382,7 @@ struct CommandOrigin {
   virtual BlockPos getBlockPosition();
   virtual Vec3 getWorldPosition();
   virtual Level &getLevel();
-  virtual void *getDimension();
+  virtual Dimension *getDimension();
   virtual Actor &getEntity();
   virtual int getPermissionsLevel();
   virtual CommandOrigin *clone();
@@ -358,13 +399,30 @@ struct CommandOrigin {
   virtual bool mayOverrideName();
 };
 
-SCM_DEFINE_PUBLIC(orig_type, "orig-type", 0, 0, 0, (), "Get CommandOrigin type") {
-  return scm::to_scm(f_current_command_origin()->getOriginType());
-}
+SCM_DEFINE_PUBLIC(orig_type, "orig-type", 0, 0, 0, (), "Get CommandOrigin type") { return scm::to_scm(f_current_command_origin()->getOriginType()); }
 
-SCM_DEFINE_PUBLIC(orig_player, "orig-player", 0, 0, 0, (), "Get CommandOrigin type") {
+SCM_DEFINE_PUBLIC(orig_player, "orig-player", 0, 0, 0, (), "Get CommandOrigin player") {
   if (f_current_command_origin()->getOriginType() == 0) { return scm::to_scm((ServerPlayer *)&f_current_command_origin()->getEntity()); }
   return SCM_BOOL_F;
+}
+
+SCM_DEFINE_PUBLIC(orig_actor, "orig-actor", 0, 0, 0, (), "Get CommandOrigin actor") {
+  auto ret = &f_current_command_origin()->getEntity();
+  if (ret) { return scm::to_scm(ret); }
+  return SCM_BOOL_F;
+}
+
+SCM_DEFINE_PUBLIC(orig_ability, "orig-ability", 1, 0, 0, (scm::val<std::string> name), "Check CommandOrigin ability") {
+  return scm::to_scm(f_current_command_origin()->canUseAbility(name));
+}
+
+SCM_DEFINE_PUBLIC(orig_dim, "orig-dim", 0, 0, 0, (), "Get CommandOrigin dim") {
+  if (!f_current_command_origin()->getDimension()) return scm::to_scm(0);
+  return scm::to_scm(f_current_command_origin()->getDimension()->getId());
+}
+
+SCM_DEFINE_PUBLIC(orig_pos, "orig-pos", 0, 0, 0, (), "Get CommandOrigin pos") {
+  return scm::to_scm(f_current_command_origin()->getWorldPosition());
 }
 
 LOADFILE(preload, "src/script/command/preload.scm");

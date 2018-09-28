@@ -5,6 +5,7 @@
                #:use-module (minecraft dbus)
                #:use-module (minecraft form)
                #:use-module (minecraft chat)
+               #:use-module (minecraft fake)
 
                #:use-module (utils form)
                #:use-module (utils point-select)
@@ -42,6 +43,12 @@
                     0
                     (checked-player! player
                                      (player-resume player)))
+
+(reg-simple-command "test-particle"
+                    "test particle"
+                    0
+                    (checked-player! player
+                                     (fake-particle "hugeexplosion" (actor-pos player) (actor-dim player))))
 
 (reg-simple-command "test-form"
                     "Test form"

@@ -58,4 +58,6 @@ public:
     f(overload);
     registerOverloadInternal(*signature, overload);
   }
+
+  void addSoftEnum(std::string const &, std::vector<std::string>);
 };
