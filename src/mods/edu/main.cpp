@@ -15,6 +15,7 @@ hooknotedu(_ZNK13LevelSettings23isEducationEditionWorldEv);
 hookedu(_ZNK12LevelSummary5isEduEv);
 hookedu(_ZNK9LevelData24educationFeaturesEnabledEv);
 hookedu(_ZNK13LevelSettings24educationFeaturesEnabledEv);
+hookedu(_ZNK6Option7getBoolEv);
 
 TClasslessInstanceHook(
     void *, _ZN15CommandRegistry15registerCommandERKNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEPKc22CommandPermissionLevel11CommandFlagSB_,
