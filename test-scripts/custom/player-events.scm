@@ -2,6 +2,7 @@
                #:use-module (minecraft)
                #:use-module (minecraft base)
                #:use-module (minecraft chat)
+               #:use-module (minecraft server-exec)
                
                #:use-module (megacut))
 

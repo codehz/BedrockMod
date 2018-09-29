@@ -14,7 +14,7 @@ extern "C" {
 extern const char *(*mcpelauncher_exec_hook)(const char *);
 }
 
-PRELOAD_MODULE("minecraft chat") {
+PRELOAD_MODULE("minecraft server-exec") {
   mcpelauncher_exec_hook = onLauncherExec;
 #ifndef DIAG
 #include "main.x"
