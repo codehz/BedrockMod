@@ -19,6 +19,7 @@
 (use-modules (custom teleport))
 (use-modules (custom transfer))
 (use-modules (custom vanilla-ext))
+(use-modules (custom residence))
 
 (log-debug "guile" "config")
 

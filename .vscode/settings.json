@@ -71,5 +71,6 @@
     "csignal": "cpp",
     "strstream": "cpp",
     "*.h++": "cpp"
-  }
+  },
+  "clang.cxxflags": ["-I${workspaceRoot}/include", "-std=c++2a", "-Wno-pragma-once-outside-header"]
 }

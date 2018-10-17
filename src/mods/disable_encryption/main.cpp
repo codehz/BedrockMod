@@ -3,13 +3,13 @@
 class NetworkIdentifier;
 class ClientToServerHandshakePacket;
 struct ServerNetworkHandler {
-  void handle(NetworkIdentifier const &, ClientToServerHandshakePacket const &);
+  void handleClientToServerHandshake(NetworkIdentifier const &, ClientToServerHandshakePacket const &);
 };
-TInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK11LoginPacket, ServerNetworkHandler, NetworkIdentifier const &netId,
+TInstanceHook(void, _ZN20ServerNetworkHandler11handleLoginERK17NetworkIdentifierRK11LoginPacket, ServerNetworkHandler, NetworkIdentifier const &netId,
               void *packet) {
   original(this, netId, packet);
   ClientToServerHandshakePacket *whateverhonestly = nullptr;
-  this->handle(netId, *whateverhonestly);
+  this->handleClientToServerHandshake(netId, *whateverhonestly);
 }
 
 struct NetworkIdentifier {};

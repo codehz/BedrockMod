@@ -42,7 +42,7 @@ TInstanceHook(bool, _ZN8GameMode7useItemER12ItemInstance, GameMode, ItemInstance
 }
 
 MAKE_HOOK(player_use_on, "policy-player-use-on", ItemInstance *, BlockPos, Vec3);
-TInstanceHook(bool, _ZN8GameMode9useItemOnER12ItemInstanceRK8BlockPosaRK4Vec3P15ItemUseCallback, GameMode, ItemInstance *instance, BlockPos &pos,
+TInstanceHook(bool, _ZN8GameMode9useItemOnER12ItemInstanceRK8BlockPosaRK4Vec3, GameMode, ItemInstance *instance, BlockPos &pos,
               char flag, Vec3 &vec, void *callback) {
   if (queryPolicy(player_use_on, instance, pos, vec)) { return original(this, instance, pos, flag, vec, callback); }
   return false;

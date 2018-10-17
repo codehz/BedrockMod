@@ -25,7 +25,7 @@ struct TextPacket : Packet {
 MAKE_HOOK(player_chat, "player-chat", ServerPlayer *, std::string);
 MAKE_FLUID(bool, cancel_chat, "cancel-chat");
 
-TInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK10TextPacket, ServerNetworkHandler, NetworkIdentifier const &nid,
+TInstanceHook(void, _ZN20ServerNetworkHandler10handleTextERK17NetworkIdentifierRK10TextPacket, ServerNetworkHandler, NetworkIdentifier const &nid,
               TextPacket const &packet) {
   auto canceled = cancel_chat()[false] <<= [=] {
     auto player = _getServerPlayer(nid, packet.playerSubIndex);

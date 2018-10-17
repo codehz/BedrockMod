@@ -72,11 +72,22 @@ struct Vec2 {
   float x, y;
 };
 
-struct DimensionId {
-  int value;
-  DimensionId(int value)
-      : value(value) {}
+template <typename Type, typename Store> struct AutomaticID {
+  Store v;
+  template <typename X>
+  AutomaticID(X v)
+      : v(v) {}
+  Store value() const;
+  bool operator!=(AutomaticID const &) const;
+  bool operator==(AutomaticID const &) const;
+  operator Store() const { return v; }
+  static Store _makeRuntimeID();
 };
+
+struct Dimension;
+struct Biome;
+using DimensionId = AutomaticID<Dimension, int>;
+using BiomeId     = AutomaticID<Biome, int>;
 
 struct BinaryStream;
 struct NetEventCallback;
@@ -222,8 +233,9 @@ struct ParticleTypeMap {
   static ParticleType getParticleTypeId(std::string const &name);
 };
 
+std::string getEntityName(Actor const &);
+
 struct ItemActor : Actor {
-  std::string getPrimaryName() const;
   ItemInstance &getItemInstance();
 };
 

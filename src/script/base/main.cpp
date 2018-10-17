@@ -179,7 +179,7 @@ SCM_DEFINE_PUBLIC(item_id_from_string, "lookup-item-id", 1, 0, 0, (scm::val<std:
 }
 
 SCM_DEFINE_PUBLIC(item_actor_name, "item-actor-name", 1, 0, 0, (scm::val<ItemActor *> act), "Get ItemActor's name") {
-  return scm::to_scm(act->getPrimaryName());
+  return scm::to_scm(getEntityName(*(Actor *)act));
 }
 
 SCM_DEFINE_PUBLIC(item_actor_to_instance, "item-actor->item-instance", 1, 0, 0, (scm::val<ItemActor *> act), "Get ItemInstance from ItemActor") {

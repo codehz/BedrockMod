@@ -75,7 +75,7 @@ struct FixedFunction {
 
 std::unordered_map<ServerPlayer *, FixedFunction> callbacks;
 
-TInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK23ModalFormResponsePacket, ServerNetworkHandler,
+TInstanceHook(void, _ZN20ServerNetworkHandler23handleModalFormResponseERK17NetworkIdentifierRK23ModalFormResponsePacket, ServerNetworkHandler,
               NetworkIdentifier const &nid, ModalFormResponsePacket &packet) {
   auto it = callbacks.find(_getServerPlayer(nid, packet.playerSubIndex));
   if (it != callbacks.end()) {
@@ -87,7 +87,7 @@ TInstanceHook(void, _ZN20ServerNetworkHandler6handleERK17NetworkIdentifierRK23Mo
 }
 
 MAKE_HOOK(server_settings, "open-server-settings", ServerPlayer *);
-TInstanceHook(void, _ZN16NetEventCallback6handleERK17NetworkIdentifierRK27ServerSettingsRequestPacket, ServerNetworkHandler,
+TInstanceHook(void, _ZN16NetEventCallback27handleServerSettingsRequestERK17NetworkIdentifierRK27ServerSettingsRequestPacket, ServerNetworkHandler,
               NetworkIdentifier const &nid, ModalFormResponsePacket &packet) {
   auto result = _getServerPlayer(nid, packet.playerSubIndex);
   if (result)
