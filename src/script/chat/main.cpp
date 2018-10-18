@@ -5,10 +5,13 @@
 #include <StaticHook.h>
 
 struct TextPacket : Packet {
-  unsigned char type; // 17
-  unsigned char filler[96 - 18];
-  std::string message; // 96
-  unsigned char filler2[150];
+  unsigned char type;            // 17
+  std::string name;              // 24
+  std::string message;           // 56
+  std::vector<std::string> list; // 88
+  bool flag;                     // 112
+  std::string s120;              // 120
+  std::string s152;              // 152
   static TextPacket createSystemMessage(std::string const &);
 
   TextPacket(unsigned char playerSubIndex)
