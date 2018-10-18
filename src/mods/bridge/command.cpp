@@ -24,7 +24,6 @@ struct AutoCompleteOption {
 };
 
 struct AutoCompleteInformation {
-  void *filler;
   std::vector<AutoCompleteOption> list;
 };
 
