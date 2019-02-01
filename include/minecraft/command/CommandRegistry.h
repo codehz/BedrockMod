@@ -6,6 +6,19 @@
 
 class Command;
 class CommandParameterData;
+enum  CommandOriginType: int {
+	PlayerOrigin=0,
+	BlockOrigin=1,
+	MinecartBlockOrigin=2,
+	DevconsoleOrigin=3,
+	ServerOrigin=7,
+	ActorOrigin=8,
+};
+enum CommandPermissionsLevel : int{
+	PlayerPerm=0,
+	OPPerm=1,
+	ConsolePerm=2,
+};
 class CommandOrigin{
   public:
     virtual ~CommandOrigin();
@@ -16,7 +29,7 @@ class CommandOrigin{
     virtual void* getLevel() const =0;
     virtual int getDimension() const =0;
     virtual void* getEntity() const =0;
-    virtual int getPermissionsLevel() const =0;
+    virtual CommandPermissionsLevel getPermissionsLevel() const =0;
     virtual void* clone() const =0;
     virtual int canCallHiddenCommands();
     virtual int hasChatPerms();
@@ -27,7 +40,7 @@ class CommandOrigin{
     virtual int getSourceId();
     virtual int getSourceSubId();
     virtual int getOutputReceiver();
-    virtual int getOriginType() const =0;
+    virtual CommandOriginType getOriginType() const =0;
 };
 enum CommandPermissionLevel : int {};
 enum CommandFlag : int {};
