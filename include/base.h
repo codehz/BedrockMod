@@ -98,7 +98,6 @@ struct Packet {
 
   Packet(unsigned char playerSubIndex)
       : playerSubIndex(playerSubIndex) {}
-  Packet(){}
   virtual ~Packet();
   virtual void *getId() const                                               = 0;
   virtual void *getName() const                                             = 0;
@@ -342,4 +341,10 @@ struct TextPacket : Packet
   static TextPacket createSystemMessage(std::string const &);
   void SendTo(Player* p) { ((ServerPlayer*)p)->sendNetworkPacket(this); }
   void SendTo(ServerPlayer* p) { ((ServerPlayer*)p)->sendNetworkPacket(this); }
+  void *getId() const;
+   void *getName() const                                             ;
+   void *write(BinaryStream &) const                                ;
+   void *read(BinaryStream &)                                        ;
+   void *handle(NetworkIdentifier const &, NetEventCallback &) const ;
+   bool disallowBatching() const;
 };
