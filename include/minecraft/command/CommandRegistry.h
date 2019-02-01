@@ -6,46 +6,9 @@
 
 class Command;
 class CommandParameterData;
-enum  CommandOriginType: int {
-	PlayerOrigin=0,
-	BlockOrigin=1,
-	MinecartBlockOrigin=2,
-	DevconsoleOrigin=3,
-	ServerOrigin=7,
-	ActorOrigin=8,
-};
-enum CommandPermissionLevel : int {
-	PlayerPerm=0,
-	OPPerm=1,
-	ConsolePerm=2,
-};
-class CommandOrigin{
-  public:
-    virtual ~CommandOrigin();
-    virtual void* getRequestId() const =0;
-    virtual void* getName() const =0;
-    virtual void* getBlockPosition() const =0;
-    virtual void* getWorldPosition() const =0;
-    virtual void* getLevel() const =0;
-    virtual int getDimension() const =0;
-    virtual void* getEntity() const =0;
-    virtual CommandPermissionLevel getPermissionsLevel() const =0;
-    virtual void* clone() const =0;
-    virtual int canCallHiddenCommands();
-    virtual int hasChatPerms();
-    virtual int hasTellPerms();
-    virtual int canUseAbility(std::string const&);
-    virtual int isWorldBuilder();
-    virtual int canUseCommandsWithoutCheatsEnabled();
-    virtual int getSourceId();
-    virtual int getSourceSubId();
-    virtual int getOutputReceiver();
-    virtual CommandOriginType getOriginType() const =0;
-};
-
-enum CommandFlag : int {
-	WithoutCheat=32,
-};
+class CommandOrigin;
+enum CommandPermissionLevel : int {};
+enum CommandFlag : int {};
 
 class CommandRegistry {
 
