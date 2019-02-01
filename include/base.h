@@ -335,12 +335,12 @@ struct Blacklist
 enum class TextPacketType;
 struct TextPacket : Packet
 {
-  char filler[0xff];
+  char filler[0x30];
   TextPacket(TextPacketType, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&, bool, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&);
   static TextPacket createJukeboxPopup(std::string const &);
   static TextPacket createSystemMessage(std::string const &);
-  void SendTo(Player* p) { ((ServerPlayer*)p)->sendNetworkPacket(this); }
-  void SendTo(ServerPlayer* p) { ((ServerPlayer*)p)->sendNetworkPacket(this); }
+  void SendTo(Player* p) { ((ServerPlayer*)p)->sendNetworkPacket(*this); }
+  void SendTo(ServerPlayer* p) { ((ServerPlayer*)p)->sendNetworkPacket(*this); }
   void *getId() const;
    void *getName() const                                             ;
    void *write(BinaryStream &) const                                ;
