@@ -169,7 +169,7 @@ struct ExtendedCertificate {
   static std::string getXuid(Certificate const &);
 };
 
-static auto const uuidoffset = 5704;
+//static auto const uuidoffset = 5704;
 //struct Player;
 //mce::UUID &Player::getUUID() { return *(mce::UUID *)((char *)this + uuidoffset); }
 
@@ -193,8 +193,8 @@ struct Player : Mob {
   std::string* getPlayerName(){return (std::string*)((long)this+5400);};
   struct PacketSender* getPKSender(){return (PacketSender*)((long)this+6472);};
 };
-mce::UUID &Player::getUUID() const { return *(mce::UUID *)((char *)this + uuidoffset); }
-std::string Player::getXUID() const { return ExtendedCertificate::getXuid(getCertificate()); }
+__attribute__((weak)) mce::UUID &Player::getUUID() const { return *(mce::UUID *)((char *)this + 5704); }
+__attribute__((weak)) std::string Player::getXUID() const { return ExtendedCertificate::getXuid(getCertificate()); }
 struct ServerPlayer : Player {
   void disconnect();
   void changeDimension(DimensionId, bool);
