@@ -333,6 +333,7 @@ struct Blacklist
   };
 };
 enum class TextPacketType;
+/*
 struct TextPacket : Packet
 {
   char filler[0x30];
@@ -348,6 +349,7 @@ struct TextPacket : Packet
    void *handle(NetworkIdentifier const &, NetEventCallback &) const ;
    bool disallowBatching() const;
 };
+*/
 extern void onPlayerJoined(std::function<void(ServerPlayer &player)> callback);
 extern void onPlayerLeft(std::function<void(ServerPlayer &player)> callback);
 extern void kickPlayer(ServerPlayer *player);
