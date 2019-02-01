@@ -98,6 +98,7 @@ struct Packet {
 
   Packet(unsigned char playerSubIndex)
       : playerSubIndex(playerSubIndex) {}
+  Packet(){}
   virtual ~Packet();
   virtual void *getId() const                                               = 0;
   virtual void *getName() const                                             = 0;
@@ -335,16 +336,10 @@ struct Blacklist
 enum class TextPacketType;
 struct TextPacket : Packet
 {
-  char filler[0x30];
+  char filler[0xff];
+  TextPacket(){};
   TextPacket(TextPacketType, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&, bool, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&);
-  static TextPacket createJukeboxPopup(std::string const &);
-  static TextPacket createSystemMessage(std::string const &);
-  void SendTo(Player* p) { ((ServerPlayer*)p)->sendNetworkPacket(*this); }
-  void SendTo(ServerPlayer* p) { ((ServerPlayer*)p)->sendNetworkPacket(*this); }
-  void *getId() const;
-   void *getName() const                                             ;
-   void *write(BinaryStream &) const                                ;
-   void *read(BinaryStream &)                                        ;
-   void *handle(NetworkIdentifier const &, NetEventCallback &) const ;
-   bool disallowBatching() const;
+  TextPacket createJukeboxPopup(std::string const &);
+  TextPacket createSystemMessage(std::string const &);
+  void SendTo(Player* p) { ((ServerPlayer*)p)->sendNetworkPacket(this); }
 };
