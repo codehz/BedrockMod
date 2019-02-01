@@ -98,16 +98,16 @@ struct Packet {
 
   Packet(unsigned char playerSubIndex)
       : playerSubIndex(playerSubIndex) {}
-
+  Packet(){}
+/*
   virtual ~Packet();
   virtual void *getId() const                                               = 0;
   virtual void *getName() const                                             = 0;
   virtual void *write(BinaryStream &) const                                 = 0;
   virtual void *read(BinaryStream &)                                        = 0;
   virtual void *handle(NetworkIdentifier const &, NetEventCallback &) const = 0;
-  virtual bool disallowBatching() const;
+  virtual bool disallowBatching() const;*/
 };
-struct Level;
 
 struct BlockEntity {
   void setData(int val);
@@ -149,14 +149,15 @@ struct Actor {
   EntityRuntimeID getRuntimeID() const;
   Vec2 const &getRotation() const;
   Vec3 const &getPos() const;
-  Level &getLevel() const;
+  struct Level &getLevel() const;
   int getDimensionId() const;
   void changeDimension(DimensionId, bool);
   void getDebugText(std::vector<std::string> &);
   BlockSource &getRegion() const;
   void setOffhandSlot(ItemInstance const &);
   bool save(CompoundTag &);
-
+  struct Player* getPlayerOwner() const;
+  int getEntityTypeId()	const;
   virtual ~Actor();
 };
 
@@ -169,6 +170,10 @@ struct Certificate {};
 struct ExtendedCertificate {
   static std::string getXuid(Certificate const &);
 };
+
+static auto const uuidoffset = 5704;
+//struct Player;
+//mce::UUID &Player::getUUID() { return *(mce::UUID *)((char *)this + uuidoffset); }
 
 struct Player : Mob {
   void remove();
@@ -185,20 +190,25 @@ struct Player : Mob {
   bool isAdventure() const;
   bool isCreative() const;
   bool isWorldBuilder();
-
+  void sendNetworkPacket(Packet &packet) const;
   void setOffhandSlot(ItemInstance const &);
+  std::string* getPlayerName(){return (std::string*)((long)this+5400);};
+  struct PacketSender* getPKSender(){return (PacketSender*)((long)this+6472);};
 };
-
+mce::UUID &Player::getUUID() const { return *(mce::UUID *)((char *)this + uuidoffset); }
+std::string Player::getXUID() const { return ExtendedCertificate::getXuid(getCertificate()); }
 struct ServerPlayer : Player {
   void disconnect();
-  void sendNetworkPacket(Packet &packet) const;
   void changeDimension(DimensionId, bool);
-
+  void sendNetworkPacket(Packet &packet) const;
   void openInventory();
 };
 
 struct PacketSender {
-  virtual void *sendToClient(NetworkIdentifier const &, Packet const &, unsigned char) = 0;
+  virtual ~PacketSender();
+  virtual void send(Packet&)=0;
+  virtual void sendToServer(Packet&)=0;
+  virtual void sendToClient(NetworkIdentifier const &, Packet const &, unsigned char) = 0;
 };
 
 struct LevelStorage {
@@ -208,7 +218,8 @@ struct LevelStorage {
 struct Dimension;
 struct Spawner;
 enum ParticleType : int {};
-
+struct TickingAreasManager{
+};
 struct Level {
   LevelStorage *getLevelStorage();
   ServerPlayer *getPlayer(const std::string &name) const;
@@ -226,6 +237,7 @@ struct Level {
 
   void suspendPlayer(Player &);
   void resumePlayer(Player &);
+  TickingAreasManager& getTickingAreasMgr() const;
 };
 
 struct ParticleTypeMap {
@@ -266,6 +278,7 @@ struct NetworkHandler {
 struct ServerNetworkHandler : NetworkHandler {
   void disconnectClient(NetworkIdentifier const &, std::string const &, bool);
   ServerPlayer *_getServerPlayer(NetworkIdentifier const &, unsigned char);
+  void _displayGameMessage(Player const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&);
 };
 
 struct MinecraftCommands;
@@ -313,8 +326,21 @@ struct ItemInstance {
   static ItemInstance EMPTY_ITEM;
 };
 struct ItemUseCallback;
-
-extern void onPlayerJoined(std::function<void(ServerPlayer &player)> callback);
-extern void onPlayerLeft(std::function<void(ServerPlayer &player)> callback);
-
-extern void kickPlayer(ServerPlayer *player);
+struct Blacklist
+{
+  struct Entry{
+    std::string* getXUID(){
+      return (std::string*)((char*)this+16);
+    }
+  };
+};
+enum class TextPacketType;
+struct TextPacket : Packet
+{
+  char filler[0xff];
+  TextPacket(){};
+  TextPacket(TextPacketType, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::vector<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >, std::allocator<std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > > > const&, bool, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&);
+  TextPacket createJukeboxPopup(std::string const &);
+  TextPacket createSystemMessage(std::string const &);
+  void SendTo(Player* p) { ((ServerPlayer*)p)->sendNetworkPacket(this); }
+};
