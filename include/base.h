@@ -348,3 +348,6 @@ struct TextPacket : Packet
    void *handle(NetworkIdentifier const &, NetEventCallback &) const ;
    bool disallowBatching() const;
 };
+extern void onPlayerJoined(std::function<void(ServerPlayer &player)> callback);
+extern void onPlayerLeft(std::function<void(ServerPlayer &player)> callback);
+extern void kickPlayer(ServerPlayer *player);
