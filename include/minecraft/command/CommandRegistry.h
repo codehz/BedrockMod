@@ -14,7 +14,7 @@ enum  CommandOriginType: int {
 	ServerOrigin=7,
 	ActorOrigin=8,
 };
-enum CommandPermissionsLevel : int{
+enum CommandPermissionLevel : int {
 	PlayerPerm=0,
 	OPPerm=1,
 	ConsolePerm=2,
@@ -29,7 +29,7 @@ class CommandOrigin{
     virtual void* getLevel() const =0;
     virtual int getDimension() const =0;
     virtual void* getEntity() const =0;
-    virtual CommandPermissionsLevel getPermissionsLevel() const =0;
+    virtual CommandPermissionLevel getPermissionsLevel() const =0;
     virtual void* clone() const =0;
     virtual int canCallHiddenCommands();
     virtual int hasChatPerms();
@@ -42,8 +42,10 @@ class CommandOrigin{
     virtual int getOutputReceiver();
     virtual CommandOriginType getOriginType() const =0;
 };
-enum CommandPermissionLevel : int {};
-enum CommandFlag : int {};
+
+enum CommandFlag : int {
+	WithoutCheat=32,
+};
 
 class CommandRegistry {
 
