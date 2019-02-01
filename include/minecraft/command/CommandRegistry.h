@@ -6,7 +6,29 @@
 
 class Command;
 class CommandParameterData;
-class CommandOrigin;
+class CommandOrigin{
+  public:
+    virtual ~CommandOrigin();
+    virtual void* getRequestId() const =0;
+    virtual void* getName() const =0;
+    virtual void* getBlockPosition() const =0;
+    virtual void* getWorldPosition() const =0;
+    virtual void* getLevel() const =0;
+    virtual int getDimension() const =0;
+    virtual void* getEntity() const =0;
+    virtual int getPermissionsLevel() const =0;
+    virtual void* clone() const =0;
+    virtual int canCallHiddenCommands();
+    virtual int hasChatPerms();
+    virtual int hasTellPerms();
+    virtual int canUseAbility(std::string const&);
+    virtual int isWorldBuilder();
+    virtual int canUseCommandsWithoutCheatsEnabled();
+    virtual int getSourceId();
+    virtual int getSourceSubId();
+    virtual int getOutputReceiver();
+    virtual int getOriginType() const =0;
+};
 enum CommandPermissionLevel : int {};
 enum CommandFlag : int {};
 
