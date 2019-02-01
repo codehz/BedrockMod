@@ -99,14 +99,13 @@ struct Packet {
   Packet(unsigned char playerSubIndex)
       : playerSubIndex(playerSubIndex) {}
   Packet(){}
-/*
   virtual ~Packet();
   virtual void *getId() const                                               = 0;
   virtual void *getName() const                                             = 0;
   virtual void *write(BinaryStream &) const                                 = 0;
   virtual void *read(BinaryStream &)                                        = 0;
   virtual void *handle(NetworkIdentifier const &, NetEventCallback &) const = 0;
-  virtual bool disallowBatching() const;*/
+  virtual bool disallowBatching() const;
 };
 
 struct BlockEntity {
